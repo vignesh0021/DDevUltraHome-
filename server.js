@@ -21,6 +21,11 @@ import { LabourEngine } from './src/engine/labour.js';
 import { BoqEngine } from './src/engine/boq.js';
 import { SepticTankEngine } from './src/engine/septictank.js';
 import { MilestonesEngine } from './src/engine/milestones.js';
+import { GeotechEngine } from './src/engine/geotech.js';
+import { ConcreteQcEngine } from './src/engine/qc.js';
+import { TncdbrEngine } from './src/engine/tncdbr.js';
+import { MBookEngine } from './src/engine/mbook.js';
+import { AntiTermiteEngine } from './src/engine/antitermite.js';
 import { MaterialPriceIntelligence, TN_DISTRICTS } from './src/intelligence/materialRates.js';
 import { ScrapRatesEngine } from './src/intelligence/scrapRates.js';
 import { ScrapValuationEngine } from './src/intelligence/scrapValuation.js';
@@ -247,6 +252,48 @@ const server = http.createServer(async (req, res) => {
         'Content-Disposition': 'attachment; filename="DDevUltraHome_BOQ_Estimate.csv"'
       });
       return res.end(csv);
+    }
+
+    // Geotechnical & SBC Footing Sizing
+    if (pathname === '/api/calculate/sbc-footing' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = GeotechEngine.sizeFooting(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Concrete QC Cube Test
+    if (pathname === '/api/qc/cube-test' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = ConcreteQcEngine.evaluateBatch(body);
+      return sendJson(res, 200, result);
+    }
+
+    // TNCDBR 2019 Planning Rules
+    if (pathname === '/api/planning/tncdbr' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = TncdbrEngine.validateResidentialPlan(body);
+      return sendJson(res, 200, result);
+    }
+
+    // M-Book Quantity Measurement
+    if (pathname === '/api/mbook/calculate' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = MBookEngine.calculateItemQuantity(body.entries || []);
+      return sendJson(res, 200, result);
+    }
+
+    // Running Account (RA) Billing
+    if (pathname === '/api/mbook/ra-bill' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = MBookEngine.generateRaBill(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Anti-Termite Pre-construction Treatment
+    if (pathname === '/api/calculate/antitermite' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = AntiTermiteEngine.calculate(body);
+      return sendJson(res, 200, result);
     }
 
     // AI & Civil Knowledge Engine

@@ -442,6 +442,282 @@ function initCalculators() {
       }
     });
   }
+
+  // 10. Geotech SBC & Footing Sizer
+  const geoForm = document.getElementById('form-geotech');
+  if (geoForm) {
+    geoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const colSize = parseFloat(document.getElementById('geo-col-size').value) || 300;
+      const payload = {
+        columnAxialLoadKn: parseFloat(document.getElementById('geo-load').value),
+        sbcKnm2: parseFloat(document.getElementById('geo-soil').value),
+        columnWidthMm: colSize,
+        columnDepthMm: colSize,
+        concreteGrade: document.getElementById('geo-grade').value
+      };
+
+      try {
+        const res = await fetch('/api/calculate/sbc-footing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderGeotechOutput(data);
+      } catch (err) {
+        alert(`Geotech calculation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 11. Concrete QC Cube Test
+  const qcForm = document.getElementById('form-qc');
+  if (qcForm) {
+    qcForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        grade: document.getElementById('qc-grade').value,
+        testAgeDays: parseInt(document.getElementById('qc-age').value, 10),
+        elementName: document.getElementById('qc-element').value,
+        breakingLoadsKn: [
+          parseFloat(document.getElementById('qc-c1').value),
+          parseFloat(document.getElementById('qc-c2').value),
+          parseFloat(document.getElementById('qc-c3').value)
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/qc/cube-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderQcOutput(data);
+      } catch (err) {
+        alert(`QC test evaluation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 12. Anti-Termite Treatment
+  const antiForm = document.getElementById('form-antitermite');
+  if (antiForm) {
+    antiForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        plinthAreaM2: parseFloat(document.getElementById('anti-plinth').value),
+        chemical: document.getElementById('anti-chem').value,
+        perimeterM: parseFloat(document.getElementById('anti-perim').value),
+        trenchAreaM2: parseFloat(document.getElementById('anti-trench').value)
+      };
+
+      try {
+        const res = await fetch('/api/calculate/antitermite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderAntiTermiteOutput(data);
+      } catch (err) {
+        alert(`Anti-termite estimation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 13. TNCDBR 2019 Rule Checker
+  const tnForm = document.getElementById('form-tncdbr');
+  if (tnForm) {
+    tnForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        plotAreaSqft: parseFloat(document.getElementById('tn-plot').value),
+        roadWidthM: parseFloat(document.getElementById('tn-road').value),
+        proposedGroundFloorSqft: parseFloat(document.getElementById('tn-gf').value),
+        proposedTotalBuiltupSqft: parseFloat(document.getElementById('tn-tot').value),
+        buildingHeightM: parseFloat(document.getElementById('tn-height').value) || 7.0,
+        frontSetbackM: parseFloat(document.getElementById('tn-front').value) || 1.5,
+        rearSetbackM: parseFloat(document.getElementById('tn-rear').value) || 1.5,
+        side1SetbackM: parseFloat(document.getElementById('tn-sides').value) || 1.0,
+        side2SetbackM: parseFloat(document.getElementById('tn-sides').value) || 1.0
+      };
+
+      try {
+        const res = await fetch('/api/planning/tncdbr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderTncdbrOutput(data);
+      } catch (err) {
+        alert(`TNCDBR validation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 14. M-Book Quantity Measurement
+  const mbForm = document.getElementById('form-mbook');
+  if (mbForm) {
+    mbForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        entries: [
+          {
+            location: document.getElementById('mb-loc').value,
+            nos: parseFloat(document.getElementById('mb-nos').value) || 1,
+            lengthM: parseFloat(document.getElementById('mb-l').value) || 0,
+            breadthM: parseFloat(document.getElementById('mb-b').value) || 0,
+            depthM: parseFloat(document.getElementById('mb-d').value) || 0
+          }
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/mbook/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderMBookOutput(data, document.getElementById('mb-desc').value);
+      } catch (err) {
+        alert(`M-Book calculation error: ${err.message}`);
+      }
+    });
+  }
+}
+
+function renderGeotechOutput(data) {
+  const box = document.getElementById('output-geotech');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('geo-out-dims').textContent = `${data.footingDimensions.lengthM}m × ${data.footingDimensions.widthM}m × ${data.footingDimensions.overallDepthMm}mm`;
+
+  const tbody = document.getElementById('geo-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Service Column Axial Load:</td><td><strong>${data.serviceLoadKn} kN</strong> (Design base load: ${(data.serviceLoadKn * 1.1).toFixed(1)} kN incl. 10% self-wt)</td></tr>
+    <tr><td>Soil Safe Bearing Capacity (SBC):</td><td><strong>${data.sbcKnm2} kN/m²</strong></td></tr>
+    <tr><td>Footing Plan Dimensions:</td><td><strong>${data.footingDimensions.lengthM}m × ${data.footingDimensions.widthM}m</strong> (${data.footingDimensions.footingAreaM2} m² / ${(data.footingDimensions.footingAreaM2 * 10.7639).toFixed(1)} sq.ft)</td></tr>
+    <tr><td>Actual Service Soil Pressure:</td><td><strong>${data.pressures.servicePressureKnm2} kN/m²</strong> (${data.isSafe ? '✅ SAFE <= SBC' : '❌ UNSAFE > SBC'})</td></tr>
+    <tr><td>Overall Footing Depth (D):</td><td><strong>${data.footingDimensions.overallDepthMm} mm</strong> (Effective depth d = ${data.footingDimensions.effectiveDepthMm}mm, Cover = ${data.footingDimensions.clearCoverMm}mm)</td></tr>
+    <tr><td>Critical Bending Moment (Mu):</td><td><strong>${data.bendingMomentKnM} kN·m</strong></td></tr>
+    <tr><td>Bottom Reinforcement Mesh:</td><td><strong style="color:#1e40af;">${data.reinforcement.description}</strong> (Ast: ${data.reinforcement.astRequiredMm2} mm²)</td></tr>
+    <tr><td>Concrete Volume:</td><td><strong>${data.concreteVolumeM3} m³</strong></td></tr>
+  `;
+
+  const ol = document.getElementById('geo-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+  const disc = document.getElementById('geo-out-disclaimer');
+  if (disc) disc.textContent = data.disclaimer;
+}
+
+function renderQcOutput(data) {
+  const box = document.getElementById('output-qc');
+  if (!box) return;
+  box.style.display = 'block';
+
+  const badge = document.getElementById('qc-out-badge');
+  if (badge) {
+    badge.textContent = data.resultStatus;
+    badge.className = `badge ${data.resultStatus === 'PASS' ? 'badge-green' : (data.resultStatus === 'MARGINAL_VARIATION' ? 'badge-yellow' : 'badge-red')}`;
+  }
+
+  document.getElementById('qc-out-avg').textContent = `${data.averageStrengthNmm2} N/mm²`;
+
+  const tbody = document.getElementById('qc-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Tested Member:</td><td><strong>${data.elementTested}</strong> (${data.grade} Grade, ${data.testAgeDays}-Day Test)</td></tr>
+    <tr><td>Target Threshold Strength:</td><td><strong>${data.targetStrengthNmm2} N/mm²</strong> (${data.testAgeDays === 7 ? '67% of fck' : '100% of fck'})</td></tr>
+    <tr><td>Average Compressive Strength:</td><td><strong style="color:${data.isStrengthAchieved ? '#16a34a' : '#dc2626'};">${data.averageStrengthNmm2} N/mm²</strong> (${data.percentOfFckAchieved}% of ${data.characteristicStrengthFck} N/mm²)</td></tr>
+    <tr><td>Statistical Cube Variation (±15% limit):</td><td><strong>${data.isVariationWithin15Percent ? '✅ Compliant (All cubes within ±15%)' : '⚠️ Non-compliant (Variation exceeds ±15%)'}</strong></td></tr>
+    <tr><td>Cube #1:</td><td>Breaking Load: ${data.specimens[0].breakingLoadKn} kN => Strength: <strong>${data.specimens[0].compressiveStrengthNmm2} N/mm²</strong> (Dev: ${data.specimens[0].percentageDeviation}%)</td></tr>
+    <tr><td>Cube #2:</td><td>Breaking Load: ${data.specimens[1].breakingLoadKn} kN => Strength: <strong>${data.specimens[1].compressiveStrengthNmm2} N/mm²</strong> (Dev: ${data.specimens[1].percentageDeviation}%)</td></tr>
+    <tr><td>Cube #3:</td><td>Breaking Load: ${data.specimens[2].breakingLoadKn} kN => Strength: <strong>${data.specimens[2].compressiveStrengthNmm2} N/mm²</strong> (Dev: ${data.specimens[2].percentageDeviation}%)</td></tr>
+    <tr><td>IS 456 Acceptance Remarks:</td><td><em>${data.remarks}</em></td></tr>
+  `;
+
+  const ol = document.getElementById('qc-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+}
+
+function renderAntiTermiteOutput(data) {
+  const box = document.getElementById('output-antitermite');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('anti-out-litres').textContent = `${data.totalEmulsionLitres} Litres`;
+
+  const tbody = document.getElementById('anti-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Chemical Spec:</td><td><strong>${data.chemicalName}</strong></td></tr>
+    <tr><td>Concentrated Chemical Required:</td><td><strong style="color:#1e40af; font-size:1.1rem;">${data.concentratedChemicalLitres} Litres</strong> (~<strong>${data.cans5LitreRequired} Cans</strong> of 5 Litre pack)</td></tr>
+    <tr><td>Water for Dilution:</td><td><strong>${data.waterLitresRequired} Litres</strong></td></tr>
+    <tr><td>Stage 1 (Trench Bed & Sides):</td><td>${data.stagesLitres.stage1Trench} Litres (5.0 L/m²)</td></tr>
+    <tr><td>Stage 2 (Refilled Backfill Soil):</td><td>${data.stagesLitres.stage2Backfill} Litres (7.5 L/m²)</td></tr>
+    <tr><td>Stage 3 (Plinth Floor Sub-base):</td><td>${data.stagesLitres.stage3PlinthBed} Litres (5.0 L/m²)</td></tr>
+    <tr><td>Stage 4 (External Perimeter Barrier):</td><td>${data.stagesLitres.stage4Perimeter} Litres (7.5 L/linear meter)</td></tr>
+  `;
+
+  const ol = document.getElementById('anti-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+}
+
+function renderTncdbrOutput(data) {
+  const box = document.getElementById('output-tncdbr');
+  if (!box) return;
+  box.style.display = 'block';
+
+  const badge = document.getElementById('tn-out-badge');
+  if (badge) {
+    badge.textContent = data.isCompliant ? 'APPROVED COMPLIANT' : 'PLAN VIOLATIONS DETECTED';
+    badge.className = `badge ${data.isCompliant ? 'badge-green' : 'badge-red'}`;
+  }
+
+  const m = data.metrics;
+  const tbody = document.getElementById('tn-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Verdict:</td><td><strong>${data.verdict}</strong></td></tr>
+    <tr><td>Plot Area & Road Width:</td><td><strong>${m.plotAreaSqft} sq.ft</strong> (${(m.plotAreaSqft / 2400).toFixed(2)} Grounds) on <strong>${m.roadWidthM}m Street</strong></td></tr>
+    <tr><td>Plot Coverage (Max 70%):</td><td>Proposed: <strong>${m.plotCoverage.proposedPct}%</strong> (${m.plotCoverage.isPass ? '✅ PASS' : '❌ VIOLATION > 70%'})</td></tr>
+    <tr><td>Floor Space Index (FSI):</td><td>Permissible: <strong>${m.fsi.permissibleFsi}</strong> | Proposed: <strong>${m.fsi.proposedFsi}</strong> (${m.fsi.isPass ? '✅ PASS' : '❌ EXCEEDED'})</td></tr>
+    <tr><td>Front Setback:</td><td>Min Req: ${m.setbacks.front.requiredM}m | Proposed: <strong>${m.setbacks.front.proposedM}m</strong> (${m.setbacks.front.isPass ? '✅ PASS' : '❌ VIOLATION'})</td></tr>
+    <tr><td>Rear Setback:</td><td>Min Req: ${m.setbacks.rear.requiredM}m | Proposed: <strong>${m.setbacks.rear.proposedM}m</strong> (${m.setbacks.rear.isPass ? '✅ PASS' : '❌ VIOLATION'})</td></tr>
+    <tr><td>Side Setbacks (Sides 1 & 2):</td><td>Min Req: ${m.setbacks.side1.requiredM}m | Proposed: <strong>${m.setbacks.side1.proposedM}m & ${m.setbacks.side2.proposedM}m</strong> (${(m.setbacks.side1.isPass && m.setbacks.side2.isPass) ? '✅ PASS' : '❌ VIOLATION'})</td></tr>
+  `;
+
+  const violBox = document.getElementById('tn-violations-box');
+  const violList = document.getElementById('tn-violations-list');
+  if (data.violations && data.violations.length > 0) {
+    if (violBox) violBox.style.display = 'block';
+    if (violList) violList.innerHTML = data.violations.map(v => `<li>${v}</li>`).join('');
+  } else {
+    if (violBox) violBox.style.display = 'none';
+  }
+}
+
+function renderMBookOutput(data, desc) {
+  const box = document.getElementById('output-mbook');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('mb-out-qty').textContent = `${data.totalQuantity} m³`;
+
+  const tbody = document.getElementById('mb-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Item Description:</td><td><strong>${desc || 'Measured Item'}</strong></td></tr>
+    <tr><td>Location:</td><td>${data.entries[0]?.location || '—'}</td></tr>
+    <tr><td>Measurement Formula:</td><td>Nos (${data.entries[0]?.nos}) × L (${data.entries[0]?.lengthM}m) × B (${data.entries[0]?.breadthM}m) × D (${data.entries[0]?.depthM}m)</td></tr>
+    <tr><td>Total Measured Volume:</td><td><strong style="color:#1e40af; font-size:1.1rem;">${data.totalQuantity} m³</strong></td></tr>
+  `;
 }
 
 function renderSepticOutput(data) {
