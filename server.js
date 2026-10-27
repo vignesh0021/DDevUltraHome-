@@ -19,6 +19,8 @@ import { BbsEngine } from './src/engine/bbs.js';
 import { WaterTankEngine } from './src/engine/watertank.js';
 import { LabourEngine } from './src/engine/labour.js';
 import { BoqEngine } from './src/engine/boq.js';
+import { SepticTankEngine } from './src/engine/septictank.js';
+import { MilestonesEngine } from './src/engine/milestones.js';
 import { MaterialPriceIntelligence, TN_DISTRICTS } from './src/intelligence/materialRates.js';
 import { ScrapRatesEngine } from './src/intelligence/scrapRates.js';
 import { ScrapValuationEngine } from './src/intelligence/scrapValuation.js';
@@ -210,6 +212,41 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const result = BoqEngine.calculate(body);
       return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/api/calculate/septictank' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = SepticTankEngine.calculate(body);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/api/calculate/milestones' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = MilestonesEngine.calculateSchedule(body.totalContractAmount, body.customStages);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/api/boq/export-csv' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const boq = BoqEngine.calculate(body);
+      
+      let csv = 'Item Code,Description,Quantity,Unit,Material Rate (INR),Labour Rate (INR),Total Unit Rate (INR),Item Total (INR)\r\n';
+      for (const itm of boq.items) {
+        const desc = `"${(itm.description || '').replace(/"/g, '""')}"`;
+        csv += `${itm.itemCode},${desc},${itm.quantity},${itm.unit},${itm.materialRate},${itm.labourRate},${itm.unitRate},${itm.totalAmount}\r\n`;
+      }
+      csv += `\r\nDirect Civil Works Subtotal,,,,,,,${boq.financials.directCostSubtotal}\r\n`;
+      csv += `Site Overhead (5%),,,,,,,${boq.financials.overhead.amount}\r\n`;
+      csv += `Contractor Profit (10%),,,,,,,${boq.financials.contractorProfit.amount}\r\n`;
+      csv += `Contingency (3%),,,,,,,${boq.financials.contingency.amount}\r\n`;
+      csv += `GST (18%),,,,,,,${boq.financials.gst.amount}\r\n`;
+      csv += `Grand Total Estimate (INR),,,,,,,${boq.financials.grandTotal}\r\n`;
+
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="DDevUltraHome_BOQ_Estimate.csv"'
+      });
+      return res.end(csv);
     }
 
     // AI & Civil Knowledge Engine

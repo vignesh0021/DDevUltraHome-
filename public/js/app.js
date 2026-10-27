@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initAiAssistant();
   loadMaterialRates();
 
+  // Register Service Worker for Offline PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration:', err));
+  }
+
   // Print timestamp setup
   const timeElem = document.getElementById('print-timestamp');
   if (timeElem) {
@@ -409,6 +414,54 @@ function initCalculators() {
       alert(`Labour estimation error: ${err.message}`);
     }
   });
+
+  // 9. Septic Tank Calculator
+  const septicForm = document.getElementById('form-septictank');
+  if (septicForm) {
+    septicForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        users: parseInt(document.getElementById('septic-users').value, 10),
+        sewageFlowLpcd: parseFloat(document.getElementById('septic-lpcd').value) || 90,
+        detentionHours: parseFloat(document.getElementById('septic-detention').value) || 24,
+        cleaningIntervalYears: parseFloat(document.getElementById('septic-cleaning').value) || 2,
+        percolationRateMin: parseFloat(document.getElementById('septic-percolation').value) || 15
+      };
+
+      try {
+        const res = await fetch('/api/calculate/septictank', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderSepticOutput(data);
+      } catch (err) {
+        alert(`Septic tank error: ${err.message}`);
+      }
+    });
+  }
+}
+
+function renderSepticOutput(data) {
+  const box = document.getElementById('output-septictank');
+  box.style.display = 'block';
+
+  document.getElementById('septic-out-capacity').textContent = `${data.liquidCapacityLitres.toLocaleString('en-IN')} Litres`;
+
+  const tbody = document.getElementById('septic-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Occupancy:</td><td><strong>${data.occupancy} Users</strong> (${data.dailySewageLitres} L/day)</td></tr>
+    <tr><td>Tank Dimensions (L × W × H):</td><td><strong>${data.dimensions.lengthM}m × ${data.dimensions.widthM}m × ${data.dimensions.totalDepthM}m</strong></td></tr>
+    <tr><td>Liquid Depth & Freeboard:</td><td>Depth: ${data.dimensions.liquidDepthM}m + Freeboard: ${data.dimensions.freeboardM}m</td></tr>
+    <tr><td>Total Gross Tank Volume:</td><td><strong>${data.dimensions.grossVolumeM3} m³</strong></td></tr>
+    <tr><td>Soak Pit Sizing:</td><td><strong>Dia: ${data.soakPit.diameterM}m, Depth: ${data.soakPit.depthM}m</strong> (${data.soakPit.sideAreaM2} m² area)</td></tr>
+  `;
+
+  const ol = document.getElementById('septic-out-steps');
+  ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+  document.getElementById('septic-out-disclaimer').textContent = data.disclaimer;
 }
 
 // --- Render Helper Functions for Calculations ---
@@ -667,6 +720,35 @@ async function initBoq() {
   document.getElementById('boq-print-btn').addEventListener('click', () => {
     window.print();
   });
+
+  const csvBtn = document.getElementById('boq-csv-btn');
+  if (csvBtn) {
+    csvBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/boq/export-csv', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: sampleBoqItems,
+            contractorProfitPercent: 10,
+            overheadPercent: 5,
+            contingencyPercent: 3,
+            gstPercent: 18
+          })
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `DDevUltraHome_BOQ_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        alert('CSV Export failed');
+      }
+    });
+  }
 }
 
 function renderBoq(data) {
@@ -696,6 +778,29 @@ function renderBoq(data) {
   document.getElementById('boq-cont').textContent = `₹ ${fin.contingency.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   document.getElementById('boq-gst').textContent = `₹ ${fin.gst.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   document.getElementById('boq-grand-total').textContent = fin.formattedGrandTotal;
+
+  // Render Contractor Payment Milestones
+  fetch('/api/calculate/milestones', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ totalContractAmount: fin.grandTotal })
+  }).then(r => r.json()).then(m => {
+    const mTbody = document.getElementById('milestones-table-body');
+    if (mTbody && m.schedule) {
+      mTbody.innerHTML = m.schedule.map(s => `
+        <tr>
+          <td><strong>Stage ${s.stage}</strong></td>
+          <td>
+            <strong>${s.name}</strong>
+            <div style="font-size:0.75rem; color:#64748b;">${s.deliverables}</div>
+          </td>
+          <td><span class="badge badge-blue">${s.percentage}%</span></td>
+          <td><strong style="color:#1e40af;">${s.formattedAmount}</strong></td>
+          <td><strong>${s.formattedCumulativeAmount}</strong> (${s.cumulativePercentage}%)</td>
+        </tr>
+      `).join('');
+    }
+  }).catch(e => console.error('Milestones render error:', e));
 }
 
 // --- Civil AI Assistant UI ---

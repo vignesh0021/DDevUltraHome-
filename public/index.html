@@ -79,6 +79,7 @@
         <button class="subtab-btn" data-subtab="sub-earthwork">Earthwork</button>
         <button class="subtab-btn" data-subtab="sub-bbs">BBS & Stirrup</button>
         <button class="subtab-btn" data-subtab="sub-watertank">Water Tank & Sump</button>
+        <button class="subtab-btn" data-subtab="sub-septictank">Septic Tank (IS 2470)</button>
         <button class="subtab-btn" data-subtab="sub-labour">Labour Norms</button>
       </div>
 
@@ -535,6 +536,64 @@
         </div>
       </div>
 
+      <!-- Septic Tank Subtab -->
+      <div id="sub-septictank" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Septic Tank & Soak Pit Design</h3>
+              <span class="badge badge-blue">IS 2470 (Part 1 & 2)</span>
+            </div>
+            <form id="form-septictank">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Number of Users (Occupants)</label>
+                  <input type="number" id="septic-users" value="10" min="1" step="1" required>
+                </div>
+                <div class="form-group">
+                  <label>Sewage Flow (LPCD)</label>
+                  <input type="number" id="septic-lpcd" value="90" step="5" min="50">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Detention Period (Hours)</label>
+                  <input type="number" id="septic-detention" value="24" step="6" min="12">
+                </div>
+                <div class="form-group">
+                  <label>Sludge Cleaning Interval (Years)</label>
+                  <input type="number" id="septic-cleaning" value="2" step="1" min="1">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Soil Percolation Rate (min/cm for Soak Pit)</label>
+                <input type="number" id="septic-percolation" value="15" step="1" min="1">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Design Septic Tank & Soak Pit</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-septictank" style="display: none;">
+            <div class="card-header">
+              <h3>Design Dimensions & Sizing</h3>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="septic-out-capacity">0 Litres</div>
+              <div class="output-hero-label">Total Effective Liquid Capacity</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="septic-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box">
+              <ol class="steps-list" id="septic-out-steps"></ol>
+            </div>
+            <div class="disclaimer-banner" id="septic-out-disclaimer"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 8. Labour Norms Subtab -->
       <div id="sub-labour" class="calc-section" style="display: none;">
         <div class="grid-2">
@@ -728,7 +787,8 @@
             <h2>Itemized Bill of Quantities (BOQ)</h2>
             <p style="font-size: 0.85rem; color: #64748b;">Deterministic Quantities × Verified Unit Rates • Full Commercial Costing</p>
           </div>
-          <div class="no-print">
+          <div class="no-print" style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" id="boq-csv-btn">📥 Export CSV</button>
             <button class="btn btn-primary" id="boq-print-btn">🖨️ Print / Save PDF</button>
           </div>
         </div>
@@ -780,6 +840,34 @@
               <td>Estimated Grand Total:</td>
               <td style="text-align: right;" id="boq-grand-total">₹ 0.00</td>
             </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Contractor Stage-wise Payment Milestones Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>Contractor Stage-Wise Payment Milestones (Tamil Nadu Practice)</h3>
+            <p style="font-size: 0.85rem; color: #64748b;">Progressive billing schedule linked to verified estimate total</p>
+          </div>
+          <span class="badge badge-green">Standard 7-Stage Contract</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Stage</th>
+                <th>Milestone & Deliverables</th>
+                <th>Percentage</th>
+                <th>Milestone Amount (₹)</th>
+                <th>Cumulative Total (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="milestones-table-body">
+              <!-- Populated by JavaScript -->
+            </tbody>
           </table>
         </div>
       </div>
