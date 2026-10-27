@@ -26,6 +26,11 @@ import { ConcreteQcEngine } from './src/engine/qc.js';
 import { TncdbrEngine } from './src/engine/tncdbr.js';
 import { MBookEngine } from './src/engine/mbook.js';
 import { AntiTermiteEngine } from './src/engine/antitermite.js';
+import { RwhEngine } from './src/engine/rwh.js';
+import { DurabilityEngine } from './src/engine/durability.js';
+import { CmdaFeeEngine } from './src/engine/cmdafee.js';
+import { PlinthEngine } from './src/engine/plinth.js';
+import { PileEngine } from './src/engine/pile.js';
 import { MaterialPriceIntelligence, TN_DISTRICTS } from './src/intelligence/materialRates.js';
 import { ScrapRatesEngine } from './src/intelligence/scrapRates.js';
 import { ScrapValuationEngine } from './src/intelligence/scrapValuation.js';
@@ -293,6 +298,41 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/calculate/antitermite' && req.method === 'POST') {
       const body = await parseJsonBody(req);
       const result = AntiTermiteEngine.calculate(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Rainwater Harvesting (RWH)
+    if (pathname === '/api/calculate/rwh' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = RwhEngine.calculate(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Coastal Durability & Marine Exposure
+    if (pathname === '/api/durability/check' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = DurabilityEngine.evaluate(body);
+      return sendJson(res, 200, result);
+    }
+
+    // CMDA & GCC Statutory Approval Fees
+    if (pathname === '/api/planning/cmda-fee' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = CmdaFeeEngine.estimateFees(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Post-Flood Plinth & DPC Waterproofing
+    if (pathname === '/api/calculate/plinth' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = PlinthEngine.calculate(body);
+      return sendJson(res, 200, result);
+    }
+
+    // Short Bored / Under-Reamed Pile Sizing
+    if (pathname === '/api/calculate/pile' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = PileEngine.calculate(body);
       return sendJson(res, 200, result);
     }
 

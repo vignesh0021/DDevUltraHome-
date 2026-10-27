@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBoq();
   initAiAssistant();
   loadMaterialRates();
+  initApkInstallPrompt();
 
   // Register Service Worker for Offline PWA
   if ('serviceWorker' in navigator) {
@@ -48,6 +49,34 @@ document.addEventListener('DOMContentLoaded', () => {
     timeElem.textContent = `Generated on: ${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN')}`;
   }
 });
+
+// --- Android APK & PWA Native Install Prompt ---
+function initApkInstallPrompt() {
+  let deferredPrompt;
+  const installBtn = document.getElementById('install-apk-btn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) {
+      installBtn.style.display = 'inline-block';
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response to APK install: ${outcome}`);
+          deferredPrompt = null;
+          installBtn.style.display = 'none';
+        }
+      });
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    if (installBtn) installBtn.style.display = 'none';
+    console.log('DDevUltraHome APK installed successfully!');
+  });
+}
 
 // --- Tab Navigation ---
 function initTabs() {
@@ -593,6 +622,283 @@ function initCalculators() {
       }
     });
   }
+
+  // 15. Rainwater Harvesting (RWH) Sizer
+  const rwhForm = document.getElementById('form-rwh');
+  if (rwhForm) {
+    rwhForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        roofAreaSqft: parseFloat(document.getElementById('rwh-roof').value),
+        pavedAreaSqft: parseFloat(document.getElementById('rwh-paved').value) || 0,
+        soilPercolation: document.getElementById('rwh-soil').value
+      };
+
+      try {
+        const res = await fetch('/api/calculate/rwh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderRwhOutput(data);
+      } catch (err) {
+        alert(`RWH calculation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 16. Coastal Durability & Exposure Controller
+  const durForm = document.getElementById('form-durability');
+  if (durForm) {
+    durForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        exposureCondition: document.getElementById('dur-exp').value,
+        proposedGrade: document.getElementById('dur-grade').value,
+        elementType: document.getElementById('dur-elem').value,
+        proposedCoverMm: parseFloat(document.getElementById('dur-cover').value),
+        waterCementRatio: parseFloat(document.getElementById('dur-wc').value)
+      };
+
+      try {
+        const res = await fetch('/api/durability/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderDurabilityOutput(data);
+      } catch (err) {
+        alert(`Durability evaluation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 17. CMDA & GCC Permit Fees
+  const feeForm = document.getElementById('form-cmdafee');
+  if (feeForm) {
+    feeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        plotAreaSqft: parseFloat(document.getElementById('fee-plot').value),
+        totalBuiltupSqft: parseFloat(document.getElementById('fee-built').value),
+        locationZone: document.getElementById('fee-zone').value,
+        estimatedCostPerSqft: parseFloat(document.getElementById('fee-cost').value) || 2400
+      };
+
+      try {
+        const res = await fetch('/api/planning/cmda-fee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderCmdaFeeOutput(data);
+      } catch (err) {
+        alert(`Permit fee estimation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 18. Flood Plinth & DPC Waterproofing
+  const plinthForm = document.getElementById('form-plinth');
+  if (plinthForm) {
+    plinthForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        plinthAreaSqft: parseFloat(document.getElementById('plinth-area').value),
+        plinthHeightAboveRoadMm: parseFloat(document.getElementById('plinth-height').value),
+        plinthWallPerimeterM: parseFloat(document.getElementById('plinth-perim').value)
+      };
+
+      try {
+        const res = await fetch('/api/calculate/plinth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderPlinthOutput(data);
+      } catch (err) {
+        alert(`Plinth calculation error: ${err.message}`);
+      }
+    });
+  }
+
+  // 19. Under-Reamed Pile Sizing
+  const pileForm = document.getElementById('form-pile');
+  if (pileForm) {
+    pileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        columnLoadKn: parseFloat(document.getElementById('pile-load').value),
+        pileDiameterMm: parseInt(document.getElementById('pile-dia').value, 10),
+        pileLengthM: parseFloat(document.getElementById('pile-depth').value),
+        numberOfBulbs: parseInt(document.getElementById('pile-bulbs').value, 10),
+        cohesionCpkN: parseFloat(document.getElementById('pile-cohesion').value)
+      };
+
+      try {
+        const res = await fetch('/api/calculate/pile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        renderPileOutput(data);
+      } catch (err) {
+        alert(`Pile calculation error: ${err.message}`);
+      }
+    });
+  }
+}
+
+function renderRwhOutput(data) {
+  const box = document.getElementById('output-rwh');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('rwh-out-annual').textContent = `${data.annualPotentialLitres.toLocaleString('en-IN')} Litres/Year`;
+
+  const tbody = document.getElementById('rwh-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Rooftop Catchment Yield:</td><td><strong>${data.annualRoofLitres.toLocaleString('en-IN')} L/year</strong> (85% runoff)</td></tr>
+    <tr><td>Paved Driveway Yield:</td><td><strong>${data.annualPavedLitres.toLocaleString('en-IN')} L/year</strong> (60% runoff)</td></tr>
+    <tr><td>Single Storm (25mm) Recharge:</td><td><strong>${data.peakStormLitres.toLocaleString('en-IN')} Litres</strong></td></tr>
+    <tr><td>First-Flush Separator:</td><td><strong>${data.firstFlushLitres} Litres</strong></td></tr>
+    <tr><td>Percolation Pits Required:</td><td><strong style="color:#1e40af; font-size:1.1rem;">${data.percolationSystem.numberOfPits} No(s)</strong> (${data.percolationSystem.pitDimensions.lengthM}m × ${data.percolationSystem.pitDimensions.widthM}m × ${data.percolationSystem.pitDimensions.depthM}m)</td></tr>
+    <tr><td>Recharge Bore Details:</td><td><strong>${data.percolationSystem.rechargeBore.depthM}m depth</strong> (${data.percolationSystem.rechargeBore.casingType})</td></tr>
+    <tr><td>Filter Packing Per Pit:</td><td>40mm Aggregate: ${data.percolationSystem.filterMediaPerPit.blueMetal40mmM3} m³, Coarse Gravel: ${data.percolationSystem.filterMediaPerPit.gravelCoarseM3} m³, Sand: ${data.percolationSystem.filterMediaPerPit.coarseSandM3} m³</td></tr>
+    <tr><td>Recommended Storage Sump:</td><td><strong>${data.recommendedStorageSumpLitres.toLocaleString('en-IN')} Litres</strong></td></tr>
+  `;
+
+  const ol = document.getElementById('rwh-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+}
+
+function renderDurabilityOutput(data) {
+  const box = document.getElementById('output-durability');
+  if (!box) return;
+  box.style.display = 'block';
+
+  const badge = document.getElementById('dur-out-badge');
+  if (badge) {
+    badge.textContent = data.complianceStatus === 'DURABILITY_COMPLIANT' ? 'IS 456 COMPLIANT' : 'CORROSION RISK DEFICIT';
+    badge.className = `badge ${data.complianceStatus === 'DURABILITY_COMPLIANT' ? 'badge-green' : 'badge-red'}`;
+  }
+
+  document.getElementById('dur-out-verdict').textContent = data.verdict;
+
+  const s = data.specifications;
+  const tbody = document.getElementById('dur-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Exposure Environment:</td><td><strong>${data.exposureCategory}</strong></td></tr>
+    <tr><td>Concrete Grade:</td><td>Proposed: <strong>${s.proposedConcreteGrade}</strong> (Mandatory Minimum: <strong>${s.minimumConcreteGrade}</strong>)</td></tr>
+    <tr><td>Nominal Clear Cover:</td><td>Proposed: <strong>${s.proposedNominalCoverMm} mm</strong> (Mandatory Minimum: <strong>${s.mandatoryNominalCoverMm} mm</strong>)</td></tr>
+    <tr><td>Max Water-Cement Ratio:</td><td>Proposed: <strong>${s.proposedWaterCementRatio}</strong> (Max Limit: <strong>${s.maximumWaterCementRatio}</strong>)</td></tr>
+    <tr><td>Minimum Cement Content:</td><td><strong>${s.minimumCementContentKgM3} kg/m³</strong></td></tr>
+    <tr><td>Recommended Rebar Metallurgy:</td><td><strong style="color:#1e40af;">${s.rebarSpecification}</strong></td></tr>
+  `;
+
+  const warnBox = document.getElementById('dur-warnings-box');
+  const warnList = document.getElementById('dur-warnings-list');
+  if (data.warnings && data.warnings.length > 0) {
+    if (warnBox) warnBox.style.display = 'block';
+    if (warnList) warnList.innerHTML = data.warnings.map(w => `<li>${w}</li>`).join('');
+  } else {
+    if (warnBox) warnBox.style.display = 'none';
+  }
+}
+
+function renderCmdaFeeOutput(data) {
+  const box = document.getElementById('output-cmdafee');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('fee-out-total').textContent = data.formattedTotalStatutoryAmount;
+
+  const b = data.feeBreakdown;
+  const tbody = document.getElementById('fee-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Jurisdiction:</td><td><strong>${data.jurisdiction}</strong></td></tr>
+    <tr><td>1. Scrutiny Fee:</td><td><strong>${b.scrutinyFee.formatted}</strong></td></tr>
+    <tr><td>2. Development Charges:</td><td><strong>${b.developmentCharges.formatted}</strong> (Land: ₹${b.developmentCharges.landComponent.toLocaleString('en-IN')}, Building: ₹${b.developmentCharges.buildingComponent.toLocaleString('en-IN')})</td></tr>
+    <tr><td>3. I&A Amenities Charges:</td><td><strong>${b.iaCharges.formatted}</strong></td></tr>
+    <tr><td>4. 1% BOCW Workers Welfare Cess:</td><td><strong style="color:#1e40af;">${b.labourWelfareCess1Pct.formatted}</strong> (on ₹${b.labourWelfareCess1Pct.estimatedBuildingCost.toLocaleString('en-IN')} estimated construction)</td></tr>
+    <tr><td>5. Local Body License & Debris:</td><td><strong>${b.localBodyLicenseAndDebris.formatted}</strong> (License: ₹${b.localBodyLicenseAndDebris.licenseFee}, Debris: ₹${b.localBodyLicenseAndDebris.debrisRemoval}, RWH Refundable: ₹${b.localBodyLicenseAndDebris.rwhRefundableDeposit})</td></tr>
+  `;
+
+  const ol = document.getElementById('fee-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+}
+
+function renderPlinthOutput(data) {
+  const box = document.getElementById('output-plinth');
+  if (!box) return;
+  box.style.display = 'block';
+
+  const badge = document.getElementById('plinth-out-badge');
+  if (badge) {
+    badge.textContent = data.plinthLevelStatus === 'COMPLIANT_POST_MICHAUNG_STANDARD' ? 'POST-MICHAUNG SAFE' : 'FLOOD RISK DETECTED';
+    badge.className = `badge ${data.plinthLevelStatus === 'COMPLIANT_POST_MICHAUNG_STANDARD' ? 'badge-green' : 'badge-red'}`;
+  }
+
+  document.getElementById('plinth-out-moorum').textContent = `${data.fillMaterials.looseMoorumM3} m³ (${data.fillMaterials.moorumTnUnits} TN Units)`;
+
+  const f = data.fillMaterials;
+  const d = data.dpc;
+  const tbody = document.getElementById('plinth-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Plinth Height Above Road Crown:</td><td><strong>+${data.plinthHeightMm} mm</strong> (${(data.plinthHeightMm / 304.8).toFixed(2)} ft — Min Norm: +${data.minRecommendedHeightMm} mm)</td></tr>
+    <tr><td>Compacted Moorum Fill:</td><td>Net: <strong>${f.compactedMoorumM3} m³</strong> => Loose Quarry Moorum Required: <strong>${f.looseMoorumM3} m³ (${f.moorumCft} cft / ${f.moorumTnUnits} Units)</strong></td></tr>
+    <tr><td>Sand Cushion Bedding (100mm):</td><td><strong>${f.sandCushionM3} m³ (${f.sandCft} cft / ${f.sandTnUnits} Units)</strong></td></tr>
+    <tr><td>DPC 50mm (1:2:4 Bed):</td><td>Area: <strong>${d.surfaceAreaM2} m²</strong> (${d.linearLengthM}m linear run)</td></tr>
+    <tr><td>DPC Cement & Admixture:</td><td><strong>${d.cementBags} Bags Cement</strong> + <strong style="color:#1e40af;">${d.waterproofingAdmixtureLitres} Litres Waterproofing Compound</strong> (200ml/bag)</td></tr>
+    <tr><td>DPC Sand & 12mm Blue Metal:</td><td>Sand: <strong>${d.sandCft} cft</strong>, 12mm Aggregate: <strong>${d.blueMetal12mmCft} cft</strong></td></tr>
+    <tr><td>Hot Bitumen Sealing Coat:</td><td><strong>${d.bitumenSealerKg} kg Bitumen (85/25 Grade)</strong></td></tr>
+  `;
+
+  const warnBox = document.getElementById('plinth-warnings-box');
+  const warnList = document.getElementById('plinth-warnings-list');
+  if (data.warnings && data.warnings.length > 0) {
+    if (warnBox) warnBox.style.display = 'block';
+    if (warnList) warnList.innerHTML = data.warnings.map(w => `<li>${w}</li>`).join('');
+  } else {
+    if (warnBox) warnBox.style.display = 'none';
+  }
+
+  const ol = document.getElementById('plinth-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
+}
+
+function renderPileOutput(data) {
+  const box = document.getElementById('output-pile');
+  if (!box) return;
+  box.style.display = 'block';
+
+  document.getElementById('pile-out-safe').textContent = `${data.capacity.safeWorkingCapacityKn} kN`;
+
+  const p = data.pileDimensions;
+  const g = data.pileGroup;
+  const m = data.materialPerPile;
+  const tbody = document.getElementById('pile-out-tbody');
+  tbody.innerHTML = `
+    <tr><td>Service Column Axial Load:</td><td><strong>${data.serviceLoadKn} kN</strong></td></tr>
+    <tr><td>Pile Dimensions:</td><td>Shaft Dia: <strong>${p.shaftDiameterMm} mm</strong>, Bulb Dia: <strong>${p.bulbDiameterMm} mm</strong> (2.5D), Embedment: <strong>${p.depthM} m</strong></td></tr>
+    <tr><td>Safe Capacity per Pile (FOS 2.5):</td><td><strong style="color:#16a34a; font-size:1.1rem;">${data.capacity.safeWorkingCapacityKn} kN</strong> (Ultimate: ${data.capacity.ultimateCapacityKn} kN)</td></tr>
+    <tr><td>Piles Required per Column:</td><td><strong style="color:#1e40af; font-size:1.1rem;">${g.pilesRequiredCount} No(s)</strong> (${g.pileCapType} — Total Safe Capacity: ${g.totalGroupSafeCapacityKn} kN)</td></tr>
+    <tr><td>Concrete Volume per Pile:</td><td><strong>${m.concreteVolumeM3} m³</strong></td></tr>
+    <tr><td>Rebar Cage per Pile:</td><td>Main: <strong>${m.mainRebar}</strong>, Rings: <strong>${m.lateralTies}</strong> (${m.steelWeightKg} kg steel)</td></tr>
+  `;
+
+  const ol = document.getElementById('pile-out-steps');
+  if (ol) ol.innerHTML = (data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
 }
 
 function renderGeotechOutput(data) {

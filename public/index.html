@@ -43,6 +43,9 @@
         <button id="lang-toggle-btn" class="btn btn-outline" style="padding: 0.35rem 0.6rem; color:#fff;">
           தமிழ் (TA)
         </button>
+        <button id="install-apk-btn" class="btn btn-primary" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; display: none; background: #0284c7;">
+          📱 Install App (APK)
+        </button>
       </div>
     </div>
   </header>
@@ -86,6 +89,11 @@
         <button class="subtab-btn" data-subtab="sub-tncdbr">TNCDBR Rules (2019)</button>
         <button class="subtab-btn" data-subtab="sub-mbook">M-Book & RA Bill</button>
         <button class="subtab-btn" data-subtab="sub-labour">Labour Norms</button>
+        <button class="subtab-btn" data-subtab="sub-rwh">RWH Sizer (CMDA/GCC)</button>
+        <button class="subtab-btn" data-subtab="sub-durability">Coastal Durability (IS 456)</button>
+        <button class="subtab-btn" data-subtab="sub-cmdafee">CMDA/GCC Permit Fees</button>
+        <button class="subtab-btn" data-subtab="sub-plinth">Flood Plinth & DPC</button>
+        <button class="subtab-btn" data-subtab="sub-pile">Under-Reamed Piles (IS 2911)</button>
       </div>
 
       <!-- 1. Concrete Mix Subtab -->
@@ -961,6 +969,308 @@
                 </thead>
                 <tbody id="labour-out-tbody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 15. Rainwater Harvesting (RWH) Subtab -->
+      <div id="sub-rwh" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Rainwater Harvesting (RWH) Sizer</h3>
+              <span class="badge badge-blue">TNCDBR Rule 42 / CMWSSB</span>
+            </div>
+            <form id="form-rwh">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Rooftop Area (sq.ft)</label>
+                  <input type="number" id="rwh-roof" value="1500" step="10" min="100" required>
+                </div>
+                <div class="form-group">
+                  <label>Paved Driveway / Courtyard (sq.ft)</label>
+                  <input type="number" id="rwh-paved" value="500" step="10" min="0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Soil Strata / Location Percolation</label>
+                <select id="rwh-soil">
+                  <option value="MODERATE" selected>Moderate Loamy Soil (Central Chennai / Kodambakkam / Anna Nagar)</option>
+                  <option value="LOW">Stiff Impervious Clay (Velachery / Pallikaranai / Tambaram - Deep Recharge Bore Required)</option>
+                  <option value="HIGH">Coastal High-Permeability Sand (ECR / Besant Nagar / Thiruvanmiyur)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Size RWH Percolation Pits & Recharge Bore</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-rwh" style="display: none;">
+            <div class="card-header">
+              <h3>RWH System Specifications</h3>
+              <span class="badge badge-green">TNCDBR RULE 42</span>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="rwh-out-annual">0 Litres/Year</div>
+              <div class="output-hero-label">Annual Harvestable Rainwater Potential</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="rwh-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box">
+              <ol class="steps-list" id="rwh-out-steps"></ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 16. Coastal Durability Subtab -->
+      <div id="sub-durability" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Coastal Durability & Exposure Controller</h3>
+              <span class="badge badge-blue">IS 456 Table 3, 5 & 16</span>
+            </div>
+            <form id="form-durability">
+              <div class="form-group">
+                <label>Environmental Exposure Condition</label>
+                <select id="dur-exp">
+                  <option value="SEVERE" selected>Severe — Chennai Coastal Environment (within 15km from sea / OMR / Velachery)</option>
+                  <option value="VERY_SEVERE">Very Severe — Direct Marine Spray / Tidal Fog (ECR / Besant Nagar / Marina / Ennore)</option>
+                  <option value="MODERATE">Moderate — Sheltered Inland (Tambaram / Kanchipuram / Coimbatore)</option>
+                  <option value="MILD">Mild — Completely Protected Interior (Dry inland zones)</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Proposed Concrete Mix Grade</label>
+                  <select id="dur-grade">
+                    <option value="M20">M20</option>
+                    <option value="M25">M25</option>
+                    <option value="M30" selected>M30 (Mandatory for Coastal)</option>
+                    <option value="M35">M35</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Structural Element</label>
+                  <select id="dur-elem">
+                    <option value="BEAM" selected>RCC Beam</option>
+                    <option value="SLAB">RCC Roof Slab</option>
+                    <option value="COLUMN">RCC Column</option>
+                    <option value="FOOTING">RCC Footing</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Proposed Nominal Cover (mm)</label>
+                  <input type="number" id="dur-cover" value="45" step="5" min="15" required>
+                </div>
+                <div class="form-group">
+                  <label>Water-Cement Ratio</label>
+                  <input type="number" id="dur-wc" value="0.45" step="0.01" min="0.30" max="0.65" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Verify Concrete Durability & Corrosion Risk</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-durability" style="display: none;">
+            <div class="card-header">
+              <h3>IS 456 Durability Compliance</h3>
+              <span class="badge" id="dur-out-badge">COMPLIANT</span>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="dur-out-verdict" style="font-size: 1.1rem; color: #1e40af;">—</div>
+              <div class="output-hero-label">Engineering Specification Audit</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="dur-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box" id="dur-warnings-box" style="display:none; background-color:#fef2f2; border-color:#fecaca;">
+              <h4 style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.25rem;">Corrosion & Spalling Deficits:</h4>
+              <ul id="dur-warnings-list" style="padding-left:1.25rem; font-size:0.85rem; color:#991b1b;"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 17. CMDA & GCC Permit Fees Subtab -->
+      <div id="sub-cmdafee" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>CMDA & GCC Building Approval Fee Estimator</h3>
+              <span class="badge badge-blue">TNSWS Single Window</span>
+            </div>
+            <form id="form-cmdafee">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Plot Area (sq.ft)</label>
+                  <input type="number" id="fee-plot" value="2400" step="10" required>
+                </div>
+                <div class="form-group">
+                  <label>Total Proposed Built-up Area (sq.ft)</label>
+                  <input type="number" id="fee-built" value="2600" step="10" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Local Authority Jurisdiction</label>
+                  <select id="fee-zone">
+                    <option value="GCC_CORE" selected>Greater Chennai Corporation (GCC Core City - Zones 1 to 15)</option>
+                    <option value="CMA_MUNICIPALITY">CMA Municipalities (Tambaram / Avadi / Poonamallee)</option>
+                    <option value="CMA_PANCHAYAT">CMA Town / Village Panchayats (Guduvanchery / Kelambakkam)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Civil Construction Rate (₹/sq.ft)</label>
+                  <input type="number" id="fee-cost" value="2400" step="100">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Estimate Official Sanction Fees & 1% Labour Cess</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-cmdafee" style="display: none;">
+            <div class="card-header">
+              <h3>Estimated Government Sanction Outlay</h3>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="fee-out-total">₹ 0.00</div>
+              <div class="output-hero-label">Total Official Government Fees & 1% BOCW Cess</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="fee-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box">
+              <ol class="steps-list" id="fee-out-steps"></ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 18. Flood Plinth & DPC Subtab -->
+      <div id="sub-plinth" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Flood Plinth Protection & DPC Waterproofing</h3>
+              <span class="badge badge-blue">GCC Flood Guideline</span>
+            </div>
+            <form id="form-plinth">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Plinth Footprint Area (sq.ft)</label>
+                  <input type="number" id="plinth-area" value="1200" step="10" required>
+                </div>
+                <div class="form-group">
+                  <label>Proposed Plinth Height Above Road Crown (mm)</label>
+                  <input type="number" id="plinth-height" value="600" step="50" min="200" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Plinth Beam Wall Perimeter (m)</label>
+                <input type="number" id="plinth-perim" value="60" step="1">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Check Flood Inundation Safety & DPC Materials</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-plinth" style="display: none;">
+            <div class="card-header">
+              <h3>Plinth & Damp Proofing Schedule</h3>
+              <span class="badge" id="plinth-out-badge">COMPLIANT</span>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="plinth-out-moorum">0.0 m³</div>
+              <div class="output-hero-label">Compacted Red Earth / Moorum Filling (1.25 Bulking Factor)</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="plinth-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box" id="plinth-warnings-box" style="display:none; background-color:#fef2f2; border-color:#fecaca;">
+              <h4 style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.25rem;">Flood Risk Advisory:</h4>
+              <ul id="plinth-warnings-list" style="padding-left:1.25rem; font-size:0.85rem; color:#991b1b;"></ul>
+            </div>
+            <div class="output-box">
+              <ol class="steps-list" id="plinth-out-steps"></ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 19. Under-Reamed Piles Subtab -->
+      <div id="sub-pile" class="calc-section" style="display: none;">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>Under-Reamed Pile Foundation Sizing</h3>
+              <span class="badge badge-blue">IS 2911 (Part 3)</span>
+            </div>
+            <form id="form-pile">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Column Axial Service Load (kN)</label>
+                  <input type="number" id="pile-load" value="600" step="25" min="50" required>
+                </div>
+                <div class="form-group">
+                  <label>Pile Shaft Diameter (mm)</label>
+                  <select id="pile-dia">
+                    <option value="300" selected>300 mm (Bulb Dia = 750 mm / 2.5D)</option>
+                    <option value="250">250 mm (Bulb Dia = 625 mm / 2.5D)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pile Embedment Depth (m)</label>
+                  <input type="number" id="pile-depth" value="4.5" step="0.5" min="3.0" max="10.0" required>
+                </div>
+                <div class="form-group">
+                  <label>Number of Under-Reamed Bulbs</label>
+                  <select id="pile-bulbs">
+                    <option value="1" selected>1 Bulb (Single Under-Reamed)</option>
+                    <option value="2">2 Bulbs (Double Under-Reamed)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Soil Undrained Cohesion cu (kN/m²)</label>
+                <select id="pile-cohesion">
+                  <option value="60" selected>Medium Stiff Clay (Velachery / Madipakkam) — 60 kN/m²</option>
+                  <option value="40">Soft Alluvial/Marsh Clay (Pallikaranai / OMR) — 40 kN/m²</option>
+                  <option value="80">Hard Sandy Clay / Weathered Moorum (Avadi) — 80 kN/m²</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Size Under-Reamed Piles & Pile Cap</button>
+            </form>
+          </div>
+
+          <div class="card" id="output-pile" style="display: none;">
+            <div class="card-header">
+              <h3>Under-Reamed Pile Design</h3>
+            </div>
+            <div class="output-hero">
+              <div class="output-hero-val" id="pile-out-safe">0.0 kN</div>
+              <div class="output-hero-label">Safe Working Capacity per Pile (FOS 2.5)</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <tbody id="pile-out-tbody"></tbody>
+              </table>
+            </div>
+            <div class="output-box">
+              <ol class="steps-list" id="pile-out-steps"></ol>
             </div>
           </div>
         </div>
