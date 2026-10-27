@@ -1,0 +1,16 @@
+{
+  "name": "ddevultrahome",
+  "version": "1.0.0",
+  "description": "Tamil Nadu focused civil engineering calculation engine, construction estimation, material price intelligence, and scrap valuation application",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "author": "DDevUltraHome Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
