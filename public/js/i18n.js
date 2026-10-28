@@ -13,6 +13,7 @@ export const I18N_DATA = {
 
     nav: {
       home: 'முகப்பு',
+      plan: 'திட்டம்/BOQ',
       calc: 'கணக்கீடுகள்',
       rates: 'பொருட்கள் விலை',
       scrap: 'ஸ்கிராப்',
@@ -178,6 +179,7 @@ export const I18N_DATA = {
 
     nav: {
       home: 'Home',
+      plan: 'Plan/BOQ',
       calc: 'Calculations',
       rates: 'Material Rates',
       scrap: 'Scrap',

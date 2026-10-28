@@ -20,7 +20,7 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-wrapper">
-        <div class="brand-logo" aria-hidden="true">🏗️</div>
+        <img src="/assets/ddevultrahome-logo-mobile.png" alt="DDevUltraHome / ULTRA HOMES" class="brand-header-logo">
         <div class="brand-details">
           <span class="brand-title" id="app-title-text" data-i18n="appTitle">டிடெவ் அல்ட்ரா ஹோம்</span>
           <span class="brand-subtitle">DDevUltraHome • Tamil Nadu</span>
@@ -96,9 +96,15 @@
 
     <!-- Print Header (Visible only on print/PDF) -->
     <div class="print-header" style="display: none;">
-      <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">DDevUltraHome (டிடெவ் அல்ட்ரா ஹோம்)</h1>
-      <p style="font-size: 0.9rem; color: #555;">Tamil Nadu Civil Engineering Calculation & Estimation Report • IS 456 & PWD Standards</p>
-      <p style="font-size: 0.85rem; color: #777;" id="print-timestamp"></p>
+      <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.75rem;">
+        <img src="/assets/ddevultrahome-logo-mobile.png" alt="DDevUltraHome" style="width: 70px; height: 70px; object-fit: contain;">
+        <div>
+          <h1 style="font-size: 1.45rem; margin: 0; color: #0f172a; letter-spacing: -0.01em;">DDevUltraHome / ULTRA HOMES</h1>
+          <p style="font-size: 0.85rem; margin: 0.2rem 0; color: #b45309; font-weight: 700; text-transform: uppercase;">Building your dreams • Tamil Nadu Civil Engineering</p>
+          <p style="font-size: 0.8rem; margin: 0; color: #475569;">IS 456, IS 1200, IS 1786 &amp; TN PWD Schedule of Rates Specification</p>
+        </div>
+      </div>
+      <p style="font-size: 0.8rem; color: #64748b; margin: 0;" id="print-timestamp"></p>
     </div>
 
     <!-- =========================================================================
@@ -106,6 +112,25 @@
          ========================================================================= -->
     <div id="tab-home" class="tab-pane active">
       
+      <!-- Official Brand Identity Hero Banner -->
+      <div class="brand-hero-card">
+        <div class="brand-hero-inner">
+          <img src="/assets/ddevultrahome-logo-transparent.png" alt="DDevUltraHome / ULTRA HOMES" class="brand-hero-logo">
+          <div class="brand-hero-text">
+            <div class="brand-tagline">Building your dreams</div>
+            <h1>DDevUltraHome / ULTRA HOMES</h1>
+            <p class="brand-hero-sub">
+              தமிழ்நாடு சிவில் இன்ஜினியரிங் &amp; கட்டுமான கணக்கீட்டு தளம் • IS 456, IS 1200 &amp; TN PWD SOR 2025-26
+            </p>
+          </div>
+          <div style="margin-left: auto;">
+            <button type="button" class="btn btn-primary" data-jump-tab="tab-plan-budget" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #fff; border: 1px solid #fef3c7; font-weight: 700;">
+              📑 வரைபடம் → BOQ மதிப்பீடு
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Welcome Hero Card -->
       <div class="card" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-accent-soft) 100%); border-left: 4px solid var(--accent);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap;">
@@ -124,7 +149,7 @@
         </div>
       </div>
 
-      <!-- Quick Actions Grid (8 Primary Tools) -->
+      <!-- Quick Actions Grid (Primary Tools) -->
       <div class="card">
         <div class="card-header">
           <div>
@@ -134,6 +159,13 @@
         </div>
 
         <div class="grid-4">
+          <div class="quick-action-card" data-jump-tab="tab-plan-budget" style="border: 1px solid #d97706; background: linear-gradient(135deg, var(--bg-surface) 0%, #fffbeb 100%);">
+            <div class="quick-icon">📑</div>
+            <div>
+              <div class="quick-text" style="color: #b45309; font-weight: 700;">திட்டம் → BOQ</div>
+              <div class="quick-sub">Plan to Budget (AI/OCR)</div>
+            </div>
+          </div>
           <div class="quick-action-card" data-jump-subtab="sub-concrete">
             <div class="quick-icon">🧱</div>
             <div>
@@ -327,6 +359,352 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- =========================================================================
+         DESTINATION: திட்டத்திலிருந்து கட்டுமான மதிப்பீடு — PLAN TO BUDGET (AI & OCR TAKEOFF)
+         ========================================================================= -->
+    <div id="tab-plan-budget" class="tab-pane">
+      
+      <!-- Plan to Budget Header Card -->
+      <div class="card" style="border-left: 4px solid #d97706;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <span style="font-size: 1.4rem;">📑</span>
+              <h2 style="font-size: 1.25rem; margin: 0; color: var(--text-primary);">திட்டத்திலிருந்து கட்டுமான மதிப்பீடு (Plan to Budget)</h2>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); max-width: 720px; margin: 0;">
+              கட்டிட வரைபடங்கள் (PDF/படங்கள்) மூலம் தானியங்கி அளவெடுப்பு, IS 456 / IS 1200 அடிப்படையிலான BOQ மதிப்பீடு மற்றும் பொருட்கள் கொள்முதல் பட்டியல்.
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <span class="draft-review-badge">
+              <span>⚠️</span>
+              <span>முன்மதிப்பீடு — சரிபார்ப்புக்குரியது (Draft)</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Upload Plan Files -->
+      <div class="card takeoff-step-card">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">1</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">வரைபடங்களை பதிவேற்றுக (Upload Plans &amp; Schedules)</h3>
+              <p class="card-subtitle" style="margin: 0;">Architectural floor plans, structural drawings, or scanned PDFs/images</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-upload-zone" id="plan-drop-zone">
+          <div class="plan-upload-icon">📂</div>
+          <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">
+            கோப்புகளை இங்கே இழுத்து விடவும் அல்லது தேர்ந்தெடுக்க கிளிக் செய்யவும்
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+            ஆதரிக்கப்படும் வடிவங்கள்: PDF (Text/Scanned), JPG, PNG • Multi-sheet / Multi-page Support
+          </p>
+          <input type="file" id="plan-file-input" accept=".pdf,.png,.jpg,.jpeg" multiple style="display: none;">
+        </div>
+
+        <div id="plan-parsing-progress" style="display: none; margin-top: 1rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.25rem;">
+            <span id="plan-progress-text">வரைபடங்களை ஆய்வு செய்கிறது (Analyzing plans &amp; extracting schedules)...</span>
+            <span id="plan-progress-percent">0%</span>
+          </div>
+          <div style="height: 6px; background-color: var(--border-subtle); border-radius: 3px; overflow: hidden;">
+            <div id="plan-progress-bar" style="width: 0%; height: 100%; background-color: var(--accent); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Extracted Sheet List Container -->
+        <div id="plan-sheet-list-container" style="display: none; margin-top: 1.25rem;">
+          <h4 style="font-size: 0.92rem; margin-bottom: 0.5rem; color: var(--text-secondary);">கண்டறியப்பட்ட வரைபட தாள்கள் (Detected Sheets &amp; Classifications):</h4>
+          <div class="plan-sheet-list" id="plan-sheets-wrapper"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Scale Calibration & Room Takeoff Dimensions -->
+      <div class="card takeoff-step-card">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">2</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">அளவுத்திருத்தம் &amp; அளவெடுப்பு (Scale &amp; Takeoff Dimensions)</h3>
+              <p class="card-subtitle" style="margin: 0;">Calibrate drawing scale and verify extracted room / area dimensions</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-bottom: 1rem;">
+          <div class="form-group">
+            <label>வரைபட அளவுத்திருத்த முறை (Scale Calibration)</label>
+            <select id="scale-preset-select" class="form-control">
+              <option value="door">நிலையான கதவு அகலம் (Standard Door 0.90 m / 3 ft)</option>
+              <option value="grid">3.00 மீட்டர் கட்டமைப்பு இடைவெளி (3.00 m Grid)</option>
+              <option value="custom">தனிப்பயன் அளவீடு (Custom Reference Length)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>உண்மை நீளம் (Real Length)</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="number" id="scale-real-len" class="form-control" value="0.90" step="0.01" min="0.1">
+              <select id="scale-real-unit" class="form-control" style="max-width: 90px;">
+                <option value="m" selected>m</option>
+                <option value="ft">ft</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>கணக்கிடப்பட்ட விகிதம் (Calibrated Scale)</label>
+            <div style="padding: 0.55rem; background: var(--bg-muted); border-radius: var(--radius-sm); font-weight: 700; color: var(--accent);" id="scale-display-text">
+              100.0 px / m (30.48 px / ft)
+            </div>
+          </div>
+        </div>
+
+        <!-- Room Dimensions Table -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.92rem; margin: 0; color: var(--text-secondary);">கண்டறியப்பட்ட அறைகள் மற்றும் பரப்பளவு (Extracted Rooms &amp; Areas):</h4>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-add-custom-room">+ புதிய அறை சேர் (Add Room)</button>
+        </div>
+
+        <div id="dimension-conflict-alert" class="warning-callout" style="display: none;">
+          ⚠️ <strong>அளவீட்டு முரண்பாடு எச்சரிக்கை:</strong> சில பரிமாணங்களில் 5%க்கும் அதிகமான வேறுபாடு கண்டறியப்பட்டுள்ளது. கீழேயுள்ள மதிப்புகளை சரிபார்க்கவும்.
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="takeoff-rooms-table">
+            <thead>
+              <tr>
+                <th>அறை / பகுதி (Space Name)</th>
+                <th>நீளம் (Length m)</th>
+                <th>அகலம் (Width m)</th>
+                <th>பரப்பளவு (m²)</th>
+                <th>பரப்பளவு (sq.ft)</th>
+                <th>சுற்றளவு (Perimeter m)</th>
+                <th>கழிவுகள் (Deductions m²)</th>
+                <th>நிலை (Status)</th>
+                <th>செயல்</th>
+              </tr>
+            </thead>
+            <tbody id="takeoff-rooms-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface); padding: 0.75rem 1rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); margin-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <strong>மொத்த கார்பெட் பரப்பளவு:</strong> <span id="total-carpet-sqft" style="color: var(--accent); font-weight: 700;">1,000</span> sq.ft (<span id="total-carpet-m2">92.9</span> m²)
+          </div>
+          <div>
+            <strong>கட்டுமான தரைத்தள பரப்பளவு (Built-Up ~120%):</strong> <span id="total-builtup-sqft" style="color: #b45309; font-weight: 700;">1,200</span> sq.ft (<span id="total-builtup-m2">111.5</span> m²)
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Structural Schedules & Building Configuration -->
+      <div class="card takeoff-step-card">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">3</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">கட்டமைப்பு அட்டவணைகள் (Structural Schedules &amp; Building Profile)</h3>
+              <p class="card-subtitle" style="margin: 0;">Columns, footings, beam schedule, and number of floors</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="form-group">
+            <label>திட்டத்தின் பெயர் (Project Name)</label>
+            <input type="text" id="plan-proj-name" class="form-control" value="சென்னை குடியிருப்பு இல்லம்">
+          </div>
+          <div class="form-group">
+            <label>தளங்களின் எண்ணிக்கை (Floors Count)</label>
+            <select id="plan-floors-count" class="form-control">
+              <option value="1" selected>தரைத்தளம் மட்டும் (Ground Floor Only)</option>
+              <option value="2">G + 1 தளம் (Ground + 1 Floor)</option>
+              <option value="3">G + 2 தளங்கள் (Ground + 2 Floors)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>தூண்களின் எண்ணிக்கை (Columns Count)</label>
+            <input type="number" id="plan-columns-count" class="form-control" value="12" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label>அடித்தள குழிகள் (Footings Count)</label>
+            <input type="number" id="plan-footings-count" class="form-control" value="12" min="1" max="100">
+          </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1rem;">
+          <button type="button" class="btn btn-primary" id="btn-generate-plan-boq">
+            🚀 BOQ &amp; மதிப்பீட்டை உருவாக்கு (Generate Draft BOQ)
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Draft Civil Engineering BOQ Table -->
+      <div class="card takeoff-step-card" id="boq-results-section" style="display: none;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">4</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">உத்தேச BOQ மதிப்பீட்டு அறிக்கை (Itemized Civil Works BOQ)</h3>
+              <p class="card-subtitle" style="margin: 0;">IS 456, IS 1200 &amp; Tamil Nadu PWD Schedule of Rates 2025-26</p>
+            </div>
+          </div>
+          <span class="draft-review-badge">Draft — Requires Review</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="plan-boq-table">
+            <thead>
+              <tr>
+                <th>குறியீடு (Code)</th>
+                <th>பிரிவு (Trade)</th>
+                <th>வேலை விவரம் (Description)</th>
+                <th>அலகு (Unit)</th>
+                <th>நிகர அளவு (Net Qty)</th>
+                <th>பொருள் விலை (₹)</th>
+                <th>கூலி (₹)</th>
+                <th>அலகு விலை (₹)</th>
+                <th>மொத்த தொகை (₹)</th>
+                <th>நிலை (Review)</th>
+              </tr>
+            </thead>
+            <tbody id="plan-boq-tbody">
+              <!-- Populated by BoqGenerator -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Financial Summary Grid -->
+        <div class="grid-2" style="margin-top: 1.25rem;">
+          <div class="card" style="margin: 0; background: var(--bg-surface); border: 1px solid var(--border-subtle);">
+            <div class="card-header">
+              <h4 style="margin: 0; font-size: 0.95rem;">நிதியியல் முறிவு (Financial Cost Breakdown)</h4>
+            </div>
+            <div style="font-size: 0.88rem; line-height: 1.8;">
+              <div style="display: flex; justify-content: space-between;">
+                <span>நேரடி கட்டுமான செலவு (Direct Works):</span>
+                <strong id="fin-direct-cost">₹0.00</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>தள மேற்பார்வை &amp; தளவாடங்கள் (Overheads 5%):</span>
+                <span id="fin-overhead">₹0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>ஒப்பந்ததாரர் லாபம் (Contractor Profit 10%):</span>
+                <span id="fin-profit">₹0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>எதிர்பாராத செலவுகள் (Contingency 3%):</span>
+                <span id="fin-contingency">₹0.00</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 0.25rem;">
+                <span>வரிக்கு முந்தைய மொத்த தொகை (Pre-tax Total):</span>
+                <strong id="fin-pretax">₹0.00</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>ஒப்பந்த பணி ஜி.எஸ்.டி (Works Contract GST 18%):</span>
+                <span id="fin-gst">₹0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border: 1px solid #d97706;">
+            <div style="text-align: center; padding: 0.5rem 0;">
+              <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #f59e0b; font-weight: 700;">
+                மொத்த கட்டுமான மதிப்பீடு (Grand Total)
+              </div>
+              <div id="fin-grand-total" style="font-size: 2.2rem; font-weight: 800; color: #fef3c7; margin: 0.35rem 0; letter-spacing: -0.02em;">
+                ₹0.00
+              </div>
+              <div style="display: flex; justify-content: center; gap: 1.5rem; font-size: 0.88rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 0.75rem; margin-top: 0.5rem;">
+                <div>
+                  <div style="font-size: 0.75rem; color: #94a3b8;">சதுர அடிக்கு (Per Sq.Ft)</div>
+                  <strong id="fin-rate-sqft" style="color: #fef3c7; font-size: 1.1rem;">₹0.00</strong>
+                </div>
+                <div>
+                  <div style="font-size: 0.75rem; color: #94a3b8;">சதுர மீட்டருக்கு (Per M²)</div>
+                  <strong id="fin-rate-m2" style="color: #fef3c7; font-size: 1.1rem;">₹0.00</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Material Procurement BOM Schedule -->
+      <div class="card takeoff-step-card" id="procurement-results-section" style="display: none;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">5</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">பொருட்கள் கொள்முதல் பட்டியல் (Material Procurement BOM)</h3>
+              <p class="card-subtitle" style="margin: 0;">Aggregated material bill with standard Tamil Nadu commercial pack sizes</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="plan-procurement-table">
+            <thead>
+              <tr>
+                <th>பொருள் குறியீடு (Code)</th>
+                <th>பொருள் பெயர் (Material)</th>
+                <th>வகை (Category)</th>
+                <th>தர நிர்ணயம் (Standard / IS Code)</th>
+                <th>கோட்பாட்டு அளவு (Theoretical)</th>
+                <th>கழிவு % (Waste)</th>
+                <th>ஆர்டர் அளவு &amp; அலகு (Order Qty)</th>
+                <th>வணிக சிப்பம் அளவு (Commercial Pack Size)</th>
+                <th>மதிப்பிடப்பட்ட விலை (₹)</th>
+                <th>மொத்தம் (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="plan-procurement-tbody">
+              <!-- Populated by MaterialProcurementEngine -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Step 6: Professional Export Actions -->
+      <div class="card takeoff-step-card" id="export-actions-section" style="display: none;">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill">6</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">அறிக்கைகள் &amp; ஏற்றுமதி (Professional Export &amp; Downloads)</h3>
+              <p class="card-subtitle" style="margin: 0;">Multi-sheet Excel, branded printable PDF report, and supplier procurement CSV</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary" id="btn-export-excel">
+            📥 Microsoft Excel பன்முக தாள் (.xls Workbook)
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-export-pdf">
+            📄 முத்திரையுடன் கூடிய PDF அறிக்கை (Print / PDF)
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-export-csv">
+            📊 கொள்முதல் CSV பட்டியல் (Supplier CSV)
+          </button>
+          <button type="button" class="btn btn-outline" id="btn-save-project-plan">
+            💾 திட்டமாக சேமி (Save to Projects DB)
+          </button>
+        </div>
+        <div id="plan-save-status" style="margin-top: 0.5rem; font-size: 0.85rem;"></div>
+      </div>
+
     </div>
 
     <!-- =========================================================================
@@ -1799,6 +2177,14 @@
           </div>
 
           <div class="more-menu-grid">
+            <div class="more-menu-card" data-more-target="jump-tab-plan" style="border: 1px solid #d97706; background: linear-gradient(135deg, var(--bg-surface) 0%, #fffbeb 100%);">
+              <div class="more-card-icon">📑</div>
+              <div class="more-card-body">
+                <h4 style="color: #b45309;">திட்ட வரைபடம் → BOQ (Plan to Budget)</h4>
+                <p>AI/OCR வரைபட அளவெடுப்பு, உத்தேச BOQ மற்றும் Excel/PDF ஏற்றுமதி.</p>
+              </div>
+            </div>
+
             <div class="more-menu-card" data-more-target="view-boq">
               <div class="more-card-icon">📋</div>
               <div class="more-card-body">
@@ -2193,6 +2579,14 @@
             <span class="badge badge-green">பதிப்பு 1.0.0 (Capacitor)</span>
           </div>
           <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
+              <img src="/assets/ddevultrahome-logo-transparent.png" alt="DDevUltraHome" style="width: 72px; height: 72px; object-fit: contain;">
+              <div>
+                <h4 style="margin: 0; font-size: 1.15rem; color: var(--text-primary);">DDevUltraHome / ULTRA HOMES</h4>
+                <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: #b45309; font-weight: 700; text-transform: uppercase;">Building your dreams</p>
+                <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Tamil Nadu Civil Engineering, Estimation &amp; Scrap Intelligence</p>
+              </div>
+            </div>
             <p><strong>பயன்பாடு:</strong> DDevUltraHome — Tamil Nadu Civil Engineering & Scrap Valuation</p>
             <p><strong>தொழில்நுட்பம்:</strong> Node.js 22, Vanilla JavaScript ESM, SQLite, Capacitor 8 Android Wrapper, PWA Service Worker.</p>
             <p><strong>ஆஃப்லைன் திறன்:</strong> 100% ஆஃப்லைனில் அனைத்து 19 கணக்கீடுகளும் இயங்கும்.</p>
@@ -2273,6 +2667,11 @@
     <button class="nav-item-btn active" data-tab="tab-home" id="nav-home" type="button">
       <span class="nav-icon" aria-hidden="true">🏠</span>
       <span class="nav-label" data-i18n="nav.home">முகப்பு</span>
+    </button>
+
+    <button class="nav-item-btn" data-tab="tab-plan-budget" id="nav-plan-budget" type="button">
+      <span class="nav-icon" aria-hidden="true">📑</span>
+      <span class="nav-label" data-i18n="nav.plan">திட்டம்/BOQ</span>
     </button>
 
     <button class="nav-item-btn" data-tab="tab-calc" id="nav-calc" type="button">

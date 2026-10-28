@@ -36,6 +36,11 @@ import { ScrapRatesEngine } from './src/intelligence/scrapRates.js';
 import { aiService } from './src/ai/provider.js';
 import { defaultProviderRegistry } from './src/intelligence/providerArchitecture.js';
 import { I18n } from './src/i18n/translations.js';
+import { PdfExtractor } from './src/plan/pdfExtractor.js';
+import { TakeoffEngine } from './src/plan/takeoffEngine.js';
+import { BoqGenerator } from './src/plan/boqGenerator.js';
+import { MaterialProcurementEngine } from './src/plan/materialProcurement.js';
+import { ExcelExportEngine } from './src/plan/excelExport.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,7 +78,7 @@ function parseJsonBody(req) {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 5 * 1024 * 1024) { // 5MB limit
+      if (body.length > 25 * 1024 * 1024) { // 25MB limit for plan PDFs & images
         reject(new Error('Payload too large'));
       }
     });
@@ -420,6 +425,70 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       db.importBackupJson(body);
       return sendJson(res, 200, { success: true, message: 'Database successfully restored from backup' });
+    }
+
+    // --- Plan-to-Budget API Routes ---
+    if (pathname === '/api/plan-budget/parse-plan' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      let buffer;
+      if (body.fileBase64) {
+        buffer = Buffer.from(body.fileBase64, 'base64');
+      } else if (body.rawText) {
+        buffer = Buffer.from(body.rawText, 'utf-8');
+      } else {
+        return sendJson(res, 400, { success: false, error: 'Missing fileBase64 or rawText in request body' });
+      }
+      const result = PdfExtractor.extractPlan(buffer, {
+        fileName: body.fileName || 'plan.pdf',
+        mimeType: body.mimeType || 'application/pdf'
+      });
+      return sendJson(res, 200, { success: true, ...result });
+    }
+
+    if (pathname === '/api/plan-budget/calibrate-scale' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const scale = TakeoffEngine.calibrateScale(body.pixelLength, body.realLengthMeters, body.unit);
+      return sendJson(res, 200, { success: true, scale });
+    }
+
+    if (pathname === '/api/plan-budget/compute-polygon' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const result = TakeoffEngine.computePolygonArea(body.points, body.scale);
+      return sendJson(res, 200, { success: true, ...result });
+    }
+
+    if (pathname === '/api/plan-budget/generate-boq' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const boq = BoqGenerator.generateDraftBoq(body);
+      return sendJson(res, 200, { success: true, boq });
+    }
+
+    if (pathname === '/api/plan-budget/procurement' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const materials = MaterialProcurementEngine.generateProcurementList(body.boqItems || []);
+      return sendJson(res, 200, { success: true, materials });
+    }
+
+    if (pathname === '/api/plan-budget/export-excel' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const xml = ExcelExportEngine.generateWorkbookXml(body.boq || {}, body.materials || []);
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.ms-excel; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="DDevUltraHome_BOQ_Budget.xls"',
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(xml);
+    }
+
+    if (pathname === '/api/plan-budget/export-csv' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      const csv = ExcelExportEngine.generateProcurementCsv(body.materials || []);
+      res.writeHead(200, {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="DDevUltraHome_Material_Procurement.csv"',
+        'Access-Control-Allow-Origin': '*'
+      });
+      return res.end(csv);
     }
 
     // --- Static File Serving (PWA Client) ---

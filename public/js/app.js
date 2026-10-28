@@ -5,6 +5,7 @@
 
 import { i18n, I18N_DATA } from './i18n.js';
 import { apiClient } from './apiClient.js';
+import { PlanBudgetController } from './planBudget.js';
 
 // Global Application State
 export const state = {
@@ -47,6 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initDataSourcesSettings();
   initProjectProfile();
   initApkInstallPrompt();
+
+  // Initialize Plan to Budget Module
+  const planBudgetController = new PlanBudgetController();
+  planBudgetController.init();
 
   // Load Real Data from Backend
   loadMaterialRates();
@@ -213,6 +218,10 @@ function initMoreSubNavigation() {
   document.querySelectorAll('.more-menu-card').forEach(card => {
     card.addEventListener('click', () => {
       const targetView = card.getAttribute('data-more-target');
+      if (targetView === 'jump-tab-plan') {
+        switchPrimaryTab('tab-plan-budget');
+        return;
+      }
       openMoreSubView(targetView);
     });
   });

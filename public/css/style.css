@@ -1038,6 +1038,211 @@ nav.mobile-bottom-nav {
   line-height: 1.4;
 }
 
+/* --- Brand Identity & Logo Display --- */
+.brand-header-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
+
+.brand-hero-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  color: #ffffff;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-hero-card::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brand-hero-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.brand-hero-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.brand-hero-text h1 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fef3c7;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.25rem 0;
+}
+
+.brand-tagline {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f59e0b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.brand-hero-sub {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  max-width: 580px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* --- Plan-to-Budget Upload & Workflow Styles --- */
+.plan-upload-zone {
+  border: 2px dashed var(--accent-border);
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.plan-upload-zone:hover, .plan-upload-zone.dragover {
+  border-color: var(--accent);
+  background-color: var(--bg-accent-soft);
+}
+
+.plan-upload-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.plan-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.plan-sheet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.plan-sheet-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 220px;
+}
+
+.plan-sheet-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.plan-sheet-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.plan-sheet-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.takeoff-step-card {
+  margin-bottom: 1.25rem;
+}
+
+.step-num-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background-color: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-right: 0.5rem;
+}
+
+.warning-callout {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  color: #92400e;
+  padding: 0.75rem 1rem;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  font-size: 0.85rem;
+  margin: 0.75rem 0;
+}
+
+[data-theme="dark"] .warning-callout {
+  background-color: #451a03;
+  color: #fde68a;
+  border-color: #f59e0b;
+}
+
+.gold-callout {
+  background-color: #fefce8;
+  border: 1px solid #fef08a;
+  color: #713f12;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .gold-callout {
+  background-color: #1e1b4b;
+  border-color: #4338ca;
+  color: #e0e7ff;
+}
+
+.draft-review-badge {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+[data-theme="dark"] .draft-review-badge {
+  background-color: #78350f;
+  color: #fef3c7;
+  border-color: #b45309;
+}
+
 /* ==========================================================================
    Print Styles for PDF Export & Official Engineering Reports
    ========================================================================== */
