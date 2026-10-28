@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-apk:
+    name: Build & Verify Android Debug APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -17,7 +18,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Setup Java 21
+      - name: Setup Java 21 (Temurin JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -30,25 +31,26 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install Dependencies & Capacitor
-        run: |
-          pnpm install
-          pnpm add --save-dev @capacitor/core @capacitor/cli @capacitor/android
+      - name: Install Dependencies
+        run: pnpm install
 
-      - name: Generate Capacitor Android Project
+      - name: Run Automated Test Suite (Pre-Build Verification)
+        run: pnpm test
+
+      - name: Generate & Sync Capacitor Android
         run: |
           npx cap add android || true
           npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Debug APK with Gradle
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK Artifact
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DDevUltraHome-Android-APK
+          name: DDevUltraHome-Debug-APK
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

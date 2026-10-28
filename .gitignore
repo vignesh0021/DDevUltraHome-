@@ -3,3 +3,12 @@ android/
 *.apk
 *.zip
 .DS_Store
+data/*.sqlite
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
+data/*.db
+data/*.db-journal
+.env
+.env.*
+coverage/

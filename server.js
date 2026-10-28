@@ -60,7 +60,10 @@ function sendJson(res, statusCode, data) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
   });
   res.end(JSON.stringify(data));
 }
@@ -381,19 +384,26 @@ const server = http.createServer(async (req, res) => {
     }
 
     // --- Static File Serving (PWA Client) ---
-    let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-    if (safePath === '/' || safePath === '') safePath = '/index.html';
+    const publicDir = path.resolve(__dirname, 'public');
+    const safeSubPath = pathname === '/' || pathname === '' ? '/index.html' : pathname;
+    const resolvedPath = path.resolve(publicDir, '.' + path.normalize(safeSubPath));
 
-    const filePath = path.join(__dirname, 'public', safePath);
+    // Path Traversal Security Boundary Guard
+    if (!resolvedPath.startsWith(publicDir)) {
+      return sendJson(res, 403, { error: 'Forbidden', message: 'Access outside web root is prohibited' });
+    }
 
-    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-      const ext = path.extname(filePath).toLowerCase();
+    if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
+      const ext = path.extname(resolvedPath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
       });
-      return fs.createReadStream(filePath).pipe(res);
+      return fs.createReadStream(resolvedPath).pipe(res);
     }
 
     // 404

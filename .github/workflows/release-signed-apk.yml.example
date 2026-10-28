@@ -1,0 +1,94 @@
+# Example GitHub Actions Workflow for Signed Android Release
+# To enable this workflow:
+# 1. Add repository secrets: ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+# 2. Rename this file to .github/workflows/release-signed-apk.yml
+# 3. Push a tag (e.g., git tag v1.0.0 && git push origin v1.0.0)
+
+name: Build & Sign Android Release APK
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  release-signed-apk:
+    name: Build & Sign Release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java 21 (Temurin JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Accept Android Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install Dependencies & Run Tests
+        run: |
+          pnpm install
+          pnpm test
+
+      - name: Generate & Sync Capacitor Android
+        run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Unsigned Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Decode Keystore from Secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
+
+      - name: Align and Sign APK with apksigner
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          UNSIGNED_APK="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          ALIGNED_APK="/tmp/app-release-aligned.apk"
+          SIGNED_APK="android/app/build/outputs/apk/release/DDevUltraHome-release-signed.apk"
+
+          $BUILD_TOOLS_DIR/zipalign -v -p 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+
+          $BUILD_TOOLS_DIR/apksigner sign \
+            --ks /tmp/release.keystore \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out "$SIGNED_APK" \
+            "$ALIGNED_APK"
+
+          $BUILD_TOOLS_DIR/apksigner verify --verbose "$SIGNED_APK"
+
+          shred -u /tmp/release.keystore || rm -f /tmp/release.keystore
+          rm -f "$ALIGNED_APK"
+
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DDevUltraHome-Signed-Release-APK
+          path: android/app/build/outputs/apk/release/DDevUltraHome-release-signed.apk
+          if-no-files-found: error

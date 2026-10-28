@@ -4,6 +4,7 @@
  */
 
 import { i18n, I18N_DATA } from './i18n.js';
+import { apiClient } from './apiClient.js';
 
 // Global Application State
 export const state = {
@@ -349,7 +350,7 @@ function initMaterialRatesScreen() {
 
 async function loadMaterialRates() {
   try {
-    const res = await fetch(`/api/rates?district=${encodeURIComponent(state.currentDistrict)}`);
+    const res = await apiClient.request(`/api/rates?district=${encodeURIComponent(state.currentDistrict)}`);
     if (!res.ok) throw new Error('Failed to load rates');
     const data = await res.json();
     state.rates = data.rates || [];
@@ -446,7 +447,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/concrete', {
+        const res = await apiClient.request('/api/calculate/concrete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -495,7 +496,7 @@ function initCalculators() {
       }
 
       try {
-        const res = await fetch('/api/calculate/rcc', {
+        const res = await apiClient.request('/api/calculate/rcc', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -525,7 +526,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/masonry', {
+        const res = await apiClient.request('/api/calculate/masonry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -552,7 +553,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/finishing', {
+        const res = await apiClient.request('/api/calculate/finishing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -580,7 +581,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/earthwork', {
+        const res = await apiClient.request('/api/calculate/earthwork', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -608,7 +609,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/bbs', {
+        const res = await apiClient.request('/api/calculate/bbs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -636,7 +637,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/watertank', {
+        const res = await apiClient.request('/api/calculate/watertank', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -663,7 +664,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/septictank', {
+        const res = await apiClient.request('/api/calculate/septictank', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -690,7 +691,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/sbc-footing', {
+        const res = await apiClient.request('/api/calculate/sbc-footing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -720,7 +721,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/qc/cube-test', {
+        const res = await apiClient.request('/api/qc/cube-test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -746,7 +747,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/antitermite', {
+        const res = await apiClient.request('/api/calculate/antitermite', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -773,7 +774,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/planning/tncdbr', {
+        const res = await apiClient.request('/api/planning/tncdbr', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -804,7 +805,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/mbook/calculate', {
+        const res = await apiClient.request('/api/mbook/calculate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -829,7 +830,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/labour', {
+        const res = await apiClient.request('/api/calculate/labour', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -855,7 +856,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/rwh', {
+        const res = await apiClient.request('/api/calculate/rwh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -880,7 +881,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/durability/check', {
+        const res = await apiClient.request('/api/durability/check', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -905,7 +906,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/planning/cmda-fee', {
+        const res = await apiClient.request('/api/planning/cmda-fee', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -930,7 +931,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/plinth', {
+        const res = await apiClient.request('/api/calculate/plinth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -957,7 +958,7 @@ function initCalculators() {
       };
 
       try {
-        const res = await fetch('/api/calculate/pile', {
+        const res = await apiClient.request('/api/calculate/pile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -1339,7 +1340,7 @@ function initScrapCalculator() {
     };
 
     try {
-      const res = await fetch('/api/scrap/calculate', {
+      const res = await apiClient.request('/api/scrap/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1361,18 +1362,18 @@ function initScrapCalculator() {
         const payload = {
           clientName: 'Walk-in Seller',
           materialName: state.lastScrapCalculation.materialName || 'Scrap Metal',
-          grossWeightKg: state.lastScrapCalculation.scaleWeight?.grossWeightKg,
-          netWeightKg: state.lastScrapCalculation.scaleWeight?.netAcceptedWeightKg,
-          unitRate: state.lastScrapCalculation.unitPrice,
-          totalPayout: state.lastScrapCalculation.netPayout
+          grossWeightKg: state.lastScrapCalculation.weights?.grossWeight ?? state.lastScrapCalculation.scaleWeight?.grossWeightKg,
+          netWeightKg: state.lastScrapCalculation.weights?.netAcceptedWeightKg ?? state.lastScrapCalculation.scaleWeight?.netAcceptedWeightKg,
+          unitRate: state.lastScrapCalculation.pricing?.unitRate ?? state.lastScrapCalculation.unitPrice,
+          totalPayout: state.lastScrapCalculation.pricing?.netPayout ?? state.lastScrapCalculation.netPayout
         };
-        const res = await fetch('/api/scrap/save', {
+        const res = await apiClient.request('/api/scrap/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          alert('Scrap transaction saved successfully to SQLite database!');
+          alert('Scrap transaction saved successfully!');
         }
       } catch (err) {
         alert('Failed to save scrap transaction.');
@@ -1386,23 +1387,36 @@ function renderScrapOutput(data) {
   if (!box) return;
   box.style.display = 'block';
 
-  document.getElementById('scrap-out-payout').textContent = data.formattedNetPayout;
+  const w = data.weights || data.scaleWeight || {};
+  const p = data.pricing || {};
+  const formattedPayout = p.formattedNetPayout || data.formattedNetPayout || `₹ ${(p.netPayout || 0).toLocaleString('en-IN')}`;
+  const formattedGross = p.formattedGrossValue || data.formattedGrossValue || `₹ ${(p.grossValue || 0).toLocaleString('en-IN')}`;
+  const totalDeductions = p.expenses?.totalExpenses ?? data.commercialDeductions?.totalCommercialDeductions ?? 0;
+  const netScale = w.netScaleWeightKg ?? 0;
+  const netAccepted = w.netAcceptedWeightKg ?? 0;
+
+  const payoutEl = document.getElementById('scrap-out-payout');
+  if (payoutEl) payoutEl.textContent = formattedPayout;
 
   const tbody = document.getElementById('scrap-out-tbody');
-  tbody.innerHTML = `
-    <tr><td>எடைமேடை நிகர எடை (Net Scale Weight):</td><td><strong>${data.scaleWeight.netScaleWeightKg} kg</strong></td></tr>
-    <tr><td>கழிவுகள் நீங்கிய எடை (Accepted Weight):</td><td><strong>${data.scaleWeight.netAcceptedWeightKg} kg</strong></td></tr>
-    <tr><td>அடிப்படை ஸ்கிராப் மதிப்பு (Gross Value):</td><td>${data.formattedGrossValue}</td></tr>
-    <tr><td>போக்குவரத்து மற்றும் வெட்டு கூலி கழிவு:</td><td>- ₹ ${data.commercialDeductions.totalCommercialDeductions}</td></tr>
-    <tr style="background:var(--bg-accent-soft); font-weight:800; font-size:1.05rem;">
-      <td>நிகர பட்டுவாடா தொகை:</td>
-      <td><strong style="color:var(--accent);">${data.formattedNetPayout}</strong></td>
-    </tr>
-  `;
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr><td>எடைமேடை நிகர எடை (Net Scale Weight):</td><td><strong>${netScale} kg</strong></td></tr>
+      <tr><td>கழிவுகள் நீங்கிய எடை (Accepted Weight):</td><td><strong>${netAccepted} kg</strong></td></tr>
+      <tr><td>அடிப்படை ஸ்கிராப் மதிப்பு (Gross Value):</td><td>${formattedGross}</td></tr>
+      <tr><td>போக்குவரத்து மற்றும் வெட்டு கூலி கழிவு:</td><td>- ₹ ${totalDeductions.toLocaleString('en-IN')}</td></tr>
+      <tr style="background:var(--bg-accent-soft); font-weight:800; font-size:1.05rem;">
+        <td>நிகர பட்டுவாடா தொகை:</td>
+        <td><strong style="color:var(--accent);">${formattedPayout}</strong></td>
+      </tr>
+    `;
+  }
 
+  const steps = data.calculationSteps || data.steps || [];
   const ol = document.getElementById('scrap-out-steps');
-  ol.innerHTML = (data.steps || []).map(s => `<li>${s}</li>`).join('');
-  document.getElementById('scrap-out-disclaimer').textContent = data.assumptions?.join(' • ') || '';
+  if (ol) ol.innerHTML = steps.map(s => `<li>${s}</li>`).join('');
+  const disc = document.getElementById('scrap-out-disclaimer');
+  if (disc) disc.textContent = data.disclaimer || (data.assumptions?.join(' • ') || '');
 }
 
 // --- BOQ & Payment Milestones ---
@@ -1413,7 +1427,7 @@ function initBoq() {
   if (csvBtn) {
     csvBtn.addEventListener('click', async () => {
       try {
-        const res = await fetch('/api/boq/export-csv', {
+        const res = await apiClient.request('/api/boq/export-csv', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: sampleBoqItems })
@@ -1438,7 +1452,7 @@ function initBoq() {
 
 async function calculateBoq(items) {
   try {
-    const res = await fetch('/api/calculate/boq', {
+    const res = await apiClient.request('/api/calculate/boq', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items })
@@ -1446,7 +1460,8 @@ async function calculateBoq(items) {
     if (!res.ok) throw new Error('BOQ Calculation error');
     const data = await res.json();
     renderBoq(data);
-    calculateMilestones(data.grandTotal);
+    const fin = data.financials || data;
+    calculateMilestones(fin.grandTotal);
   } catch (err) {
     console.error('BOQ Error:', err);
   }
@@ -1457,8 +1472,12 @@ function renderBoq(data) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  data.items.forEach((item, idx) => {
+  const fin = data.financials || data;
+  const items = data.items || [];
+
+  items.forEach((item, idx) => {
     const tr = document.createElement('tr');
+    const unitRate = item.unitRate ?? item.compositeRate ?? ((item.materialRate || 0) + (item.labourRate || 0));
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td><strong>${item.description}</strong></td>
@@ -1466,25 +1485,39 @@ function renderBoq(data) {
       <td>${item.unit}</td>
       <td>₹ ${item.materialRate}</td>
       <td>₹ ${item.labourRate}</td>
-      <td>₹ ${item.compositeRate}</td>
-      <td><strong>₹ ${item.totalAmount.toLocaleString('en-IN')}</strong></td>
+      <td>₹ ${unitRate}</td>
+      <td><strong>₹ ${(item.totalAmount || 0).toLocaleString('en-IN')}</strong></td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById('boq-subtotal').textContent = `₹ ${data.directCostSubtotal.toLocaleString('en-IN')}`;
-  document.getElementById('boq-overhead').textContent = `₹ ${data.overheadAmount.toLocaleString('en-IN')}`;
-  document.getElementById('boq-profit').textContent = `₹ ${data.contractorProfitAmount.toLocaleString('en-IN')}`;
-  document.getElementById('boq-cont').textContent = `₹ ${data.contingencyAmount.toLocaleString('en-IN')}`;
-  document.getElementById('boq-gst').textContent = `₹ ${data.gstAmount.toLocaleString('en-IN')}`;
-  document.getElementById('boq-grand-total').textContent = data.formattedGrandTotal;
+  const directCost = fin.directCostSubtotal || 0;
+  const overhead = fin.overhead?.amount ?? fin.overheadAmount ?? 0;
+  const profit = fin.contractorProfit?.amount ?? fin.contractorProfitAmount ?? 0;
+  const cont = fin.contingency?.amount ?? fin.contingencyAmount ?? 0;
+  const gst = fin.gst?.amount ?? fin.gstAmount ?? 0;
+  const grandTotal = fin.grandTotal || 0;
+  const formattedGrand = fin.formattedGrandTotal || `₹ ${grandTotal.toLocaleString('en-IN')}`;
+
+  const subEl = document.getElementById('boq-subtotal');
+  if (subEl) subEl.textContent = `₹ ${directCost.toLocaleString('en-IN')}`;
+  const overEl = document.getElementById('boq-overhead');
+  if (overEl) overEl.textContent = `₹ ${overhead.toLocaleString('en-IN')}`;
+  const profEl = document.getElementById('boq-profit');
+  if (profEl) profEl.textContent = `₹ ${profit.toLocaleString('en-IN')}`;
+  const contEl = document.getElementById('boq-cont');
+  if (contEl) contEl.textContent = `₹ ${cont.toLocaleString('en-IN')}`;
+  const gstEl = document.getElementById('boq-gst');
+  if (gstEl) gstEl.textContent = `₹ ${gst.toLocaleString('en-IN')}`;
+  const grandEl = document.getElementById('boq-grand-total');
+  if (grandEl) grandEl.textContent = formattedGrand;
 }
 
 function calculateMilestones(totalContractAmount) {
-  fetch('/api/calculate/milestones', {
+  apiClient.request('/api/calculate/milestones', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ totalContractAmount })
+    body: JSON.stringify({ totalContractAmount: totalContractAmount || 0 })
   })
     .then(r => r.json())
     .then(data => {
@@ -1525,7 +1558,7 @@ function initAiAssistant() {
       const loadingBubble = appendChatMessage('ai', 'சிவில் என்ஜின் யோசிக்கிறது... (Analyzing IS Codes)...');
 
       try {
-        const res = await fetch('/api/ai/ask', {
+        const res = await apiClient.request('/api/ai/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: question })
@@ -1576,7 +1609,7 @@ function initProjectProfile() {
     };
 
     try {
-      const res = await fetch('/api/projects', {
+      const res = await apiClient.request('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1593,9 +1626,10 @@ function initProjectProfile() {
 
 async function loadProjectProfile() {
   try {
-    const res = await fetch('/api/projects');
+    const res = await apiClient.request('/api/projects');
     if (res.ok) {
-      const projects = await res.json();
+      const data = await res.json();
+      const projects = Array.isArray(data) ? data : (data.projects || []);
       if (projects.length > 0) {
         const p = projects[0];
         const nameEl = document.getElementById('home-proj-name');
