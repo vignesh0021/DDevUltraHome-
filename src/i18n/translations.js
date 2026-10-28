@@ -7,14 +7,19 @@ export const TRANSLATIONS = {
   en: {
     appTitle: 'DDevUltraHome',
     tagline: 'Tamil Nadu Civil Engineering, Material Intelligence & Scrap Management',
+    brandBadge: 'Tamil Nadu • IS & PWD',
     regionNotice: 'Tamil Nadu Focus • Chennai & All 38 Districts • IS 456 & PWD Standards',
     nav: {
-      calculations: 'Engineering Calculations',
-      materialRates: 'Material Rates (PWD & Market)',
-      scrapRates: 'Scrap Valuation',
+      home: 'Home',
+      calculations: 'Calculations',
+      materialRates: 'Material Rates',
+      scrapRates: 'Scrap',
+      more: 'More',
       boq: 'BOQ & Estimates',
-      aiAssistant: 'Civil AI & Knowledge',
-      projects: 'Projects & Backup'
+      aiAssistant: 'Civil AI',
+      projects: 'Projects',
+      standards: 'Standards',
+      backup: 'Backup'
     },
     actions: {
       calculate: 'Calculate Quantities',
@@ -63,14 +68,19 @@ export const TRANSLATIONS = {
   ta: {
     appTitle: 'டிடெவ் அல்ட்ரா ஹோம்',
     tagline: 'தமிழ்நாடு சிவில் இன்ஜினியரிங், கட்டுமான விலை மற்றும் ஸ்கிராப் மேலாண்மை',
+    brandBadge: 'தமிழ்நாடு • IS & PWD',
     regionNotice: 'தமிழ்நாடு முன்னுரிமை • சென்னை மற்றும் 38 மாவட்டங்கள் • IS 456 & PWD தரம்',
     nav: {
+      home: 'முகப்பு',
       calculations: 'கட்டுமான கணக்கீடுகள்',
-      materialRates: 'பொருட்கள் விலை (PWD & சந்தை)',
+      materialRates: 'பொருட்கள் விலை',
       scrapRates: 'ஸ்கிராப் மதிப்பீடு',
+      more: 'மேலும்',
       boq: 'மதிப்பீடு & BOQ',
-      aiAssistant: 'சிவில் AI & வழிகாட்டி',
-      projects: 'திட்டங்கள் & காப்பு'
+      aiAssistant: 'சிவில் AI',
+      projects: 'திட்டங்கள்',
+      standards: 'தரநிலைகள்',
+      backup: 'காப்பு'
     },
     actions: {
       calculate: 'அளவுகளைக் கணக்கிடு',
@@ -119,7 +129,7 @@ export const TRANSLATIONS = {
 };
 
 export class I18n {
-  static get(lang = 'en') {
-    return TRANSLATIONS[lang] || TRANSLATIONS['en'];
+  static get(lang = 'ta') {
+    return TRANSLATIONS[lang] || TRANSLATIONS['ta'];
   }
 }

@@ -1,1294 +1,1637 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ta">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DDevUltraHome — Tamil Nadu Civil Engineering & Scrap Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>DDevUltraHome (டிடெவ் அல்ட்ரா ஹோம்) — Tamil Nadu Civil Engineering & Scrap Valuation</title>
+  <meta name="description" content="Tamil Nadu focused civil engineering calculation engine, construction estimation, material price intelligence, and scrap valuation application.">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-  <!-- Top Application Header -->
+  <!-- Top Sticky Application Header -->
   <header class="app-header">
-    <div class="header-top">
-      <div class="brand">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-        <h1 id="app-title-text">DDevUltraHome</h1>
-        <span class="brand-badge" id="region-badge">Tamil Nadu</span>
+    <div class="header-inner">
+      <div class="brand-wrapper">
+        <div class="brand-logo" aria-hidden="true">🏗️</div>
+        <div class="brand-details">
+          <span class="brand-title" id="app-title-text" data-i18n="appTitle">டிடெவ் அல்ட்ரா ஹோம்</span>
+          <span class="brand-subtitle">DDevUltraHome • Tamil Nadu</span>
+        </div>
       </div>
 
-      <div class="header-controls">
-        <select id="district-select" title="Tamil Nadu District">
-          <option value="Chennai" selected>Chennai</option>
-          <option value="Chengalpattu">Chengalpattu</option>
-          <option value="Kanchipuram">Kanchipuram</option>
-          <option value="Tiruvallur">Tiruvallur</option>
-          <option value="Coimbatore">Coimbatore</option>
-          <option value="Madurai">Madurai</option>
-          <option value="Tiruchirappalli">Tiruchirappalli</option>
-          <option value="Salem">Salem</option>
-          <option value="Tirunelveli">Tirunelveli</option>
-          <option value="Erode">Erode</option>
-          <option value="Vellore">Vellore</option>
-          <option value="Thanjavur">Thanjavur</option>
-          <option value="Tiruppur">Tiruppur</option>
-          <option value="Kanyakumari">Kanyakumari</option>
-        </select>
+      <div class="header-actions">
+        <!-- Live Connection Status Pill -->
+        <span id="connection-status" class="status-pill" title="Network Connection Status">
+          <span class="status-dot">🟢</span>
+          <span id="connection-status-text" data-i18n="statusOnline">ஆன்லைன்</span>
+        </span>
 
-        <button id="lang-toggle-btn" class="btn btn-outline" style="padding: 0.35rem 0.6rem; color:#fff;">
-          தமிழ் (TA)
+        <!-- District Selector Dropdown (All 38 TN Districts) -->
+        <div class="district-picker-wrap">
+          <select id="district-select" class="district-select" aria-label="Select Tamil Nadu District" title="Tamil Nadu District">
+            <option value="Chennai" selected>சென்னை (Chennai)</option>
+            <option value="Chengalpattu">செங்கல்பட்டு (Chengalpattu)</option>
+            <option value="Kanchipuram">காஞ்சிபுரம் (Kanchipuram)</option>
+            <option value="Tiruvallur">திருவள்ளூர் (Tiruvallur)</option>
+            <option value="Coimbatore">கோயம்புத்தூர் (Coimbatore)</option>
+            <option value="Madurai">மதுரை (Madurai)</option>
+            <option value="Tiruchirappalli">திருச்சிராப்பள்ளி (Trichy)</option>
+            <option value="Salem">சேலம் (Salem)</option>
+            <option value="Tirunelveli">திருநெல்வேலி (Tirunelveli)</option>
+            <option value="Erode">ஈரோடு (Erode)</option>
+            <option value="Vellore">வேலூர் (Vellore)</option>
+            <option value="Thanjavur">தஞ்சாவூர் (Thanjavur)</option>
+            <option value="Tiruppur">திருப்பூர் (Tiruppur)</option>
+            <option value="Dindigul">திண்டுக்கல் (Dindigul)</option>
+            <option value="Cuddalore">கடலூர் (Cuddalore)</option>
+            <option value="Villupuram">விழுப்புரம் (Villupuram)</option>
+            <option value="Kanyakumari">கன்னியாகுமரி (Kanyakumari)</option>
+            <option value="Karur">கரூர் (Karur)</option>
+            <option value="Namakkal">நாமக்கல் (Namakkal)</option>
+            <option value="Thoothukudi">தூத்துக்குடி (Thoothukudi)</option>
+          </select>
+        </div>
+
+        <!-- Language Switcher (Tamil / English) -->
+        <button id="lang-toggle-btn" class="header-btn" type="button" aria-label="Switch Language" title="Switch Language">
+          English
         </button>
-        <button id="install-apk-btn" class="btn btn-primary" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; display: none; background: #0284c7;">
-          📱 Install App (APK)
+
+        <!-- Dark/Light Theme Switcher -->
+        <button id="theme-toggle-btn" class="header-btn" type="button" aria-label="Toggle Theme" title="Toggle Dark/Light Mode">
+          🌙
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Primary Tab Navigation -->
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="tab-calc" id="nav-calc">📐 Calculations</button>
-    <button class="tab-btn" data-tab="tab-rates" id="nav-rates">📊 Material Rates</button>
-    <button class="tab-btn" data-tab="tab-scrap" id="nav-scrap">⚖️ Scrap Valuation</button>
-    <button class="tab-btn" data-tab="tab-boq" id="nav-boq">📋 BOQ & Estimates</button>
-    <button class="tab-btn" data-tab="tab-ai" id="nav-ai">🤖 Civil AI & Codes</button>
-    <button class="tab-btn" data-tab="tab-projects" id="nav-projects">📁 Projects & Backup</button>
-  </nav>
-
+  <!-- Main Application Content Container -->
   <main class="app-content">
 
     <!-- Print Header (Visible only on print/PDF) -->
     <div class="print-header" style="display: none;">
-      <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">DDevUltraHome — Civil Engineering & Estimation</h1>
-      <p style="font-size: 0.9rem; color: #555;">Project Estimate & Bill of Quantities • Tamil Nadu Standards (IS 456 & PWD SOR)</p>
+      <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">DDevUltraHome (டிடெவ் அல்ட்ரா ஹோம்)</h1>
+      <p style="font-size: 0.9rem; color: #555;">Tamil Nadu Civil Engineering Calculation & Estimation Report • IS 456 & PWD Standards</p>
       <p style="font-size: 0.85rem; color: #777;" id="print-timestamp"></p>
     </div>
 
     <!-- =========================================================================
-         TAB 1: ENGINEERING CALCULATIONS
+         DESTINATION 1: முகப்பு — HOME DASHBOARD
          ========================================================================= -->
-    <div id="tab-calc" class="tab-pane active">
-      <!-- Subtabs -->
-      <div class="subtab-nav">
-        <button class="subtab-btn active" data-subtab="sub-concrete">Concrete Mix</button>
-        <button class="subtab-btn" data-subtab="sub-rcc">RCC Structural</button>
-        <button class="subtab-btn" data-subtab="sub-masonry">Masonry</button>
-        <button class="subtab-btn" data-subtab="sub-finishing">Finishing & Tiles</button>
-        <button class="subtab-btn" data-subtab="sub-earthwork">Earthwork</button>
-        <button class="subtab-btn" data-subtab="sub-bbs">BBS & Stirrup</button>
-        <button class="subtab-btn" data-subtab="sub-watertank">Water Tank & Sump</button>
-        <button class="subtab-btn" data-subtab="sub-septictank">Septic Tank (IS 2470)</button>
-        <button class="subtab-btn" data-subtab="sub-geotech">SBC Footing (IS 1904)</button>
-        <button class="subtab-btn" data-subtab="sub-qc">Cube Test QC (IS 516)</button>
-        <button class="subtab-btn" data-subtab="sub-antitermite">Anti-Termite (IS 6313)</button>
-        <button class="subtab-btn" data-subtab="sub-tncdbr">TNCDBR Rules (2019)</button>
-        <button class="subtab-btn" data-subtab="sub-mbook">M-Book & RA Bill</button>
-        <button class="subtab-btn" data-subtab="sub-labour">Labour Norms</button>
-        <button class="subtab-btn" data-subtab="sub-rwh">RWH Sizer (CMDA/GCC)</button>
-        <button class="subtab-btn" data-subtab="sub-durability">Coastal Durability (IS 456)</button>
-        <button class="subtab-btn" data-subtab="sub-cmdafee">CMDA/GCC Permit Fees</button>
-        <button class="subtab-btn" data-subtab="sub-plinth">Flood Plinth & DPC</button>
-        <button class="subtab-btn" data-subtab="sub-pile">Under-Reamed Piles (IS 2911)</button>
-      </div>
-
-      <!-- 1. Concrete Mix Subtab -->
-      <div id="sub-concrete" class="calc-section">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Concrete Mix & Quantity Take-off</h3>
-              <span class="badge badge-blue">IS 456:2000</span>
-            </div>
-            <form id="form-concrete">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Concrete Mix Grade</label>
-                  <select id="conc-grade">
-                    <option value="M20" selected>M20 (1 : 1.5 : 3) — Standard RCC</option>
-                    <option value="M25">M25 (1 : 1 : 2) — Heavy RCC / Footings</option>
-                    <option value="M15">M15 (1 : 2 : 4) — Flooring / Pathways</option>
-                    <option value="M10">M10 (1 : 3 : 6) — Foundation PCC</option>
-                    <option value="M7.5">M7.5 (1 : 4 : 8) — Lean Concrete Bed</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Dimension Unit</label>
-                  <select id="conc-unit">
-                    <option value="m" selected>Meters (m)</option>
-                    <option value="ft">Feet (ft)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Length</label>
-                  <input type="number" id="conc-length" value="10" step="0.01" min="0.01" required>
-                </div>
-                <div class="form-group">
-                  <label>Width / Breadth</label>
-                  <input type="number" id="conc-width" value="5" step="0.01" min="0.01" required>
-                </div>
-                <div class="form-group">
-                  <label>Depth / Thickness</label>
-                  <input type="number" id="conc-depth" value="0.15" step="0.01" min="0.01" required>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Wastage Allowance (%)</label>
-                  <input type="number" id="conc-wastage" value="2" min="0" max="15">
-                </div>
-                <div class="form-group">
-                  <label>Dry Volume Factor</label>
-                  <input type="number" id="conc-dry-factor" value="1.54" step="0.01" readonly style="background-color: #f1f5f9;">
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block">Calculate Concrete Constituents</button>
-            </form>
+    <div id="tab-home" class="tab-pane active">
+      
+      <!-- Welcome Hero Card -->
+      <div class="card" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-accent-soft) 100%); border-left: 4px solid var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap;">
+          <div>
+            <h2 data-i18n="home.welcomeTitle" style="font-size: 1.25rem; color: var(--text-primary); margin-bottom: 0.25rem;">வணக்கம், பொறியாளரே!</h2>
+            <p data-i18n="home.welcomeSubtitle" style="font-size: 0.88rem; color: var(--text-secondary); max-width: 680px;">
+              தமிழ்நாடு PWD மற்றும் இந்திய தரநிலைகள் (IS Codes) அடிப்படையில் உருவாக்கப்பட்ட தொழில்முறை கட்டுமான மேலாண்மை தளம்.
+            </p>
           </div>
-
-          <!-- Output Box -->
-          <div class="card" id="output-concrete" style="display: none;">
-            <div class="card-header">
-              <h3>Material Requirement Summary</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="conc-out-wetvol">0.00 m³</div>
-              <div class="output-hero-label">Wet Concrete Volume</div>
-            </div>
-
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Material</th><th>Quantity</th><th>Tamil Nadu Unit</th></tr>
-                </thead>
-                <tbody id="conc-out-table"></tbody>
-              </table>
-            </div>
-
-            <div class="output-box" style="margin-top: 0.75rem;">
-              <h4 style="font-size: 0.85rem; margin-bottom: 0.25rem;">Step-by-Step Calculation Steps:</h4>
-              <ol class="steps-list" id="conc-out-steps"></ol>
-            </div>
-            <div class="disclaimer-banner" id="conc-out-disclaimer"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. RCC Structural Subtab -->
-      <div id="sub-rcc" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>RCC Element Selection</h3>
-            </div>
-            <form id="form-rcc">
-              <div class="form-group">
-                <label>Structural Element</label>
-                <select id="rcc-type">
-                  <option value="SLAB" selected>RCC Roof Slab (One-Way / Two-Way)</option>
-                  <option value="BEAM">RCC Plinth / Roof Beam</option>
-                  <option value="COLUMN">RCC Column</option>
-                  <option value="FOOTING">RCC Isolated Footing & PCC Bed</option>
-                  <option value="STAIRCASE">RCC Staircase Flight & Steps</option>
-                </select>
-              </div>
-
-              <div id="rcc-inputs-container">
-                <!-- Dynamically populated or standard inputs -->
-                <div class="form-row">
-                  <div class="form-group">
-                    <label id="rcc-l-label">Length (m)</label>
-                    <input type="number" id="rcc-dim-l" value="6.0" step="0.01" min="0.1" required>
-                  </div>
-                  <div class="form-group">
-                    <label id="rcc-w-label">Width (m)</label>
-                    <input type="number" id="rcc-dim-w" value="3.5" step="0.01" min="0.1" required>
-                  </div>
-                  <div class="form-group">
-                    <label id="rcc-d-label">Thickness / Depth (mm)</label>
-                    <input type="number" id="rcc-dim-d" value="125" step="1" min="50" required>
-                  </div>
-                </div>
-
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Concrete Mix</label>
-                    <select id="rcc-grade">
-                      <option value="M20" selected>M20</option>
-                      <option value="M25">M25</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label>Steel Rebar Ratio (%)</label>
-                    <input type="number" id="rcc-steel-pct" value="0.8" step="0.1" min="0.4" max="5.0">
-                  </div>
-                  <div class="form-group">
-                    <label>Element Count</label>
-                    <input type="number" id="rcc-count" value="1" min="1" step="1">
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block">Compute RCC Concrete, Shuttering & Steel</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-rcc" style="display: none;">
-            <div class="card-header">
-              <h3 id="rcc-out-title">RCC Quantities</h3>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="rcc-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="rcc-out-steps"></ol>
-            </div>
-            <div class="disclaimer-banner" id="rcc-out-disclaimer"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Masonry Subtab -->
-      <div id="sub-masonry" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Brick & AAC Block Masonry</h3>
-            </div>
-            <form id="form-masonry">
-              <div class="form-group">
-                <label>Masonry Unit Type</label>
-                <select id="mas-type">
-                  <option value="TRADITIONAL_TN_BRICK" selected>Traditional Wire-Cut / Country Brick (9"x4.25"x2.75")</option>
-                  <option value="MODULAR_BRICK">Standard Modular Brick (190x90x90 mm)</option>
-                  <option value="FLY_ASH_BRICK">Fly-Ash Brick (230x110x70 mm)</option>
-                  <option value="AAC_BLOCK_150">AAC Block (600x200x150 mm / 6-inch)</option>
-                  <option value="AAC_BLOCK_200">AAC Block (600x200x200 mm / 8-inch External)</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Wall Length (m)</label>
-                  <input type="number" id="mas-len" value="10" step="0.1" required>
-                </div>
-                <div class="form-group">
-                  <label>Wall Height (m)</label>
-                  <input type="number" id="mas-height" value="3.0" step="0.1" required>
-                </div>
-                <div class="form-group">
-                  <label>Wall Thickness (mm)</label>
-                  <select id="mas-thick">
-                    <option value="230" selected>230 mm (9-inch Outer Wall)</option>
-                    <option value="115">115 mm (4.5-inch Partition)</option>
-                    <option value="150">150 mm (6-inch AAC Wall)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Mortar Mix</label>
-                  <select id="mas-mortar">
-                    <option value="1:5" selected>1 : 5 (Standard Residential)</option>
-                    <option value="1:4">1 : 4 (Load bearing / external)</option>
-                    <option value="1:6">1 : 6 (Partition walls)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Deductions (Doors/Windows Area in m²)</label>
-                  <input type="number" id="mas-deduct" value="4.2" step="0.1" min="0">
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block">Calculate Bricks & Mortar</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-masonry" style="display: none;">
-            <div class="card-header">
-              <h3>Masonry Material Requirement</h3>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="mas-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="mas-out-steps"></ol>
+          <div style="text-align: right;">
+            <span class="badge badge-teal" id="home-district-badge">சென்னை (Chennai)</span>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;" id="home-date-stamp">
+              இன்றைய தேதி: 28 அக்டோபர் 2026
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 4. Finishing Subtab -->
-      <div id="sub-finishing" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Finishing Works (Plaster, Paint, Tiles)</h3>
+      <!-- Quick Actions Grid (8 Primary Tools) -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 data-i18n="home.quickActionsTitle">விரைவு கணக்கீடுகள்</h3>
+            <p class="card-subtitle" data-i18n="home.quickActionsSubtitle">அடிக்கடி பயன்படுத்தப்படும் முதன்மை கணக்கீட்டு கருவிகள்</p>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="quick-action-card" data-jump-subtab="sub-concrete">
+            <div class="quick-icon">🧱</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnConcrete">கான்கிரீட் கலவை</div>
+              <div class="quick-sub">M20, M25 Mix (IS 456)</div>
             </div>
-            <form id="form-finishing">
-              <div class="form-group">
-                <label>Finishing Trade</label>
-                <select id="fin-type">
-                  <option value="PLASTER" selected>Wall & Ceiling Plastering</option>
-                  <option value="PAINT">Wall Putty & Emulsion Painting</option>
-                  <option value="FLOORING">Vitrified / Ceramic Flooring & Tiling</option>
-                </select>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Surface Area (m²)</label>
-                  <input type="number" id="fin-area" value="50" step="0.1" min="0.1" required>
-                </div>
-                <div class="form-group" id="fin-subspec-grp">
-                  <label>Specification</label>
-                  <select id="fin-spec">
-                    <option value="INTERNAL_12MM_1:5" selected>Internal Plastering 12mm 1:5</option>
-                    <option value="EXTERNAL_15MM_1:4">External Plastering 15mm 1:4</option>
-                    <option value="CEILING_6MM_1:3">Ceiling Plastering 6mm 1:3</option>
-                  </select>
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block">Calculate Finishing Materials</button>
-            </form>
           </div>
 
-          <div class="card" id="output-finishing" style="display: none;">
-            <div class="card-header">
-              <h3>Finishing Quantities</h3>
+          <div class="quick-action-card" data-jump-subtab="sub-rcc">
+            <div class="quick-icon">🏗️</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnRcc">ஆர்சிசி கம்பிகள்</div>
+              <div class="quick-sub">Slab, Beam & Column</div>
             </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="fin-out-tbody"></tbody>
-              </table>
+          </div>
+
+          <div class="quick-action-card" data-jump-subtab="sub-masonry">
+            <div class="quick-icon">🧱</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnBrick">செங்கல் சுவர்</div>
+              <div class="quick-sub">Red Brick & AAC Blocks</div>
             </div>
-            <div class="output-box">
-              <ol class="steps-list" id="fin-out-steps"></ol>
+          </div>
+
+          <div class="quick-action-card" data-jump-subtab="sub-finishing">
+            <div class="quick-icon">🎨</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnPlaster">பூச்சு & பெயிண்டிங்</div>
+              <div class="quick-sub">12mm Plaster & Tiles</div>
+            </div>
+          </div>
+
+          <div class="quick-action-card" data-jump-subtab="sub-bbs">
+            <div class="quick-icon">📐</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnBbs">கம்பி வளைப்பு (BBS)</div>
+              <div class="quick-sub">Stirrup Cutting Length</div>
+            </div>
+          </div>
+
+          <div class="quick-action-card" data-jump-tab="tab-boq">
+            <div class="quick-icon">📋</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnBoq">BOQ மதிப்பீடு</div>
+              <div class="quick-sub">7-Stage Milestones & GST</div>
+            </div>
+          </div>
+
+          <div class="quick-action-card" data-jump-subtab="sub-septictank">
+            <div class="quick-icon">🚾</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnSeptic">செப்டிக் டேங்க்</div>
+              <div class="quick-sub">IS 2470 Soak Pit Design</div>
+            </div>
+          </div>
+
+          <div class="quick-action-card" data-jump-subtab="sub-tncdbr">
+            <div class="quick-icon">📜</div>
+            <div>
+              <div class="quick-text" data-i18n="home.btnTncdbr">TNCDBR விதி 2019</div>
+              <div class="quick-sub">Setbacks & FSI Limits</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 5. Earthwork Subtab -->
-      <div id="sub-earthwork" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Excavation & Backfilling</h3>
-            </div>
-            <form id="form-earthwork">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Pit / Trench Length (m)</label>
-                  <input type="number" id="earth-l" value="2.0" step="0.1" required>
-                </div>
-                <div class="form-group">
-                  <label>Width (m)</label>
-                  <input type="number" id="earth-w" value="2.0" step="0.1" required>
-                </div>
-                <div class="form-group">
-                  <label>Depth (m)</label>
-                  <input type="number" id="earth-d" value="1.5" step="0.1" required>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Number of Pits</label>
-                  <input type="number" id="earth-count" value="4" min="1">
-                </div>
-                <div class="form-group">
-                  <label>Concrete/Footing Vol in Pit (m³)</label>
-                  <input type="number" id="earth-struct-vol" value="4.0" step="0.1">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Calculate Earthwork Volumes</button>
-            </form>
+      <!-- Key Material Prices Snapshot Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 data-i18n="home.materialsTitle">முக்கிய கட்டுமான பொருட்கள் விலை நிலவரம்</h3>
+            <p class="card-subtitle" data-i18n="home.materialsSubtitle">தமிழ்நாடு PWD மற்றும் உள்ளூர் சந்தை தரவுகள்</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="home-view-all-rates-btn" data-i18n="home.viewAllRates">
+            அனைத்து 15+ பொருட்களையும் காண்க →
+          </button>
+        </div>
+
+        <div class="grid-4" id="home-materials-grid">
+          <!-- Populated dynamically with real PWD & Market rates -->
+          <div class="metric-card">
+            <div class="metric-title">சிமெண்ட் (Cement OPC 53)</div>
+            <div class="metric-value">₹ 385.00</div>
+            <div class="metric-unit">50kg மூட்டை • UltraTech / Dalmia</div>
+            <div class="metric-badge"><span class="badge badge-green">சரிபார்க்கப்பட்டது (Live)</span></div>
           </div>
 
-          <div class="card" id="output-earthwork" style="display: none;">
-            <div class="card-header">
-              <h3>Earthwork Quantities</h3>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="earth-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="earth-out-steps"></ol>
-            </div>
+          <div class="metric-card">
+            <div class="metric-title">TMT கம்பி (Fe550D Steel)</div>
+            <div class="metric-value">₹ 64.50</div>
+            <div class="metric-unit">கிலோ (kg) • 12mm ISI TMT</div>
+            <div class="metric-badge"><span class="badge badge-green">சரிபார்க்கப்பட்டது (Live)</span></div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-title">எம்-சாண்ட் (M-Sand)</div>
+            <div class="metric-value">₹ 4,200</div>
+            <div class="metric-unit">1 யூனிட் (100 cft) • வாஷிங் தரம்</div>
+            <div class="metric-badge"><span class="badge badge-blue">PWD SOR 2025-26</span></div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-title">ப்ளூ மெட்டல் ஜல்லி (20mm)</div>
+            <div class="metric-value">₹ 3,850</div>
+            <div class="metric-unit">1 யூனிட் (100 cft) • கிரானைட் ராக்</div>
+            <div class="metric-badge"><span class="badge badge-blue">PWD SOR 2025-26</span></div>
           </div>
         </div>
       </div>
 
-      <!-- 6. BBS Subtab -->
-      <div id="sub-bbs" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Bar Bending Schedule (BBS) & Stirrups</h3>
-              <span class="badge badge-blue">IS 2502</span>
+      <!-- Scrap Prices & Projects 2-Column Summary -->
+      <div class="grid-2">
+        <!-- Scrap Snapshot Card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 data-i18n="home.scrapTitle">பழைய இரும்பு & உலோக ஸ்கிராப் நிலவரம்</h3>
+              <p class="card-subtitle" data-i18n="home.scrapSubtitle">LiveChennai மற்றும் நேரடி சந்தை குறிப்பு</p>
             </div>
-            <form id="form-stirrup">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Member Width (mm)</label>
-                  <input type="number" id="stir-w" value="230" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Member Depth (mm)</label>
-                  <input type="number" id="stir-d" value="450" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Bar Diameter</label>
-                  <select id="stir-dia">
-                    <option value="8" selected>8 mm (Standard Stirrup)</option>
-                    <option value="10">10 mm</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Clear Cover (mm)</label>
-                  <input type="number" id="stir-cover" value="25" step="5">
-                </div>
-                <div class="form-group">
-                  <label>Hook Angle</label>
-                  <select id="stir-hook">
-                    <option value="135" selected>135° (Seismic Ductile Hook per IS 13920)</option>
-                    <option value="90">90°</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Calculate Stirrup Cut Length & Bend Deductions</button>
-            </form>
+            <button class="btn btn-outline btn-sm" id="home-view-all-scrap-btn" data-i18n="home.viewAllScrap">
+              மதிப்பீடு செய்க →
+            </button>
           </div>
 
-          <div class="card" id="output-stirrup" style="display: none;">
-            <div class="card-header">
-              <h3>Stirrup Cutting Length Result</h3>
+          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--bg-muted); border-radius: var(--radius-sm);">
+              <div>
+                <strong>இரும்பு (Heavy Melting Steel - HMS 1&2)</strong>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">கட்டுமான இரும்பு, தகடு & கம்பிகள்</div>
+              </div>
+              <div style="text-align: right;">
+                <strong style="color: var(--accent); font-size: 1.1rem;">₹ 41.00 / kg</strong>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">வரம்பு: ₹39 – ₹43</div>
+              </div>
             </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="stir-out-cutlen">0.00 m</div>
-              <div class="output-hero-label">Total Cutting Length per Stirrup</div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--bg-muted); border-radius: var(--radius-sm);">
+              <div>
+                <strong>செம்பு (Copper DC Armature Wire)</strong>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">99% தூய மோட்டார் செம்பு கம்பி</div>
+              </div>
+              <div style="text-align: right;">
+                <strong style="color: var(--accent); font-size: 1.1rem;">₹ 950.00 / kg</strong>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">வரம்பு: ₹920 – ₹980</div>
+              </div>
             </div>
-            <div class="output-box">
-              <ol class="steps-list" id="stir-out-steps"></ol>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--bg-muted); border-radius: var(--radius-sm);">
+              <div>
+                <strong>பித்தளை (Brass Honey / Turning)</strong>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">வால்வுகள் & பிளம்பிங் பிட்டிங்ஸ்</div>
+              </div>
+              <div style="text-align: right;">
+                <strong style="color: var(--accent); font-size: 1.1rem;">₹ 700.00 / kg</strong>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">வரம்பு: ₹650 – ₹720</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 7. Water Tank Subtab -->
-      <div id="sub-watertank" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Water Tank Capacity & Sump Design</h3>
-              <span class="badge badge-blue">IS 1172</span>
+        <!-- Project Profile & Estimate Summary Card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 data-i18n="home.projectsTitle">திட்டங்கள் & மதிப்பீடுகள் சுருக்கம்</h3>
+              <p class="card-subtitle">உள்ளூர் SQLite தரவுத்தளத்தில் சேமிக்கப்பட்டவை</p>
             </div>
-            <form id="form-watertank">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Tank Shape</label>
-                  <select id="tank-shape">
-                    <option value="RECTANGULAR" selected>Rectangular (Underground Sump / OHT)</option>
-                    <option value="CYLINDRICAL">Cylindrical</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Length / Diameter (m)</label>
-                  <input type="number" id="tank-l" value="3.0" step="0.1" required>
-                </div>
-                <div class="form-group" id="tank-w-grp">
-                  <label>Width (m)</label>
-                  <input type="number" id="tank-w" value="2.0" step="0.1" required>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Internal Height / Depth (m)</label>
-                  <input type="number" id="tank-h" value="2.0" step="0.1" required>
-                </div>
-                <div class="form-group">
-                  <label>Freeboard Air Gap (m)</label>
-                  <input type="number" id="tank-fb" value="0.20" step="0.05">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Calculate Water Capacity (Litres)</button>
-            </form>
+            <button class="btn btn-primary btn-sm" id="home-create-project-btn" data-i18n="home.createProject">
+              + புதிய திட்டம்
+            </button>
           </div>
 
-          <div class="card" id="output-watertank" style="display: none;">
-            <div class="card-header">
-              <h3>Tank Capacity</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="tank-out-litres">0 Litres</div>
-              <div class="output-hero-label">Effective Water Storage Capacity</div>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="tank-out-steps"></ol>
+          <div id="home-project-card-content">
+            <div style="padding: 0.75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-muted);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong id="home-proj-name" style="font-size: 1rem;">Ultra Villa Residential G+1</strong>
+                <span class="badge badge-green" id="home-proj-status">ACTIVE</span>
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                வாடிக்கையாளர்: <span id="home-proj-client">Er. Selvakumar / DDev Client</span> • இடம்: <span id="home-proj-location">Mambakkam, Chennai</span>
+              </div>
+              <div style="margin-top: 0.65rem; font-size: 0.82rem; display: flex; gap: 1rem; color: var(--text-secondary);">
+                <span>அளவீடு: <strong>2400 sq.ft</strong> (1 Ground)</span>
+                <span>கட்டிட பரப்பு: <strong>1850 sq.ft</strong></span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Septic Tank Subtab -->
-      <div id="sub-septictank" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Septic Tank & Soak Pit Design</h3>
-              <span class="badge badge-blue">IS 2470 (Part 1 & 2)</span>
-            </div>
-            <form id="form-septictank">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Number of Users (Occupants)</label>
-                  <input type="number" id="septic-users" value="10" min="1" step="1" required>
-                </div>
-                <div class="form-group">
-                  <label>Sewage Flow (LPCD)</label>
-                  <input type="number" id="septic-lpcd" value="90" step="5" min="50">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Detention Period (Hours)</label>
-                  <input type="number" id="septic-detention" value="24" step="6" min="12">
-                </div>
-                <div class="form-group">
-                  <label>Sludge Cleaning Interval (Years)</label>
-                  <input type="number" id="septic-cleaning" value="2" step="1" min="1">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Soil Percolation Rate (min/cm for Soak Pit)</label>
-                <input type="number" id="septic-percolation" value="15" step="1" min="1">
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Design Septic Tank & Soak Pit</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-septictank" style="display: none;">
-            <div class="card-header">
-              <h3>Design Dimensions & Sizing</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="septic-out-capacity">0 Litres</div>
-              <div class="output-hero-label">Total Effective Liquid Capacity</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="septic-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="septic-out-steps"></ol>
-            </div>
-            <div class="disclaimer-banner" id="septic-out-disclaimer"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Geotech SBC Footing Subtab -->
-      <div id="sub-geotech" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Soil Bearing Capacity (SBC) & Footing Sizing</h3>
-              <span class="badge badge-blue">IS 1904 / IS 6403</span>
-            </div>
-            <form id="form-geotech">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Column Axial Load P (kN)</label>
-                  <input type="number" id="geo-load" value="600" step="10" min="50" required>
-                </div>
-                <div class="form-group">
-                  <label>Soil SBC (kN/m²)</label>
-                  <select id="geo-soil">
-                    <option value="150" selected>Medium Stiff Clay (Chennai Outer / Tambaram) — 150 kN/m²</option>
-                    <option value="100">Soft Alluvial/Marine Clay (Coastal / Velachery) — 100 kN/m²</option>
-                    <option value="200">Hard Sandy Clay / Moorum (Chengalpattu) — 200 kN/m²</option>
-                    <option value="250">Dense Coarse Sand (Coimbatore / Trichy) — 250 kN/m²</option>
-                    <option value="300">Hard Gravel / Granular Moorum — 300 kN/m²</option>
-                    <option value="600">Granite / Charnockite Rock (Salem) — 600 kN/m²</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Column Size (mm)</label>
-                  <input type="number" id="geo-col-size" value="300" step="50" required>
-                </div>
-                <div class="form-group">
-                  <label>Concrete Mix</label>
-                  <select id="geo-grade">
-                    <option value="M20" selected>M20 Grade</option>
-                    <option value="M25">M25 Grade</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Size Safe Footing & Reinforcement</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-geotech" style="display: none;">
-            <div class="card-header">
-              <h3>Safe Footing Design Output</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="geo-out-dims">0.0m × 0.0m</div>
-              <div class="output-hero-label">Recommended Footing Plan Dimensions</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="geo-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="geo-out-steps"></ol>
-            </div>
-            <div class="disclaimer-banner" id="geo-out-disclaimer"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Concrete QC Cube Test Subtab -->
-      <div id="sub-qc" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Concrete Cube Compressive Strength Test (QC)</h3>
-              <span class="badge badge-blue">IS 516 / IS 456</span>
-            </div>
-            <form id="form-qc">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Concrete Grade</label>
-                  <select id="qc-grade">
-                    <option value="M20" selected>M20 (fck = 20 N/mm²)</option>
-                    <option value="M25">M25 (fck = 25 N/mm²)</option>
-                    <option value="M30">M30 (fck = 30 N/mm²)</option>
-                    <option value="M15">M15 (fck = 15 N/mm²)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Test Age</label>
-                  <select id="qc-age">
-                    <option value="28" selected>28 Days (Final Target >= 100%)</option>
-                    <option value="7">7 Days (Target >= 67%)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Structural Member / Pour Location</label>
-                <input type="text" id="qc-element" value="First Floor Roof Slab Flight-1">
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Cube 1 Load (kN)</label>
-                  <input type="number" id="qc-c1" value="480" step="5" required>
-                </div>
-                <div class="form-group">
-                  <label>Cube 2 Load (kN)</label>
-                  <input type="number" id="qc-c2" value="495" step="5" required>
-                </div>
-                <div class="form-group">
-                  <label>Cube 3 Load (kN)</label>
-                  <input type="number" id="qc-c3" value="475" step="5" required>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Evaluate Test Batch & Acceptance</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-qc" style="display: none;">
-            <div class="card-header">
-              <h3>Quality Control Evaluation</h3>
-              <span class="badge" id="qc-out-badge">PASS</span>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="qc-out-avg">0.00 N/mm²</div>
-              <div class="output-hero-label">Average Compressive Strength</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="qc-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="qc-out-steps"></ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Anti-Termite Treatment Subtab -->
-      <div id="sub-antitermite" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Anti-Termite Treatment Estimation</h3>
-              <span class="badge badge-blue">IS 6313 Part 2</span>
-            </div>
-            <form id="form-antitermite">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Plinth Area (m²)</label>
-                  <input type="number" id="anti-plinth" value="100" step="1" required>
-                </div>
-                <div class="form-group">
-                  <label>Chemical Selection</label>
-                  <select id="anti-chem">
-                    <option value="CHLORPYRIFOS_20EC" selected>Chlorpyrifos 20% EC (1:19 Dilution)</option>
-                    <option value="IMIDACLOPRID_30SC">Imidacloprid 30.50% SC (1:229 Dilution)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Perimeter Length (m)</label>
-                  <input type="number" id="anti-perim" value="40" step="1">
-                </div>
-                <div class="form-group">
-                  <label>Trench Bottom/Sides Area (m²)</label>
-                  <input type="number" id="anti-trench" value="60" step="1">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Calculate Chemical & Emulsion Requirements</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-antitermite" style="display: none;">
-            <div class="card-header">
-              <h3>Chemical Treatment Schedule</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="anti-out-litres">0 Litres</div>
-              <div class="output-hero-label">Total Diluted Emulsion Required</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="anti-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="anti-out-steps"></ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TNCDBR 2019 Rules Subtab -->
-      <div id="sub-tncdbr" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>TNCDBR 2019 Planning Rule Checker</h3>
-              <span class="badge badge-blue">CMDA / DTCP Standard</span>
-            </div>
-            <form id="form-tncdbr">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Plot Area (sq.ft)</label>
-                  <input type="number" id="tn-plot" value="2400" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Abutting Road Width (m)</label>
-                  <input type="number" id="tn-road" value="9.14" step="0.1" required>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Proposed Ground Floor (sq.ft)</label>
-                  <input type="number" id="tn-gf" value="1400" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Proposed Total Built-up (sq.ft)</label>
-                  <input type="number" id="tn-tot" value="2600" step="10" required>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Building Height (m)</label>
-                  <input type="number" id="tn-height" value="7.0" step="0.5">
-                </div>
-                <div class="form-group">
-                  <label>Front Setback (m)</label>
-                  <input type="number" id="tn-front" value="3.0" step="0.1">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Rear Setback (m)</label>
-                  <input type="number" id="tn-rear" value="1.5" step="0.1">
-                </div>
-                <div class="form-group">
-                  <label>Side 1 & 2 Setbacks (m)</label>
-                  <input type="number" id="tn-sides" value="1.0" step="0.1">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Verify Against TNCDBR 2019 Rules</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-tncdbr" style="display: none;">
-            <div class="card-header">
-              <h3>Compliance Verification Result</h3>
-              <span class="badge" id="tn-out-badge">COMPLIANT</span>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="tn-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box" id="tn-violations-box" style="display:none; background-color:#fef2f2; border-color:#fecaca;">
-              <h4 style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.25rem;">Rule Violations Detected:</h4>
-              <ul id="tn-violations-list" style="padding-left:1.25rem; font-size:0.85rem; color:#991b1b;"></ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- M-Book & RA Bill Subtab -->
-      <div id="sub-mbook" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Site Measurement Book (M-Book) Entry</h3>
-              <span class="badge badge-blue">PWD M-Book Format</span>
-            </div>
-            <form id="form-mbook">
-              <div class="form-group">
-                <label>Item Description</label>
-                <input type="text" id="mb-desc" value="Brickwork in 1:5 mortar 9-inch outer wall">
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Location / Grid</label>
-                  <input type="text" id="mb-loc" value="Grid A to D Ground Floor">
-                </div>
-                <div class="form-group">
-                  <label>Nos (Members)</label>
-                  <input type="number" id="mb-nos" value="2" min="1" step="1">
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Length (m)</label>
-                  <input type="number" id="mb-l" value="6.5" step="0.01">
-                </div>
-                <div class="form-group">
-                  <label>Breadth / Width (m)</label>
-                  <input type="number" id="mb-b" value="0.23" step="0.01">
-                </div>
-                <div class="form-group">
-                  <label>Depth / Height (m)</label>
-                  <input type="number" id="mb-d" value="3.0" step="0.01">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Calculate Measured Volume (M-Book)</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-mbook" style="display: none;">
-            <div class="card-header">
-              <h3>M-Book Computed Output</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="mb-out-qty">0.00 m³</div>
-              <div class="output-hero-label">Net Measured Quantity</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="mb-out-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 8. Labour Norms Subtab -->
-      <div id="sub-labour" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Tamil Nadu Labour Norms & Productivity</h3>
-              <span class="badge badge-blue">TN PWD Data Book</span>
-            </div>
-            <form id="form-labour">
-              <div class="form-group">
-                <label>Construction Trade Activity</label>
-                <select id="labour-act">
-                  <option value="BRICK_MASONRY_M3" selected>Brick Masonry in 1:5 Mortar (per m³)</option>
-                  <option value="PLASTERING_12MM_M2">Internal Plastering 12mm (per m²)</option>
-                  <option value="RCC_CONCRETE_M3">RCC Concrete Pouring & Vibrating (per m³)</option>
-                  <option value="STEEL_FABRICATION_KG">Bar Bending & Steel Tying (per kg)</option>
-                  <option value="FORMWORK_SHUTTERING_M2">Centering & Formwork (per m²)</option>
-                  <option value="FLOORING_TILES_M2">Vitrified Tile Laying (per m²)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Total Work Quantity</label>
-                <input type="number" id="labour-qty" value="10" step="0.5" required>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Compute Man-Days & Labour Cost</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-labour" style="display: none;">
-            <div class="card-header">
-              <h3>Labour Cost Estimation</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="labour-out-cost">₹ 0.00</div>
-              <div class="output-hero-label">Estimated Total Labour Wages</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Trade</th><th>Man-Days</th><th>Daily Wage</th><th>Total (₹)</th></tr>
-                </thead>
-                <tbody id="labour-out-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 15. Rainwater Harvesting (RWH) Subtab -->
-      <div id="sub-rwh" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Rainwater Harvesting (RWH) Sizer</h3>
-              <span class="badge badge-blue">TNCDBR Rule 42 / CMWSSB</span>
-            </div>
-            <form id="form-rwh">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Rooftop Area (sq.ft)</label>
-                  <input type="number" id="rwh-roof" value="1500" step="10" min="100" required>
-                </div>
-                <div class="form-group">
-                  <label>Paved Driveway / Courtyard (sq.ft)</label>
-                  <input type="number" id="rwh-paved" value="500" step="10" min="0">
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Soil Strata / Location Percolation</label>
-                <select id="rwh-soil">
-                  <option value="MODERATE" selected>Moderate Loamy Soil (Central Chennai / Kodambakkam / Anna Nagar)</option>
-                  <option value="LOW">Stiff Impervious Clay (Velachery / Pallikaranai / Tambaram - Deep Recharge Bore Required)</option>
-                  <option value="HIGH">Coastal High-Permeability Sand (ECR / Besant Nagar / Thiruvanmiyur)</option>
-                </select>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Size RWH Percolation Pits & Recharge Bore</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-rwh" style="display: none;">
-            <div class="card-header">
-              <h3>RWH System Specifications</h3>
-              <span class="badge badge-green">TNCDBR RULE 42</span>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="rwh-out-annual">0 Litres/Year</div>
-              <div class="output-hero-label">Annual Harvestable Rainwater Potential</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="rwh-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="rwh-out-steps"></ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 16. Coastal Durability Subtab -->
-      <div id="sub-durability" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Coastal Durability & Exposure Controller</h3>
-              <span class="badge badge-blue">IS 456 Table 3, 5 & 16</span>
-            </div>
-            <form id="form-durability">
-              <div class="form-group">
-                <label>Environmental Exposure Condition</label>
-                <select id="dur-exp">
-                  <option value="SEVERE" selected>Severe — Chennai Coastal Environment (within 15km from sea / OMR / Velachery)</option>
-                  <option value="VERY_SEVERE">Very Severe — Direct Marine Spray / Tidal Fog (ECR / Besant Nagar / Marina / Ennore)</option>
-                  <option value="MODERATE">Moderate — Sheltered Inland (Tambaram / Kanchipuram / Coimbatore)</option>
-                  <option value="MILD">Mild — Completely Protected Interior (Dry inland zones)</option>
-                </select>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Proposed Concrete Mix Grade</label>
-                  <select id="dur-grade">
-                    <option value="M20">M20</option>
-                    <option value="M25">M25</option>
-                    <option value="M30" selected>M30 (Mandatory for Coastal)</option>
-                    <option value="M35">M35</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Structural Element</label>
-                  <select id="dur-elem">
-                    <option value="BEAM" selected>RCC Beam</option>
-                    <option value="SLAB">RCC Roof Slab</option>
-                    <option value="COLUMN">RCC Column</option>
-                    <option value="FOOTING">RCC Footing</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Proposed Nominal Cover (mm)</label>
-                  <input type="number" id="dur-cover" value="45" step="5" min="15" required>
-                </div>
-                <div class="form-group">
-                  <label>Water-Cement Ratio</label>
-                  <input type="number" id="dur-wc" value="0.45" step="0.01" min="0.30" max="0.65" required>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Verify Concrete Durability & Corrosion Risk</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-durability" style="display: none;">
-            <div class="card-header">
-              <h3>IS 456 Durability Compliance</h3>
-              <span class="badge" id="dur-out-badge">COMPLIANT</span>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="dur-out-verdict" style="font-size: 1.1rem; color: #1e40af;">—</div>
-              <div class="output-hero-label">Engineering Specification Audit</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="dur-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box" id="dur-warnings-box" style="display:none; background-color:#fef2f2; border-color:#fecaca;">
-              <h4 style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.25rem;">Corrosion & Spalling Deficits:</h4>
-              <ul id="dur-warnings-list" style="padding-left:1.25rem; font-size:0.85rem; color:#991b1b;"></ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 17. CMDA & GCC Permit Fees Subtab -->
-      <div id="sub-cmdafee" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>CMDA & GCC Building Approval Fee Estimator</h3>
-              <span class="badge badge-blue">TNSWS Single Window</span>
-            </div>
-            <form id="form-cmdafee">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Plot Area (sq.ft)</label>
-                  <input type="number" id="fee-plot" value="2400" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Total Proposed Built-up Area (sq.ft)</label>
-                  <input type="number" id="fee-built" value="2600" step="10" required>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Local Authority Jurisdiction</label>
-                  <select id="fee-zone">
-                    <option value="GCC_CORE" selected>Greater Chennai Corporation (GCC Core City - Zones 1 to 15)</option>
-                    <option value="CMA_MUNICIPALITY">CMA Municipalities (Tambaram / Avadi / Poonamallee)</option>
-                    <option value="CMA_PANCHAYAT">CMA Town / Village Panchayats (Guduvanchery / Kelambakkam)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Civil Construction Rate (₹/sq.ft)</label>
-                  <input type="number" id="fee-cost" value="2400" step="100">
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Estimate Official Sanction Fees & 1% Labour Cess</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-cmdafee" style="display: none;">
-            <div class="card-header">
-              <h3>Estimated Government Sanction Outlay</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="fee-out-total">₹ 0.00</div>
-              <div class="output-hero-label">Total Official Government Fees & 1% BOCW Cess</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="fee-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="fee-out-steps"></ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 18. Flood Plinth & DPC Subtab -->
-      <div id="sub-plinth" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Flood Plinth Protection & DPC Waterproofing</h3>
-              <span class="badge badge-blue">GCC Flood Guideline</span>
-            </div>
-            <form id="form-plinth">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Plinth Footprint Area (sq.ft)</label>
-                  <input type="number" id="plinth-area" value="1200" step="10" required>
-                </div>
-                <div class="form-group">
-                  <label>Proposed Plinth Height Above Road Crown (mm)</label>
-                  <input type="number" id="plinth-height" value="600" step="50" min="200" required>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Plinth Beam Wall Perimeter (m)</label>
-                <input type="number" id="plinth-perim" value="60" step="1">
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Check Flood Inundation Safety & DPC Materials</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-plinth" style="display: none;">
-            <div class="card-header">
-              <h3>Plinth & Damp Proofing Schedule</h3>
-              <span class="badge" id="plinth-out-badge">COMPLIANT</span>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="plinth-out-moorum">0.0 m³</div>
-              <div class="output-hero-label">Compacted Red Earth / Moorum Filling (1.25 Bulking Factor)</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="plinth-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box" id="plinth-warnings-box" style="display:none; background-color:#fef2f2; border-color:#fecaca;">
-              <h4 style="color:#b91c1c; font-size:0.85rem; margin-bottom:0.25rem;">Flood Risk Advisory:</h4>
-              <ul id="plinth-warnings-list" style="padding-left:1.25rem; font-size:0.85rem; color:#991b1b;"></ul>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="plinth-out-steps"></ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 19. Under-Reamed Piles Subtab -->
-      <div id="sub-pile" class="calc-section" style="display: none;">
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header">
-              <h3>Under-Reamed Pile Foundation Sizing</h3>
-              <span class="badge badge-blue">IS 2911 (Part 3)</span>
-            </div>
-            <form id="form-pile">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Column Axial Service Load (kN)</label>
-                  <input type="number" id="pile-load" value="600" step="25" min="50" required>
-                </div>
-                <div class="form-group">
-                  <label>Pile Shaft Diameter (mm)</label>
-                  <select id="pile-dia">
-                    <option value="300" selected>300 mm (Bulb Dia = 750 mm / 2.5D)</option>
-                    <option value="250">250 mm (Bulb Dia = 625 mm / 2.5D)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Pile Embedment Depth (m)</label>
-                  <input type="number" id="pile-depth" value="4.5" step="0.5" min="3.0" max="10.0" required>
-                </div>
-                <div class="form-group">
-                  <label>Number of Under-Reamed Bulbs</label>
-                  <select id="pile-bulbs">
-                    <option value="1" selected>1 Bulb (Single Under-Reamed)</option>
-                    <option value="2">2 Bulbs (Double Under-Reamed)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Soil Undrained Cohesion cu (kN/m²)</label>
-                <select id="pile-cohesion">
-                  <option value="60" selected>Medium Stiff Clay (Velachery / Madipakkam) — 60 kN/m²</option>
-                  <option value="40">Soft Alluvial/Marsh Clay (Pallikaranai / OMR) — 40 kN/m²</option>
-                  <option value="80">Hard Sandy Clay / Weathered Moorum (Avadi) — 80 kN/m²</option>
-                </select>
-              </div>
-              <button type="submit" class="btn btn-primary btn-block">Size Under-Reamed Piles & Pile Cap</button>
-            </form>
-          </div>
-
-          <div class="card" id="output-pile" style="display: none;">
-            <div class="card-header">
-              <h3>Under-Reamed Pile Design</h3>
-            </div>
-            <div class="output-hero">
-              <div class="output-hero-val" id="pile-out-safe">0.0 kN</div>
-              <div class="output-hero-label">Safe Working Capacity per Pile (FOS 2.5)</div>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <tbody id="pile-out-tbody"></tbody>
-              </table>
-            </div>
-            <div class="output-box">
-              <ol class="steps-list" id="pile-out-steps"></ol>
-            </div>
+          <div class="disclaimer-banner" style="margin-top: 0.75rem;" data-i18n="home.freshnessNotice">
+            அனைத்து விலைகளும் தமிழ்நாடு PWD அட்டவணை 2025-26 மற்றும் சரிபார்க்கப்பட்ட சந்தை ஆதாரங்களின் அடிப்படையிலானவை.
           </div>
         </div>
       </div>
     </div>
 
     <!-- =========================================================================
-         TAB 2: MATERIAL RATES (TN PWD & MARKET BENCHMARKS)
+         DESTINATION 2: கணக்கீடுகள் — CIVIL CALCULATORS HUB
+         ========================================================================= -->
+    <div id="tab-calc" class="tab-pane">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 data-i18n="calc.title">கட்டுமான பொறியியல் கணக்கீடுகள்</h2>
+            <p class="card-subtitle" data-i18n="calc.subtitle">19 பிரத்யேக IS & தமிழ்நாடு விதிமுறை கணக்கீட்டு கருவிகள்</p>
+          </div>
+        </div>
+
+        <!-- Categorized Filter Chips -->
+        <div class="calc-nav-container">
+          <div class="category-chips">
+            <button class="chip-btn active" data-calc-category="all" data-i18n="calc.catAll">அனைத்தும் (19)</button>
+            <button class="chip-btn" data-calc-category="structural" data-i18n="calc.catStructural">🏗️ கட்டமைப்பு & கான்கிரீட்</button>
+            <button class="chip-btn" data-calc-category="masonry" data-i18n="calc.catMasonry">🧱 சுவர் & முடிப்புகள்</button>
+            <button class="chip-btn" data-calc-category="water" data-i18n="calc.catWater">💧 சுகாதாரம் & சூழல்</button>
+            <button class="chip-btn" data-calc-category="planning" data-i18n="calc.catPlanning">📜 திட்டமிடல் & விதிகள்</button>
+          </div>
+
+          <!-- Instant Search Box for 19 Tools -->
+          <div class="search-box-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="calc-search-input" class="search-input" placeholder="கணக்கீட்டு கருவியைத் தேடுங்கள் (எ.கா: கான்கிரீட், பீம், சுவர், செப்டிக், பைல்)..." data-i18n-ph="calc.searchPlaceholder">
+          </div>
+
+          <!-- Mobile Dropdown Selector for 1-Tap Switching -->
+          <select id="calc-dropdown" class="calc-selector-dropdown" aria-label="Select Calculation Tool">
+            <optgroup label="🏗️ கட்டமைப்பு & கான்கிரீட் (Structural & Concrete)">
+              <option value="sub-concrete" selected>1. Concrete Mix & Quantity Take-off (IS 456)</option>
+              <option value="sub-rcc">2. RCC Slabs, Beams & Columns (IS 456)</option>
+              <option value="sub-bbs">3. Bar Bending Schedule (BBS) & Stirrups</option>
+              <option value="sub-geotech">4. SBC Footing & Geotech Sizing (IS 1904)</option>
+              <option value="sub-pile">5. Under-Reamed Piles Foundation (IS 2911)</option>
+              <option value="sub-qc">6. Concrete Cube Strength QC Test (IS 516)</option>
+            </optgroup>
+            <optgroup label="🧱 சுவர் & முடிப்புகள் (Masonry & Finishing)">
+              <option value="sub-masonry">7. Brick & AAC Block Masonry</option>
+              <option value="sub-finishing">8. Plastering, Painting & Tiles Take-off</option>
+              <option value="sub-plinth">9. Flood Plinth Height & DPC Waterproofing</option>
+              <option value="sub-antitermite">10. Anti-Termite Pre-Construction (IS 6313)</option>
+            </optgroup>
+            <optgroup label="💧 சுகாதாரம் & சூழல் (Water & Environment)">
+              <option value="sub-watertank">11. Water Tank & Underground Sump Sizing</option>
+              <option value="sub-septictank">12. Septic Tank & Soak Pit Design (IS 2470)</option>
+              <option value="sub-rwh">13. Rainwater Harvesting (RWH Sizer CMDA/GCC)</option>
+              <option value="sub-durability">14. Coastal Durability & Salinity (IS 456)</option>
+            </optgroup>
+            <optgroup label="📜 திட்டமிடல் & விதிகள் (Planning & Statutory)">
+              <option value="sub-tncdbr">15. TNCDBR 2019 Rules & Setback Validator</option>
+              <option value="sub-cmdafee">16. CMDA & GCC Statutory Approval Fees</option>
+              <option value="sub-mbook">17. Site Measurement Book (M-Book) & Billing</option>
+              <option value="sub-labour">18. Tamil Nadu Labour Norms & Wages</option>
+              <option value="sub-earthwork">19. Earthwork Excavation & Backfill</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- ===================================================================
+             19 INDIVIDUAL CALCULATION ENGINES (ALL EXACT FORM IDs PRESERVED)
+             =================================================================== -->
+
+        <!-- 1. Concrete Mix Subtab -->
+        <div id="sub-concrete" class="calc-section" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>கான்கிரீட் கலவை & கணக்கீடு</h3>
+                  <p class="card-subtitle">Concrete Mix & Material Take-off (IS 456:2000)</p>
+                </div>
+                <span class="badge badge-teal">IS 456:2000</span>
+              </div>
+              <form id="form-concrete">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கான்கிரீட் தரம் (Mix Grade)</label>
+                    <select id="conc-grade" class="form-control">
+                      <option value="M20" selected>M20 (1 : 1.5 : 3) — Standard RCC Slab/Beam</option>
+                      <option value="M25">M25 (1 : 1 : 2) — Heavy RCC / Footings</option>
+                      <option value="M15">M15 (1 : 2 : 4) — Flooring / Pathways</option>
+                      <option value="M10">M10 (1 : 3 : 6) — Foundation PCC Bed</option>
+                      <option value="M7.5">M7.5 (1 : 4 : 8) — Lean Concrete Bed</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>அளவீட்டு அலகு (Dimension Unit)</label>
+                    <select id="conc-unit" class="form-control">
+                      <option value="m" selected>Meters (m)</option>
+                      <option value="ft">Feet (ft)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>நீளம் (Length) <span class="label-unit">L</span></label>
+                    <input type="number" id="conc-length" value="10" step="0.01" min="0.01" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>அகலம் (Width) <span class="label-unit">W</span></label>
+                    <input type="number" id="conc-width" value="5" step="0.01" min="0.01" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>தடிமன்/ஆழம் (Depth) <span class="label-unit">D</span></label>
+                    <input type="number" id="conc-depth" value="0.15" step="0.01" min="0.01" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>சேதாரம் / விரயம் (Wastage %) <span class="label-unit">%</span></label>
+                  <input type="number" id="conc-wastage" value="2" step="0.5" min="0" max="15" class="form-control">
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex: 2;">அளவுகளைக் கணக்கிடு (Calculate)</button>
+                  <button type="reset" class="btn btn-secondary" style="flex: 1;">மீட்டமை (Reset)</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Concrete Output Card -->
+            <div class="card" id="output-concrete" style="display: none;">
+              <div class="card-header">
+                <h3>தேவையான பொருட்கள் (Take-off)</h3>
+                <span class="badge badge-green">வெற்றிகரமாக கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="output-hero">
+                <div class="output-hero-val" id="conc-out-wetvol">0.00 m³</div>
+                <div class="output-hero-label">மொத்த கான்கிரீட் பருமன் (Wet Volume)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>பொருள் (Material)</th><th>அளவு (Quantity)</th><th>தமிழ்நாடு அலகில் (Units)</th></tr>
+                  </thead>
+                  <tbody id="conc-out-table"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <h4 style="font-size:0.85rem; margin-bottom:0.5rem;">கணக்கீட்டு வழிமுறை:</h4>
+                <ol class="steps-list" id="conc-out-steps"></ol>
+              </div>
+              <div class="disclaimer-banner" id="conc-out-disclaimer"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. RCC Structural Subtab -->
+        <div id="sub-rcc" class="calc-section" style="display: none;" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>ஆர்சிசி கட்டமைப்பு கூறுகள்</h3>
+                  <p class="card-subtitle">RCC Slabs, Beams & Columns (IS 456:2000)</p>
+                </div>
+                <span class="badge badge-teal">IS 456</span>
+              </div>
+              <form id="form-rcc">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கட்டமைப்பு வகை (Element Type)</label>
+                    <select id="rcc-type" class="form-control">
+                      <option value="SLAB" selected>RCC Roof Slab (தளம்)</option>
+                      <option value="BEAM">RCC Beam (பீம்)</option>
+                      <option value="COLUMN">RCC Column (தூண்)</option>
+                      <option value="FOOTING">Isolated Footing (அடித்தளம்)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>கான்கிரீட் தரம் (Grade)</label>
+                    <select id="rcc-grade" class="form-control">
+                      <option value="M20" selected>M20 (1 : 1.5 : 3)</option>
+                      <option value="M25">M25 (1 : 1 : 2)</option>
+                      <option value="M30">M30 (1 : 0.75 : 1.5)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>நீளம் / இடைவெளி (Length/Span) <span class="label-unit">m</span></label>
+                    <input type="number" id="rcc-dim-l" value="5.0" step="0.05" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>அகலம் (Width/Breadth) <span class="label-unit">m</span></label>
+                    <input type="number" id="rcc-dim-w" value="4.0" step="0.05" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>தடிமன்/ஆழம் (Depth/Thick) <span class="label-unit">mm</span></label>
+                    <input type="number" id="rcc-dim-d" value="125" step="5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கம்பி சதவீதம் (Steel % per IS 456) <span class="label-unit">%</span></label>
+                    <input type="number" id="rcc-steel-pct" value="0.8" step="0.05" min="0.1" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>எண்ணிக்கை (Count / Units)</label>
+                    <input type="number" id="rcc-count" value="1" min="1" class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கணக்கிடு (Calculate)</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- RCC Output Card -->
+            <div class="card" id="output-rcc" style="display: none;">
+              <div class="card-header">
+                <h3 id="rcc-out-title">RCC Take-off Result</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="rcc-out-tbody"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <ol class="steps-list" id="rcc-out-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Masonry Subtab -->
+        <div id="sub-masonry" class="calc-section" style="display: none;" data-calc-group="masonry">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>செங்கல் & ஆக் பிளாக் சுவர்</h3>
+                  <p class="card-subtitle">Brick & AAC Block Masonry Take-off</p>
+                </div>
+                <span class="badge badge-teal">TN PWD Standards</span>
+              </div>
+              <form id="form-masonry">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>செங்கல் வகை (Brick Type)</label>
+                    <select id="mas-type" class="form-control">
+                      <option value="COUNTRY_BRICK" selected>Country Red Brick (நாட்டு செங்கல்)</option>
+                      <option value="WIRE_CUT_BRICK">Wire-cut Chamber Brick (சேம்பர்)</option>
+                      <option value="FLYASH_BRICK">Fly Ash Brick (சாம்பல் செங்கல்)</option>
+                      <option value="AAC_BLOCK">AAC Lightweight Block (ஆக் பிளாக்)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>சுவர் தடிமன் (Wall Thickness)</label>
+                    <select id="mas-thick" class="form-control">
+                      <option value="230" selected>9 inch (230mm Outer Wall)</option>
+                      <option value="115">4.5 inch (115mm Partition Wall)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>சுவர் நீளம் (Length) <span class="label-unit">m</span></label>
+                    <input type="number" id="mas-length" value="12" step="0.1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>சுவர் உயரம் (Height) <span class="label-unit">m</span></label>
+                    <input type="number" id="mas-height" value="3.0" step="0.1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>கலவை விகிதம் (Mortar Ratio)</label>
+                    <select id="mas-mortar" class="form-control">
+                      <option value="1:5" selected>1:5 (Outer Walls)</option>
+                      <option value="1:4">1:4 (Load Bearing)</option>
+                      <option value="1:6">1:6 (Partition Walls)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>ஜன்னல் / கதவு கழிவு (Openings Area) <span class="label-unit">m²</span></label>
+                    <input type="number" id="mas-deduct" value="3.5" step="0.1" min="0" class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>செங்கல் விரயம் (Wastage %) <span class="label-unit">%</span></label>
+                    <input type="number" id="mas-wastage" value="5" step="1" min="0" max="15" class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Masonry Output Card -->
+            <div class="card" id="output-masonry" style="display: none;">
+              <div class="card-header">
+                <h3>செங்கல் & காரை தேவை</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="output-hero">
+                <div class="output-hero-val" id="mas-out-bricks">0 Nos</div>
+                <div class="output-hero-label">தேவையான மொத்த செங்கற்கள் (Bricks Required)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="mas-out-tbody"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <ol class="steps-list" id="mas-out-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Finishing Works Subtab -->
+        <div id="sub-finishing" class="calc-section" style="display: none;" data-calc-group="masonry">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>பூச்சு வேலை, வண்ணம் & டைல்ஸ்</h3>
+                  <p class="card-subtitle">Plastering, Painting & Tiles Take-off</p>
+                </div>
+                <span class="badge badge-teal">Finishing Works</span>
+              </div>
+              <form id="form-finishing">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>வேலை வகை (Finishing Type)</label>
+                    <select id="fin-type" class="form-control">
+                      <option value="PLASTER" selected>Wall / Ceiling Plastering (பூச்சு வேலை)</option>
+                      <option value="PAINT">Wall Putty & Painting (வண்ணம்)</option>
+                      <option value="TILES">Floor Tiles & Mortar Bed (டைல்ஸ்)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>பரப்பளவு (Surface Area) <span class="label-unit">m²</span></label>
+                    <input type="number" id="fin-area" value="150" step="1" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>பூச்சு தடிமன் / அளவு</label>
+                    <select id="fin-thick" class="form-control">
+                      <option value="12" selected>12mm (Internal Plaster CM 1:5)</option>
+                      <option value="15">15mm (External Plaster CM 1:4)</option>
+                      <option value="20">20mm (Rough Cast / 2 Coats)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>விரயம் (Wastage %) <span class="label-unit">%</span></label>
+                    <input type="number" id="fin-wastage" value="5" step="1" min="0" class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Finishing Output Card -->
+            <div class="card" id="output-finishing" style="display: none;">
+              <div class="card-header">
+                <h3>முடிப்பு பொருட்கள் தேவை</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="fin-out-tbody"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <ol class="steps-list" id="fin-out-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Earthwork Subtab -->
+        <div id="sub-earthwork" class="calc-section" style="display: none;" data-calc-group="planning">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>அஸ்திவாரம் மண் தோண்டுதல் & நிரப்புதல்</h3>
+                  <p class="card-subtitle">Excavation & Backfill Volume Sizing</p>
+                </div>
+                <span class="badge badge-teal">Earthwork Sizing</span>
+              </div>
+              <form id="form-earthwork">
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>நீளம் (Length) <span class="label-unit">m</span></label>
+                    <input type="number" id="ew-length" value="15" step="0.1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>அகலம் (Width) <span class="label-unit">m</span></label>
+                    <input type="number" id="ew-width" value="1.2" step="0.05" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>ஆழம் (Depth) <span class="label-unit">m</span></label>
+                    <input type="number" id="ew-depth" value="1.5" step="0.05" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>மண் வகை (Soil Type)</label>
+                    <select id="ew-soil" class="form-control">
+                      <option value="CLAY" selected>Chennai Stiff Clay (களிமண்)</option>
+                      <option value="SAND">Loose Sand / Gravel (மணல்)</option>
+                      <option value="HARD_ROCK">Hard Granite Rock (பாறை)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>சுழற்சி / வீக்கம் (Swell Factor)</label>
+                    <input type="number" id="ew-swell" value="1.25" step="0.05" min="1.0" class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Earthwork Output Card -->
+            <div class="card" id="output-earthwork" style="display: none;">
+              <div class="card-header">
+                <h3>மண் வேலை அளவீடுகள்</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="ew-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. BBS & Stirrups Subtab -->
+        <div id="sub-bbs" class="calc-section" style="display: none;" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>கம்பி வளைப்பு அட்டவணை & வளையங்கள்</h3>
+                  <p class="card-subtitle">Bar Bending Schedule & Stirrups (IS 2502)</p>
+                </div>
+                <span class="badge badge-teal">IS 2502</span>
+              </div>
+              <form id="form-stirrup">
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>பீம் அகலம் (Width) <span class="label-unit">mm</span></label>
+                    <input type="number" id="bbs-beam-w" value="230" step="5" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>பீம் ஆழம் (Depth) <span class="label-unit">mm</span></label>
+                    <input type="number" id="bbs-beam-d" value="450" step="5" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>கவர் கான்கிரீட் (Cover) <span class="label-unit">mm</span></label>
+                    <input type="number" id="bbs-cover" value="25" step="5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>வளைய கம்பி விட்டம் (Stirrup Dia) <span class="label-unit">mm</span></label>
+                    <select id="bbs-dia" class="form-control">
+                      <option value="8" selected>8mm TMT (Standard)</option>
+                      <option value="10">10mm TMT (Heavy Beam)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>ஹூக் கோணம் (Hook Angle)</label>
+                    <select id="bbs-hook" class="form-control">
+                      <option value="135" selected>135° Seismic Hook (Standard)</option>
+                      <option value="90">90° Standard Hook</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கட்டிங் நீளம் கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- BBS Output Card -->
+            <div class="card" id="output-stirrup" style="display: none;">
+              <div class="card-header">
+                <h3>வளைய கம்பி வெட்டு நீளம்</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="output-hero">
+                <div class="output-hero-val" id="bbs-out-length">0 mm</div>
+                <div class="output-hero-label">ஒரு வளையத்தின் கட்டிங் நீளம் (Cutting Length)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="bbs-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. Water Tank & Sump Subtab -->
+        <div id="sub-watertank" class="calc-section" style="display: none;" data-calc-group="water">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>தண்ணீர் தொட்டி & நிலத்தடி சம்ப்</h3>
+                  <p class="card-subtitle">Water Tank & Underground Sump Sizing</p>
+                </div>
+                <span class="badge badge-teal">IS 3370 / IS 1172</span>
+              </div>
+              <form id="form-watertank">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>தொட்டி வகை (Tank Type)</label>
+                    <select id="wt-type" class="form-control">
+                      <option value="UNDERGROUND" selected>Underground Sump (நிலத்தடி சம்ப்)</option>
+                      <option value="OVERHEAD">Overhead RCC Tank (மேல்நிலை தொட்டி)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>நபர்கள் எண்ணிக்கை (Persons)</label>
+                    <input type="number" id="wt-persons" value="6" min="1" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>உட்புற நீளம் (Length) <span class="label-unit">m</span></label>
+                    <input type="number" id="wt-length" value="3.0" step="0.1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>உட்புற அகலம் (Width) <span class="label-unit">m</span></label>
+                    <input type="number" id="wt-width" value="2.0" step="0.1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>நீர் ஆழம் (Water Depth) <span class="label-unit">m</span></label>
+                    <input type="number" id="wt-depth" value="1.8" step="0.1" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கொள்ளளவு கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Water Tank Output Card -->
+            <div class="card" id="output-watertank" style="display: none;">
+              <div class="card-header">
+                <h3>தொட்டி கொள்ளளவு & விவரம்</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="output-hero">
+                <div class="output-hero-val" id="wt-out-litres">0 Litres</div>
+                <div class="output-hero-label">மொத்த தண்ணீர் கொள்ளளவு (Capacity)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="wt-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. Septic Tank (IS 2470) Subtab -->
+        <div id="sub-septictank" class="calc-section" style="display: none;" data-calc-group="water">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>செப்டிக் டேங்க் & சோக் பிட் வடிவமைப்பு</h3>
+                  <p class="card-subtitle">Residential Septic Tank & Soak Pit (IS 2470)</p>
+                </div>
+                <span class="badge badge-teal">IS 2470 Part 1 & 2</span>
+              </div>
+              <form id="form-septictank">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>பயனாளர்கள் எண்ணிக்கை (Users/Family)</label>
+                    <input type="number" id="septic-users" value="8" min="2" max="100" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>சுத்தம் செய்யும் இடைவெளி (Cleaning Interval)</label>
+                    <select id="septic-interval" class="form-control">
+                      <option value="1">1 Year (வருடத்திற்கு ஒரு முறை)</option>
+                      <option value="2" selected>2 Years (2 வருடங்களுக்கு ஒரு முறை)</option>
+                      <option value="3">3 Years</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கழிவுநீர் வகை (Waste Stream)</label>
+                    <select id="septic-stream" class="form-control">
+                      <option value="WC_ONLY" selected>WC Toilet Waste Only (கழிப்பறை மட்டும்)</option>
+                      <option value="ALL_WASTE">All Domestic Wastewater (குளியலறை உட்பட)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>சோக் பிட் மண் உறிஞ்சும் திறன்</label>
+                    <select id="septic-soil" class="form-control">
+                      <option value="PERCOLATION_GOOD" selected>Good Sandy Loam (மணல் சார்ந்த நிலம்)</option>
+                      <option value="PERCOLATION_CLAY">Stiff Clay (களிமண் நிலம்)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">வடிவமைப்பு அளவுகள் பெறுக</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Septic Tank Output Card -->
+            <div class="card" id="output-septictank" style="display: none;">
+              <div class="card-header">
+                <h3>செப்டிக் டேங்க் பரிந்துரைக்கப்படும் அளவுகள்</h3>
+                <span class="badge badge-green">IS 2470 தரநிலை</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="septic-out-tbody"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <ol class="steps-list" id="septic-out-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. Geotech & SBC Footing Subtab -->
+        <div id="sub-geotech" class="calc-section" style="display: none;" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>மண் தாங்கு திறன் & புட்டிங் வடிவமைப்பு</h3>
+                  <p class="card-subtitle">Safe Bearing Capacity & Isolated Footing (IS 1904)</p>
+                </div>
+                <span class="badge badge-teal">IS 1904 / IS 6403</span>
+              </div>
+              <form id="form-geotech">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>தூண் சுமை (Column Axial Load) <span class="label-unit">kN</span></label>
+                    <input type="number" id="geo-load" value="650" step="10" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>மண் தாங்கு திறன் (SBC) <span class="label-unit">kN/m²</span></label>
+                    <input type="number" id="geo-sbc" value="150" step="10" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>தமிழ்நாடு மண் வகை (Soil Profile)</label>
+                    <select id="geo-soil" class="form-control">
+                      <option value="CHENNAI_CLAY" selected>Chennai Marine / Black Cotton Clay</option>
+                      <option value="RED_SOIL">Coimbatore / Salem Hard Red Soil</option>
+                      <option value="COASTAL_SAND">ECR / Coastal Loose Sandy Stratum</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>தூண் அளவு (Column Size) <span class="label-unit">mm</span></label>
+                    <input type="number" id="geo-col-size" value="300" step="25" class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">புட்டிங் அளவு கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Geotech Output Card -->
+            <div class="card" id="output-geotech" style="display: none;">
+              <div class="card-header">
+                <h3>பரிந்துரைக்கப்படும் புட்டிங் அளவு</h3>
+                <span class="badge badge-green">IS 1904 கணக்கீடு</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="geo-out-tbody"></tbody>
+                </table>
+              </div>
+              <div class="output-box">
+                <ol class="steps-list" id="geo-out-steps"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. Cube Test QC Subtab -->
+        <div id="sub-qc" class="calc-section" style="display: none;" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>கான்கிரீட் கியூப் சோதனை (QC Test)</h3>
+                  <p class="card-subtitle">Compressive Strength Evaluation (IS 516 / IS 456)</p>
+                </div>
+                <span class="badge badge-teal">IS 516</span>
+              </div>
+              <form id="form-qc">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கான்கிரீட் தரம் (Grade)</label>
+                    <select id="qc-grade" class="form-control">
+                      <option value="M20" selected>M20 (Target: 20 N/mm²)</option>
+                      <option value="M25">M25 (Target: 25 N/mm²)</option>
+                      <option value="M30">M30 (Target: 30 N/mm²)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>பரிசோதனை வயது (Age)</label>
+                    <select id="qc-age" class="form-control">
+                      <option value="28" selected>28 Days (முழு பலம் 100%)</option>
+                      <option value="7">7 Days (இடைக்கால பலம் 65%)</option>
+                      <option value="14">14 Days (90%)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>கியூப் 1 சுமை (Cube 1 Load) <span class="label-unit">kN</span></label>
+                    <input type="number" id="qc-cube1" value="480" step="5" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>கியூப் 2 சுமை (Cube 2 Load) <span class="label-unit">kN</span></label>
+                    <input type="number" id="qc-cube2" value="495" step="5" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>கியூப் 3 சுமை (Cube 3 Load) <span class="label-unit">kN</span></label>
+                    <input type="number" id="qc-cube3" value="475" step="5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">QC முடிவு காண்க (Evaluate QC)</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- QC Output Card -->
+            <div class="card" id="output-qc" style="display: none;">
+              <div class="card-header">
+                <h3>QC பரிசோதனை அறிக்கை</h3>
+                <span class="badge" id="qc-badge-status">முடிவு</span>
+              </div>
+              <div class="output-hero" id="qc-hero-box">
+                <div class="output-hero-val" id="qc-out-avg">0.00 N/mm²</div>
+                <div class="output-hero-label" id="qc-out-status">சராரசரி அழுத்தம் (Compressive Strength)</div>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="qc-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11. Anti-Termite Treatment Subtab -->
+        <div id="sub-antitermite" class="calc-section" style="display: none;" data-calc-group="masonry">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>கரையான் தடுப்பு சிகிச்சை (IS 6313)</h3>
+                  <p class="card-subtitle">Anti-Termite Pre-Construction Treatment</p>
+                </div>
+                <span class="badge badge-teal">IS 6313 Part 2</span>
+              </div>
+              <form id="form-antitermite">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>பிளின்த் பரப்பு (Plinth Area) <span class="label-unit">sq.ft</span></label>
+                    <input type="number" id="term-plinth" value="1500" step="50" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>சுற்றளவு (Perimeter Length) <span class="label-unit">m</span></label>
+                    <input type="number" id="term-perim" value="48" step="1" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>மருந்து வகை (Chemical Emulsion)</label>
+                  <select id="term-chemical" class="form-control">
+                    <option value="CHLORPYRIFOS_20EC" selected>Chlorpyrifos 20% EC (1% Emulsion)</option>
+                    <option value="IMIDACLOPRID_30_5SC">Imidacloprid 30.5% SC (0.075% Emulsion)</option>
+                  </select>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">மருந்து தேவை கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Anti-Termite Output Card -->
+            <div class="card" id="output-antitermite" style="display: none;">
+              <div class="card-header">
+                <h3>தேவையான மருந்து & தண்ணீர் அளவு</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="term-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12. TNCDBR 2019 Rules Subtab -->
+        <div id="sub-tncdbr" class="calc-section" style="display: none;" data-calc-group="planning">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>TNCDBR 2019 கட்டிட விதிகள் & செட்பேக்</h3>
+                  <p class="card-subtitle">Tamil Nadu Combined Development & Building Rules</p>
+                </div>
+                <span class="badge badge-teal">TNCDBR 2019</span>
+              </div>
+              <form id="form-tncdbr">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>மனையின் பரப்பு (Plot Area) <span class="label-unit">sq.ft</span></label>
+                    <input type="number" id="tn-plot-sqft" value="2400" step="50" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>சாலை அகலம் (Road Width) <span class="label-unit">m</span></label>
+                    <input type="number" id="tn-road-w" value="7.2" step="0.5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கட்டிட உயரம் (Building Height) <span class="label-unit">m</span></label>
+                    <input type="number" id="tn-height" value="8.5" step="0.5" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>கட்டிட வகை (Building Category)</label>
+                    <select id="tn-category" class="form-control">
+                      <option value="RESIDENTIAL_NON_HIGH_RISE" selected>Residential Non-High Rise (G+1/G+2)</option>
+                      <option value="COMMERCIAL_NON_HIGH_RISE">Commercial Non-High Rise</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">செட்பேக் விதிகளை சரிபார்</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- TNCDBR Output Card -->
+            <div class="card" id="output-tncdbr" style="display: none;">
+              <div class="card-header">
+                <h3>கட்டாய செட்பேக் & FSI விதிகள்</h3>
+                <span class="badge badge-green">சரிபார்க்கப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="tn-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 13. M-Book & Billing Subtab -->
+        <div id="sub-mbook" class="calc-section" style="display: none;" data-calc-group="planning">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>தள அளவீட்டு புத்தகம் & RA பில்</h3>
+                  <p class="card-subtitle">Site Measurement Book (M-Book) & Billing Norms</p>
+                </div>
+                <span class="badge badge-teal">TN PWD Standards</span>
+              </div>
+              <form id="form-mbook">
+                <div class="form-group">
+                  <label>பணி விளக்கம் (Item Description)</label>
+                  <input type="text" id="mb-desc" value="Brickwork in CM 1:5 in Superstructure" required class="form-control">
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label>எண்ணிக்கை (No.)</label>
+                    <input type="number" id="mb-no" value="2" min="1" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>நீளம் (Length) <span class="label-unit">m</span></label>
+                    <input type="number" id="mb-l" value="8.5" step="0.05" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>அகலம் (Breadth) <span class="label-unit">m</span></label>
+                    <input type="number" id="mb-b" value="0.23" step="0.01" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>உயரம்/ஆழம் (Depth) <span class="label-unit">m</span></label>
+                    <input type="number" id="mb-d" value="3.0" step="0.05" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>அலகு விலை (Unit Rate) <span class="label-unit">₹</span></label>
+                    <input type="number" id="mb-rate" value="4800" step="50" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">M-Book அளவு கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- M-Book Output Card -->
+            <div class="card" id="output-mbook" style="display: none;">
+              <div class="card-header">
+                <h3>M-Book பதிவு சுருக்கம்</h3>
+                <span class="badge badge-green">கணக்கிடப்பட்டது</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="mb-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 14. Labour Norms Subtab -->
+        <div id="sub-labour" class="calc-section" style="display: none;" data-calc-group="planning">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>தமிழ்நாடு PWD ஆட்கள் & கூலி விதிமுறை</h3>
+                  <p class="card-subtitle">PWD Labour Constants & Daily Wages Estimation</p>
+                </div>
+                <span class="badge badge-teal">PWD Norms</span>
+              </div>
+              <form id="form-labour">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>பணி வகை (Activity)</label>
+                    <select id="lab-activity" class="form-control">
+                      <option value="RCC_WORK" selected>RCC Casting Work (M20)</option>
+                      <option value="BRICK_WORK">Brick Masonry Work</option>
+                      <option value="PLASTERING">Plastering Work (12mm)</option>
+                      <option value="EXCAVATION">Earthwork Excavation</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>மொத்த வேலை அளவு (Volume/Area)</label>
+                    <input type="number" id="lab-qty" value="15" step="0.5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">கூலி மற்றும் ஆட்கள் தேவை கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Labour Output Card -->
+            <div class="card" id="output-labour" style="display: none;">
+              <div class="card-header">
+                <h3>தேவையான ஆட்கள் & கூலி விவரம்</h3>
+                <span class="badge badge-green">PWD தரநிலை</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="lab-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 15. Rainwater Harvesting (RWH) Subtab -->
+        <div id="sub-rwh" class="calc-section" style="display: none;" data-calc-group="water">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>மழைநீர் சேகரிப்பு கட்டமைப்பு</h3>
+                  <p class="card-subtitle">Rainwater Harvesting Sizer (CMDA / GCC / TNCDBR)</p>
+                </div>
+                <span class="badge badge-teal">TNCDBR Rule 42</span>
+              </div>
+              <form id="form-rwh">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கூரை பரப்பு (Rooftop Area) <span class="label-unit">sq.ft</span></label>
+                    <input type="number" id="rwh-roof" value="1500" step="50" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>திறந்தவெளி மனை பரப்பு <span class="label-unit">sq.ft</span></label>
+                    <input type="number" id="rwh-plot" value="900" step="50" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>மழைநீர் உறிஞ்சு குழி வகை</label>
+                  <select id="rwh-type" class="form-control">
+                    <option value="RECHARGE_WELL" selected>Recharge Well with Filter Bed (ரீசார்ஜ் கிணறு)</option>
+                    <option value="PERCOLATION_PIT">Percolation Pit with Filter Media (உறிஞ்சு குழி)</option>
+                  </select>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">RWH அளவு கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- RWH Output Card -->
+            <div class="card" id="output-rwh" style="display: none;">
+              <div class="card-header">
+                <h3>கட்டாய RWH வடிவமைப்பு</h3>
+                <span class="badge badge-green">CMWSSB அங்கீகாரம்</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="rwh-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 16. Coastal Durability Subtab -->
+        <div id="sub-durability" class="calc-section" style="display: none;" data-calc-group="water">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>கடலோர உவர் காற்று பாதுகாப்பு</h3>
+                  <p class="card-subtitle">Coastal Durability & Concrete Cover (IS 456 Table 3)</p>
+                </div>
+                <span class="badge badge-teal">IS 456 Tables 3, 5, 16</span>
+              </div>
+              <form id="form-durability">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கடற்கரையிலிருந்து தூரம் (Distance from Coast)</label>
+                    <select id="dur-distance" class="form-control">
+                      <option value="COASTAL_CRITICAL" selected>&lt; 1 km (ECR / Marina / Coastal Belt)</option>
+                      <option value="COASTAL_MODERATE">1 – 5 km (Chennai Coastal Zone)</option>
+                      <option value="INLAND">&gt; 5 km (Standard Inland Non-Saline)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>கட்டமைப்பு வகை (Structure)</label>
+                    <select id="dur-element" class="form-control">
+                      <option value="SUBSTRUCTURE" selected>Footing / Plinth Beam in Saline Soil</option>
+                      <option value="SUPERSTRUCTURE">Columns & Roof Slabs</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">பாதுகாப்பு விதிகளை சரிபார்</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Durability Output Card -->
+            <div class="card" id="output-durability" style="display: none;">
+              <div class="card-header">
+                <h3>பரிந்துரைக்கப்படும் கான்கிரீட் & கவர்</h3>
+                <span class="badge badge-green">IS 456 தரநிலை</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="dur-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 17. CMDA Permit Fees Subtab -->
+        <div id="sub-cmdafee" class="calc-section" style="display: none;" data-calc-group="planning">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>CMDA & பெருநகர சென்னை அனுமதி கட்டணம்</h3>
+                  <p class="card-subtitle">Statutory Building Permit & Scrutiny Fee Estimator</p>
+                </div>
+                <span class="badge badge-teal">CMDA / GCC Rates</span>
+              </div>
+              <form id="form-cmdafee">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>கட்டிட பரப்பு (Built-up Area) <span class="label-unit">sq.ft</span></label>
+                    <input type="number" id="cmda-builtup" value="1850" step="50" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>உள்ளாட்சி அமைப்பு (Authority)</label>
+                    <select id="cmda-auth" class="form-control">
+                      <option value="GCC" selected>Greater Chennai Corporation (GCC)</option>
+                      <option value="CMDA_PANCHAYAT">CMDA Limit (Town Panchayat / Municipality)</option>
+                      <option value="DTCP">DTCP District Limit (பிற மாவட்டங்கள்)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">அனுமதி கட்டணம் கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- CMDA Fee Output Card -->
+            <div class="card" id="output-cmdafee" style="display: none;">
+              <div class="card-header">
+                <h3>தோராயமான அனுமதி & ஆய்வுக் கட்டணம்</h3>
+                <span class="badge badge-green">அரசு கட்டண விவரம்</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="cmda-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 18. Flood Plinth Height Subtab -->
+        <div id="sub-plinth" class="calc-section" style="display: none;" data-calc-group="masonry">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>வெள்ள அபாய காரைமட்டம் & DPC</h3>
+                  <p class="card-subtitle">Post-Flood Plinth Height & DPC Waterproofing</p>
+                </div>
+                <span class="badge badge-teal">Flood Resilience</span>
+              </div>
+              <form id="form-plinth">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>சாலை மட்டத்திலிருந்து உயரம் (Road Level) <span class="label-unit">mm</span></label>
+                    <input type="number" id="plinth-road" value="600" step="50" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>மழை வெள்ள மண்டலம் (Flood Risk Zone)</label>
+                    <select id="plinth-zone" class="form-control">
+                      <option value="VELACHERY_MUDICHUR" selected>Velachery / Mudichur / Tambaram High Risk</option>
+                      <option value="STANDARD_ZONE">Normal Elevation Zone</option>
+                      <option value="COASTAL_LOW">Coastal Low-Lying Zone</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">காரைமட்டம் பரிந்துரை பெறுக</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Plinth Output Card -->
+            <div class="card" id="output-plinth" style="display: none;">
+              <div class="card-header">
+                <h3>காரைமட்டம் & DPC பரிந்துரை</h3>
+                <span class="badge badge-green">வெள்ள பாதுகாப்பு</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="plinth-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 19. Under-Reamed Piles Subtab -->
+        <div id="sub-pile" class="calc-section" style="display: none;" data-calc-group="structural">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3>அண்டர்-ரீம்டு ஆழ்துளை பைல் (IS 2911)</h3>
+                  <p class="card-subtitle">Short Bored Under-Reamed Pile Foundation (Black Cotton Soils)</p>
+                </div>
+                <span class="badge badge-teal">IS 2911 Part 3</span>
+              </div>
+              <form id="form-pile">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>தூண் சுமை (Column Axial Load) <span class="label-unit">kN</span></label>
+                    <input type="number" id="pile-load" value="350" step="25" required class="form-control">
+                  </div>
+                  <div class="form-group">
+                    <label>பைல் தண்டு விட்டம் (Shaft Dia) <span class="label-unit">mm</span></label>
+                    <select id="pile-dia" class="form-control">
+                      <option value="300" selected>300 mm Diameter</option>
+                      <option value="350">350 mm Diameter</option>
+                      <option value="400">400 mm Diameter</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>பல்பு வகை (Bulb Configuration)</label>
+                    <select id="pile-bulbs" class="form-control">
+                      <option value="1" selected>Single Under-Reamed Bulb</option>
+                      <option value="2">Double Under-Reamed Bulb (High Capacity)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>பைல் ஆழம் (Pile Depth) <span class="label-unit">m</span></label>
+                    <input type="number" id="pile-depth" value="4.0" step="0.5" required class="form-control">
+                  </div>
+                </div>
+
+                <div class="btn-group">
+                  <button type="submit" class="btn btn-primary" style="flex:2;">பைல் தாங்கு திறன் கணக்கிடு</button>
+                  <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Pile Output Card -->
+            <div class="card" id="output-pile" style="display: none;">
+              <div class="card-header">
+                <h3>பைல் தாங்கு திறன் முடிவு</h3>
+                <span class="badge badge-green">IS 2911 கணக்கீடு</span>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <tbody id="pile-out-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- =========================================================================
+         DESTINATION 3: பொருட்கள் விலை — MATERIAL RATES SCREEN
          ========================================================================= -->
     <div id="tab-rates" class="tab-pane">
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>Tamil Nadu Construction Material Rates</h2>
-            <p style="font-size: 0.85rem; color: #64748b;">Official TN PWD Schedule of Rates 2025–26 & Market Dealer Benchmarks</p>
+            <h2 data-i18n="rates.title">தமிழ்நாடு கட்டுமான பொருட்கள் சந்தை விலை</h2>
+            <p class="card-subtitle" data-i18n="rates.subtitle">அரசு PWD விலை அட்டவணை (SOR 2025–26) மற்றும் உள்ளூர் டீலர் விலைகள்</p>
           </div>
-          <div style="font-size: 0.85rem; font-weight: 600; color: #1e40af;" id="rates-current-district-label">
-            District: Chennai
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent);" id="rates-current-district-label">
+              மாவட்டம்: சென்னை (Chennai)
+            </div>
+            <button class="btn btn-primary btn-sm" id="rates-refresh-btn" type="button" data-i18n="rates.refreshBtn">
+              🔄 புதுப்பி (Refresh)
+            </button>
+          </div>
+        </div>
+
+        <!-- Category & Source Filters -->
+        <div style="margin-bottom: 1rem;">
+          <div class="category-chips">
+            <button class="chip-btn active" data-rate-cat="all" data-i18n="rates.filterAll">அனைத்து பொருட்கள்</button>
+            <button class="chip-btn" data-rate-cat="Cement" data-i18n="rates.filterCement">சிமெண்ட்</button>
+            <button class="chip-btn" data-rate-cat="Steel" data-i18n="rates.filterSteel">TMT கம்பி</button>
+            <button class="chip-btn" data-rate-cat="Aggregates" data-i18n="rates.filterAggregates">மணல் & ஜல்லி</button>
+            <button class="chip-btn" data-rate-cat="Masonry" data-i18n="rates.filterBricks">செங்கல் & பிளாக்ஸ்</button>
+          </div>
+
+          <div class="search-box-wrap" style="margin-top: 0.5rem;">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="rates-search-input" class="search-input" placeholder="பொருட்கள் பெயர் அல்லது விவரத்தை தேடுங்கள்..." data-i18n-ph="rates.searchPlaceholder">
           </div>
         </div>
 
@@ -1296,107 +1639,115 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Item & Grade</th>
-                <th>Unit</th>
-                <th>Market Price</th>
-                <th>PWD SOR 2025-26</th>
-                <th>Provenance & Freshness</th>
-                <th>Tax & Transport Status</th>
+                <th data-i18n="rates.colMaterial">பொருள் & தரம்</th>
+                <th data-i18n="rates.colUnit">அலகு</th>
+                <th data-i18n="rates.colMarketRate">சந்தை விலை (₹)</th>
+                <th data-i18n="rates.colSorRate">அரசு PWD SOR (₹)</th>
+                <th data-i18n="rates.colFreshness">நம்பகத்தன்மை & ஆதாரம்</th>
+                <th data-i18n="rates.colNotes">வரி & போக்குவரத்து குறிப்பு</th>
               </tr>
             </thead>
             <tbody id="rates-table-body">
-              <!-- Populated by JavaScript -->
+              <!-- Populated by JavaScript from real /api/rates data -->
             </tbody>
           </table>
         </div>
 
         <div class="disclaimer-banner">
-          <strong>Transparency Notice:</strong> Official TN PWD Schedule of Rates (SOR) are base government estimating benchmarks (exclusive of GST). Market retail prices reflect actual dealer purchase prices in Tamil Nadu including local transport within standard service radius.
+          <strong>வெளிப்படைத்தன்மை குறிப்பு (Transparency Notice):</strong> அரசு PWD விலை அட்டவணை (SOR) என்பது அரசு அடிப்படை மதிப்பீட்டு தரம் (18% GST நீங்கலாக). சில்லறை சந்தை விலை என்பது தமிழ்நாட்டு உள்ளூர் டீலர்களிடம் கிடைக்கும் கொள்முதல் விலை (ஜிஎஸ்டி மற்றும் நிலையான எல்லைக்குள் போக்குவரத்து உட்பட).
         </div>
       </div>
     </div>
 
     <!-- =========================================================================
-         TAB 3: SCRAP VALUATION & INTELLIGENCE
+         DESTINATION 4: ஸ்கிராப் — SCRAP VALUATION SCREEN
          ========================================================================= -->
     <div id="tab-scrap" class="tab-pane">
       <div class="grid-2">
-        <!-- Settlement Calculator -->
+        <!-- Professional Weighbridge Settlement Calculator -->
         <div class="card">
           <div class="card-header">
-            <h3>Scrap Settlement Calculator</h3>
-            <span class="badge badge-green">LiveChennai Index</span>
+            <div>
+              <h3 data-i18n="scrap.tabCalculator">எடைமேடை பட்டுவாடா கணக்கீடு</h3>
+              <p class="card-subtitle">Weighbridge Scrap Settlement & Physical Deductions</p>
+            </div>
+            <span class="badge badge-teal">LiveChennai Index</span>
           </div>
           <form id="form-scrap">
             <div class="form-group">
-              <label>Scrap Material & Grade</label>
-              <select id="scrap-select">
-                <option value="SCRAP-IRON-HMS" selected>Iron / Heavy Melting Steel (HMS 1 & 2) — ₹41/kg</option>
-                <option value="SCRAP-COP-DC">Copper DC (Armature / Bright Wire) — ₹950/kg</option>
-                <option value="SCRAP-COP-OC">Copper OC (Mixed / Burnt Copper) — ₹850/kg</option>
-                <option value="SCRAP-BRASS-HONEY">Brass (Honey / Turning) — ₹700/kg</option>
-                <option value="SCRAP-ALUM-SECTION">Aluminium Section (Extrusion) — ₹350/kg</option>
-                <option value="SCRAP-ALUM-UTENSIL">Aluminium Utensil — ₹153.40/kg</option>
-                <option value="SCRAP-SS-304">Stainless Steel SS 304 — ₹140/kg</option>
-                <option value="SCRAP-CABLE-ELEC">Electrical Wire with PVC Insulation — ₹170/kg</option>
-                <option value="SCRAP-BAT-CAR">Lead-Acid Car Battery — ₹66.66/kg</option>
+              <label>உலோக வகை & தரம் (Scrap Material & Grade)</label>
+              <select id="scrap-select" class="form-control">
+                <option value="SCRAP-IRON-HMS" selected>இரும்பு / Heavy Melting Steel (HMS 1 & 2) — ₹41/kg</option>
+                <option value="SCRAP-COP-DC">செம்பு / Copper DC (Armature / Bright Wire) — ₹950/kg</option>
+                <option value="SCRAP-COP-OC">செம்பு / Copper OC (Mixed / Burnt Copper) — ₹850/kg</option>
+                <option value="SCRAP-BRASS-HONEY">பித்தளை / Brass (Honey / Turning) — ₹700/kg</option>
+                <option value="SCRAP-ALUM-SECTION">அலுமினியம் / Aluminium Section (Extrusion) — ₹350/kg</option>
+                <option value="SCRAP-ALUM-UTENSIL">அலுமினியம் / Aluminium Utensil — ₹153.40/kg</option>
+                <option value="SCRAP-SS-304">துருப்பிடிக்காத இரும்பு / Stainless Steel SS 304 — ₹140/kg</option>
+                <option value="SCRAP-CABLE-ELEC">காப்பர் வயர் / Electrical Wire with PVC — ₹170/kg</option>
+                <option value="SCRAP-BAT-CAR">லெட் பேட்டரி / Lead-Acid Car Battery — ₹66.66/kg</option>
               </select>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Gross Scale Weight (kg)</label>
-                <input type="number" id="scrap-gross" value="500" step="0.5" required>
+                <label data-i18n="scrap.grossWeight">மொத்த எடை (Gross Weight) <span class="label-unit">kg</span></label>
+                <input type="number" id="scrap-gross" value="500" step="0.5" required class="form-control">
               </div>
               <div class="form-group">
-                <label>Tare Vehicle Weight (kg)</label>
-                <input type="number" id="scrap-tare" value="50" step="0.5">
+                <label data-i18n="scrap.tareWeight">வாகன எடை (Tare Weight) <span class="label-unit">kg</span></label>
+                <input type="number" id="scrap-tare" value="50" step="0.5" class="form-control">
               </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row-3">
               <div class="form-group">
-                <label>Moisture / Water (%)</label>
-                <input type="number" id="scrap-moist" value="0" step="0.5" min="0">
+                <label data-i18n="scrap.moistureDeduction">ஈரப்பதம் கழிவு <span class="label-unit">%</span></label>
+                <input type="number" id="scrap-moist" value="0" step="0.5" min="0" class="form-control">
               </div>
               <div class="form-group">
-                <label>Dirt / Slag / Oil (%)</label>
-                <input type="number" id="scrap-impur" value="2" step="0.5" min="0">
+                <label data-i18n="scrap.impurityDeduction">தூசி/மண் கழிவு <span class="label-unit">%</span></label>
+                <input type="number" id="scrap-impur" value="2" step="0.5" min="0" class="form-control">
               </div>
               <div class="form-group">
-                <label>Wire Sheath / Insulation (%)</label>
-                <input type="number" id="scrap-insul" value="0" step="1" min="0">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Unit Rate (₹/kg)</label>
-                <input type="number" id="scrap-rate" value="41" step="0.5" required>
-              </div>
-              <div class="form-group">
-                <label>Transport Deduction (₹)</label>
-                <input type="number" id="scrap-trans" value="500" step="10">
-              </div>
-              <div class="form-group">
-                <label>Labour / Cutting Deduction (₹)</label>
-                <input type="number" id="scrap-labour" value="200" step="10">
+                <label data-i18n="scrap.insulationDeduction">வயர் தோல் கழிவு <span class="label-unit">%</span></label>
+                <input type="number" id="scrap-insul" value="0" step="1" min="0" class="form-control">
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block">Calculate Net Settlement Payout</button>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label data-i18n="scrap.unitRate">விலை (Rate) <span class="label-unit">₹/kg</span></label>
+                <input type="number" id="scrap-rate" value="41" step="0.5" required class="form-control">
+              </div>
+              <div class="form-group">
+                <label data-i18n="scrap.transportDeduction">வண்டி வாடகை <span class="label-unit">₹</span></label>
+                <input type="number" id="scrap-trans" value="500" step="10" class="form-control">
+              </div>
+              <div class="form-group">
+                <label data-i18n="scrap.labourDeduction">வெட்டு கூலி <span class="label-unit">₹</span></label>
+                <input type="number" id="scrap-labour" value="200" step="10" class="form-control">
+              </div>
+            </div>
+
+            <div class="btn-group">
+              <button type="submit" class="btn btn-primary" style="flex:2;" data-i18n="scrap.calculateBtn">பட்டுவாடா கணக்கிடு</button>
+              <button type="reset" class="btn btn-secondary" style="flex:1;">மீட்டமை</button>
+            </div>
           </form>
         </div>
 
-        <!-- Scrap Settlement Output -->
+        <!-- Scrap Settlement Output Card -->
         <div class="card" id="output-scrap" style="display: none;">
           <div class="card-header">
-            <h3>Settlement Receipt</h3>
-            <button class="btn btn-secondary" id="scrap-save-btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Save Settlement</button>
+            <h3>பட்டுவாடா ரசீது (Settlement Slip)</h3>
+            <button class="btn btn-primary btn-sm" id="scrap-save-btn" type="button" data-i18n="scrap.saveBtn">
+              💾 பதிவை சேமி
+            </button>
           </div>
           <div class="output-hero">
             <div class="output-hero-val" id="scrap-out-payout">₹ 0.00</div>
-            <div class="output-hero-label">Net Settlement Payable to Seller</div>
+            <div class="output-hero-label" data-i18n="scrap.netPayout">வழங்க வேண்டிய நிகர பட்டுவாடா தொகை</div>
           </div>
           <div class="table-responsive">
             <table class="data-table">
@@ -1412,198 +1763,413 @@
     </div>
 
     <!-- =========================================================================
-         TAB 4: BOQ & PROJECT ESTIMATES
+         DESTINATION 5: மேலும் — MORE DESTINATION (BOQ, PROJECTS, AI, STANDARDS)
          ========================================================================= -->
-    <div id="tab-boq" class="tab-pane">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Itemized Bill of Quantities (BOQ)</h2>
-            <p style="font-size: 0.85rem; color: #64748b;">Deterministic Quantities × Verified Unit Rates • Full Commercial Costing</p>
-          </div>
-          <div class="no-print" style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary" id="boq-csv-btn">📥 Export CSV</button>
-            <button class="btn btn-primary" id="boq-print-btn">🖨️ Print / Save PDF</button>
-          </div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="data-table" id="boq-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Item Description</th>
-                <th>Quantity</th>
-                <th>Unit</th>
-                <th>Mat. Rate (₹)</th>
-                <th>Lab. Rate (₹)</th>
-                <th>Total Rate (₹)</th>
-                <th>Total Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody id="boq-table-body">
-              <!-- Dynamically rendered -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Commercial Surcharge Summary -->
-        <div style="margin-top: 1.5rem; max-width: 450px; margin-left: auto;">
-          <table class="data-table" style="font-size: 0.95rem;">
-            <tr>
-              <td><strong>Direct Civil Works Subtotal:</strong></td>
-              <td style="text-align: right;" id="boq-subtotal">₹ 0.00</td>
-            </tr>
-            <tr>
-              <td>Site Overhead (5%):</td>
-              <td style="text-align: right;" id="boq-overhead">₹ 0.00</td>
-            </tr>
-            <tr>
-              <td>Contractor Profit (10%):</td>
-              <td style="text-align: right;" id="boq-profit">₹ 0.00</td>
-            </tr>
-            <tr>
-              <td>Contingency (3%):</td>
-              <td style="text-align: right;" id="boq-cont">₹ 0.00</td>
-            </tr>
-            <tr>
-              <td>Applicable GST (18% on Civil Contracts):</td>
-              <td style="text-align: right;" id="boq-gst">₹ 0.00</td>
-            </tr>
-            <tr style="background-color: #eff6ff; font-weight: 700; font-size: 1.15rem; color: #1e40af;">
-              <td>Estimated Grand Total:</td>
-              <td style="text-align: right;" id="boq-grand-total">₹ 0.00</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Contractor Stage-wise Payment Milestones Card -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h3>Contractor Stage-Wise Payment Milestones (Tamil Nadu Practice)</h3>
-            <p style="font-size: 0.85rem; color: #64748b;">Progressive billing schedule linked to verified estimate total</p>
-          </div>
-          <span class="badge badge-green">Standard 7-Stage Contract</span>
-        </div>
-
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Stage</th>
-                <th>Milestone & Deliverables</th>
-                <th>Percentage</th>
-                <th>Milestone Amount (₹)</th>
-                <th>Cumulative Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody id="milestones-table-body">
-              <!-- Populated by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- =========================================================================
-         TAB 5: CIVIL AI & KNOWLEDGE ASSISTANT
-         ========================================================================= -->
-    <div id="tab-ai" class="tab-pane">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>Civil Engineering Knowledge & AI Assistant</h2>
-            <p style="font-size: 0.85rem; color: #64748b;">Deterministic Expert Fallback • IS Codes • PWD Norms</p>
-          </div>
-          <span class="badge badge-green" id="ai-status-badge">Offline Civil Expert Active</span>
-        </div>
-
-        <!-- Quick Prompts -->
-        <div style="display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.5rem;" class="no-print">
-          <button class="btn btn-outline quick-prompt-btn" style="font-size: 0.75rem;">M20 mix ratio & bags</button>
-          <button class="btn btn-outline quick-prompt-btn" style="font-size: 0.75rem;">90 deg bend deduction</button>
-          <button class="btn btn-outline quick-prompt-btn" style="font-size: 0.75rem;">1 ground in sqft</button>
-          <button class="btn btn-outline quick-prompt-btn" style="font-size: 0.75rem;">Curing days per IS 456</button>
-          <button class="btn btn-outline quick-prompt-btn" style="font-size: 0.75rem;">Current cement price Chennai</button>
-        </div>
-
-        <div class="chat-window">
-          <div class="chat-messages" id="chat-messages">
-            <div class="chat-bubble ai">
-              <strong>DDevUltraHome Civil Knowledge Engine:</strong><br>
-              Hello! I am your civil engineering expert assistant. I can explain IS codes (IS 456, IS 1200, IS 2502), mix proportions, curing periods, BBS formulas, and Tamil Nadu construction standards. All arithmetic is handled strictly by the deterministic calculation engine. How can I help you today?
-            </div>
-          </div>
-          <form class="chat-input-bar" id="chat-form">
-            <input type="text" id="chat-input" placeholder="Ask a civil engineering or material question..." required>
-            <button type="submit" class="btn btn-primary">Send</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- =========================================================================
-         TAB 6: PROJECTS & BACKUP
-         ========================================================================= -->
-    <div id="tab-projects" class="tab-pane">
-      <div class="grid-2">
+    <div id="tab-more" class="tab-pane">
+      
+      <!-- More Main Menu Hub -->
+      <div id="more-menu-container">
         <div class="card">
           <div class="card-header">
-            <h3>Active Project Profile</h3>
+            <div>
+              <h2 data-i18n="more.title">கூடுதல் சேவைகள் & மேலாண்மை</h2>
+              <p class="card-subtitle" data-i18n="more.subtitle">திட்ட மதிப்பீடு, AI வழிகாட்டி, தரநிலைகள் மற்றும் காப்பு</p>
+            </div>
           </div>
-          <form id="form-project">
-            <div class="form-group">
-              <label>Project Name</label>
-              <input type="text" id="proj-name" value="Ultra Villa Residential G+1" required>
-            </div>
-            <div class="form-group">
-              <label>Client Name</label>
-              <input type="text" id="proj-client" value="Er. Selvakumar / DDev Client">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Plot Area (sq.ft)</label>
-                <input type="number" id="proj-plot" value="2400">
-              </div>
-              <div class="form-group">
-                <label>Built-up Area (sq.ft)</label>
-                <input type="number" id="proj-builtup" value="1850">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Site Location (Tamil Nadu)</label>
-              <input type="text" id="proj-location" value="Kandigai / Mambakkam, Chennai Outer">
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Save Project Profile</button>
-          </form>
-        </div>
 
+          <div class="more-menu-grid">
+            <div class="more-menu-card" data-more-target="view-boq">
+              <div class="more-card-icon">📋</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.boqTitle">BOQ மதிப்பீடு & ஒப்பந்த மைல்கற்கள்</h4>
+                <p data-i18n="more.boqDesc">7-நிலை ஒப்பந்ததாரர் பில், 18% GST மற்றும் CSV ஏற்றுமதி.</p>
+              </div>
+            </div>
+
+            <div class="more-menu-card" data-more-target="view-projects">
+              <div class="more-card-icon">📁</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.projectsTitle">சேமிக்கப்பட்ட திட்டங்கள் & பதிப்புகள்</h4>
+                <p data-i18n="more.projectsDesc">திட்ட விவரங்கள், திருத்தங்கள் மற்றும் உள்ளூர் SQLite தரவுத்தளம்.</p>
+              </div>
+            </div>
+
+            <div class="more-menu-card" data-more-target="view-ai">
+              <div class="more-card-icon">🤖</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.aiTitle">சிவில் AI & இன்ஜினியரிங் வழிகாட்டி</h4>
+                <p data-i18n="more.aiDesc">IS குறியீடுகள், தமிழ்நாடு விதிமுறைகள் மற்றும் கேள்விகளுக்கு பதில்.</p>
+              </div>
+            </div>
+
+            <div class="more-menu-card" data-more-target="view-standards">
+              <div class="more-card-icon">📜</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.standardsTitle">IS குறியீடுகள் & நில அலகுகள் வழிகாட்டி</h4>
+                <p data-i18n="more.standardsDesc">கிரவுண்ட், குழி, சென்ட் மற்றும் கான்கிரீட் கலவை அட்டவணைகள்.</p>
+              </div>
+            </div>
+
+            <div class="more-menu-card" data-more-target="view-backup">
+              <div class="more-card-icon">💾</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.backupTitle">தரவு காப்பு & ஆஃப்லைன் ஒத்திசைவு</h4>
+                <p data-i18n="more.backupDesc">உங்கள் திட்டங்கள் மற்றும் கணக்கீடுகளை பாதுகாப்பாக சேமிக்கவும்.</p>
+              </div>
+            </div>
+
+            <div class="more-menu-card" data-more-target="view-apk">
+              <div class="more-card-icon">📱</div>
+              <div class="more-card-body">
+                <h4 data-i18n="more.apkTitle">Android ஆப் தகவல் & பதிவிறக்கம்</h4>
+                <p data-i18n="more.apkDesc">ஆப் பதிப்பு 1.0.0, ஆஃப்லைன் PWA மற்றும் APK தகவல்.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 1: BOQ & Project Estimates -->
+      <div id="view-boq" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
         <div class="card">
           <div class="card-header">
-            <h3>Offline Storage & Backup</h3>
+            <div>
+              <h2>கட்டுமான அளவீட்டு பட்டியல் (Itemized BOQ)</h2>
+              <p class="card-subtitle">Deterministic Quantities × Verified Unit Rates • Commercial Costing</p>
+            </div>
+            <div class="no-print" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" id="boq-csv-btn">📥 Export CSV</button>
+              <button class="btn btn-primary btn-sm" id="boq-print-btn">🖨️ Print / Save PDF</button>
+            </div>
           </div>
-          <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem;">
-            DDevUltraHome operates 100% offline. All estimates, custom rates, and scrap settlements are stored locally using SQLite and IndexedDB.
+
+          <div class="table-responsive">
+            <table class="data-table" id="boq-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item Description</th>
+                  <th>Quantity</th>
+                  <th>Unit</th>
+                  <th>Mat. Rate (₹)</th>
+                  <th>Lab. Rate (₹)</th>
+                  <th>Total Rate (₹)</th>
+                  <th>Total Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="boq-table-body">
+                <!-- Dynamically rendered by app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Commercial Surcharge Summary -->
+          <div style="margin-top: 1.5rem; max-width: 480px; margin-left: auto;">
+            <table class="data-table" style="font-size: 0.95rem;">
+              <tr>
+                <td><strong>Direct Civil Works Subtotal:</strong></td>
+                <td style="text-align: right;" id="boq-subtotal">₹ 0.00</td>
+              </tr>
+              <tr>
+                <td>Site Overhead (5%):</td>
+                <td style="text-align: right;" id="boq-overhead">₹ 0.00</td>
+              </tr>
+              <tr>
+                <td>Contractor Profit (10%):</td>
+                <td style="text-align: right;" id="boq-profit">₹ 0.00</td>
+              </tr>
+              <tr>
+                <td>Contingency (3%):</td>
+                <td style="text-align: right;" id="boq-cont">₹ 0.00</td>
+              </tr>
+              <tr>
+                <td>Applicable GST (18% on Civil Contracts):</td>
+                <td style="text-align: right;" id="boq-gst">₹ 0.00</td>
+              </tr>
+              <tr style="background-color: var(--bg-accent-soft); font-weight: 800; font-size: 1.18rem; color: var(--accent);">
+                <td>Estimated Grand Total:</td>
+                <td style="text-align: right;" id="boq-grand-total">₹ 0.00</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- 7-Stage Payment Milestones Card -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3>ஒப்பந்ததாரர் 7-நிலை கட்டண மைல்கற்கள் (Payment Milestones)</h3>
+              <p class="card-subtitle">Progressive billing schedule linked to verified estimate total</p>
+            </div>
+            <span class="badge badge-green">Standard 7-Stage Contract</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Stage</th>
+                  <th>Milestone & Deliverables</th>
+                  <th>Percentage</th>
+                  <th>Milestone Amount (₹)</th>
+                  <th>Cumulative Total (₹)</th>
+                </tr>
+              </thead>
+              <tbody id="milestones-table-body">
+                <!-- Populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 2: Projects & Revisions -->
+      <div id="view-projects" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h3>திட்ட விவரம் (Project Profile)</h3>
+            </div>
+            <form id="form-project">
+              <div class="form-group">
+                <label>திட்டத்தின் பெயர் (Project Name)</label>
+                <input type="text" id="proj-name" value="Ultra Villa Residential G+1" required class="form-control">
+              </div>
+              <div class="form-group">
+                <label>வாடிக்கையாளர் பெயர் (Client Name)</label>
+                <input type="text" id="proj-client" value="Er. Selvakumar / DDev Client" class="form-control">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>மனையின் பரப்பு (Plot Area) <span class="label-unit">sq.ft</span></label>
+                  <input type="number" id="proj-plot" value="2400" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label>கட்டிட பரப்பு (Built-up Area) <span class="label-unit">sq.ft</span></label>
+                  <input type="number" id="proj-builtup" value="1850" class="form-control">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>இடம் (Site Location)</label>
+                <input type="text" id="proj-location" value="Mambakkam, Chennai Outer" class="form-control">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">திட்டத்தை சேமி (Save Profile)</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>சேமிக்கப்பட்ட திட்டங்கள்</h3>
+            </div>
+            <div id="projects-list-container">
+              <div style="padding: 1rem; background: var(--bg-muted); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <strong>Ultra Villa Residential G+1</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                  நிலை: ACTIVE • திருத்தம்: Rev 1 • சென்னை
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 3: Civil AI Assistant -->
+      <div id="view-ai" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 data-i18n="more.aiTitle">சிவில் AI & இன்ஜினியரிங் வழிகாட்டி</h2>
+              <p class="card-subtitle">Deterministic IS Codes Expert • Cloud AI Fallback</p>
+            </div>
+            <span class="badge badge-green" id="ai-status-badge">Offline Civil Expert Active</span>
+          </div>
+
+          <!-- Quick Prompts Pills -->
+          <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.75rem;" class="no-print">
+            <button class="chip-btn quick-prompt-btn">M20 mix ratio & bags</button>
+            <button class="chip-btn quick-prompt-btn">90 deg bend deduction</button>
+            <button class="chip-btn quick-prompt-btn">1 ground in sqft</button>
+            <button class="chip-btn quick-prompt-btn">Curing days per IS 456</button>
+            <button class="chip-btn quick-prompt-btn">Current cement price Chennai</button>
+          </div>
+
+          <div class="chat-window">
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-bubble ai">
+                <strong>டிடெவ் அல்ட்ரா ஹோம் சிவில் AI:</strong><br>
+                வணக்கம்! நான் உங்கள் சிவில் இன்ஜினியரிங் நிபுணர் உதவியாளர். IS குறியீடுகள் (IS 456, IS 1200, IS 2502), கான்கிரீட் கலவை, கியூரிங் நாட்கள், கம்பி வளைப்பு விதிகள் மற்றும் தமிழ்நாடு கட்டுமான விதிமுறைகளை விளக்க முடியும். உங்கள் கேள்வியைக் கேளுங்கள்!
+              </div>
+            </div>
+            <form class="chat-input-bar" id="chat-form">
+              <input type="text" id="chat-input" placeholder="சிவில் இன்ஜினியரிங் கேள்வியைக் கேளுங்கள்..." required>
+              <button type="submit" class="btn btn-primary btn-sm">அனுப்பு</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 4: Engineering Standards & TN Land Units Reference -->
+      <div id="view-standards" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        
+        <!-- TN Land Units Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>தமிழ்நாடு பாரம்பரிய நில அளவீட்டு அலகுகள் (Tamil Nadu Land Units)</h3>
+            <span class="badge badge-teal">TN Standard</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>அலகு (Unit Name)</th><th>சதுர அடி (Square Feet)</th><th>சதுர மீட்டர் (m²)</th><th>விவரம் / விளக்கம்</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>1 கிரவுண்ட் (1 Ground)</strong></td><td><strong>2,400 sq.ft</strong></td><td>222.96 m²</td><td>சென்னை மற்றும் நகர மனைகளுக்கான அடிப்படை மனை அளவு</td></tr>
+                <tr><td><strong>1 குழி (1 Kuzhi)</strong></td><td><strong>144 sq.ft</strong></td><td>13.38 m²</td><td>கிராமப்புற பாரம்பரிய விவசாய மற்றும் மனை அளவு</td></tr>
+                <tr><td><strong>1 சென்ட் (1 Cent)</strong></td><td><strong>435.6 sq.ft</strong></td><td>40.46 m²</td><td>100 சென்ட் = 1 ஏக்கர்</td></tr>
+                <tr><td><strong>1 மா (1 Maa)</strong></td><td><strong>100 குழி (14,400 sq.ft)</strong></td><td>1337.8 m²</td><td>3 மா = 1 வேலி</td></tr>
+                <tr><td><strong>1 வேலி (1 Veli)</strong></td><td><strong>6.61 ஏக்கர் (43,560 sq.ft × 6.61)</strong></td><td>2.67 ஹெக்டேர்</td><td>தமிழ்நாடு பாரம்பரிய பெரிய நில அளவு</td></tr>
+                <tr><td><strong>1 ஏக்கர் (1 Acre)</strong></td><td><strong>43,560 sq.ft (18.15 கிரவுண்ட்)</strong></td><td>4,046.86 m²</td><td>சர்வதேச மற்றும் இந்திய அரசு அங்கீகரித்த நில அளவு</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Concrete Mix Ratios Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>IS 456 கான்கிரீட் கலவை விகிதங்கள் (Nominal Concrete Ratios)</h3>
+            <span class="badge badge-teal">IS 456:2000</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>தரம் (Grade)</th><th>விகிதம் (Cement : Sand : Aggregate)</th><th>பலம் (28 Days)</th><th>பயன்பாடு (Application)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>M5</strong></td><td>1 : 5 : 10</td><td>5 N/mm²</td><td>அஸ்திவாரம் அடித்தளம் / Lean Concrete</td></tr>
+                <tr><td><strong>M7.5</strong></td><td>1 : 4 : 8</td><td>7.5 N/mm²</td><td>அடித்தள PCC படுக்கை / Trench Beds</td></tr>
+                <tr><td><strong>M10</strong></td><td>1 : 3 : 6</td><td>10 N/mm²</td><td>தரைத்தளம் / Leveling Course</td></tr>
+                <tr><td><strong>M15</strong></td><td>1 : 2 : 4</td><td>15 N/mm²</td><td>பாதைகள் மற்றும் லேசான தரைத்தளம்</td></tr>
+                <tr><td><strong>M20</strong></td><td><strong>1 : 1.5 : 3</strong></td><td><strong>20 N/mm²</strong></td><td><strong>வீட்டு ஸ்லாப், பீம், தூண் (Standard RCC)</strong></td></tr>
+                <tr><td><strong>M25</strong></td><td>1 : 1 : 2</td><td>25 N/mm²</td><td>அடித்தள புட்டிங், தண்ணீர் தொட்டி</td></tr>
+                <tr><td><strong>M30</strong></td><td>1 : 0.75 : 1.5 (Design Mix)</td><td>30 N/mm²</td><td>வணிக வளாகம், பல அடுக்கு மாடி</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TMT Steel Weight Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3>TMT கம்பி எடை கணக்கீடு (d² / 162.28 Formula)</h3>
+            <span class="badge badge-teal">IS 1786</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>விட்டம் (Diameter)</th><th>மீட்டருக்கு எடை (kg/m)</th><th>12m கம்பி எடை (kg/rod)</th><th>1 டன்னில் உள்ள கம்பிகள் (Rods/Tonne)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>8 mm</strong></td><td>0.395 kg/m</td><td>4.74 kg</td><td>~210 கம்பிகள்</td></tr>
+                <tr><td><strong>10 mm</strong></td><td>0.617 kg/m</td><td>7.40 kg</td><td>~135 கம்பிகள்</td></tr>
+                <tr><td><strong>12 mm</strong></td><td>0.888 kg/m</td><td>10.66 kg</td><td>~94 கம்பிகள்</td></tr>
+                <tr><td><strong>16 mm</strong></td><td>1.580 kg/m</td><td>18.96 kg</td><td>~53 கம்பிகள்</td></tr>
+                <tr><td><strong>20 mm</strong></td><td>2.469 kg/m</td><td>29.63 kg</td><td>~34 கம்பிகள்</td></tr>
+                <tr><td><strong>25 mm</strong></td><td>3.858 kg/m</td><td>46.30 kg</td><td>~22 கம்பிகள்</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 5: Backup & Offline Storage -->
+      <div id="view-backup" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        <div class="card">
+          <div class="card-header">
+            <h3>உள்ளூர் தரவு மேலாண்மை & காப்பு (Offline Backup)</h3>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            DDevUltraHome 100% ஆஃப்லைனில் செயல்படும் திறன் கொண்டது. திட்டங்கள், தனிப்பயன் விலைகள் மற்றும் ஸ்கிராப் பரிவர்த்தனைகள் அனைத்தும் உங்கள் சாதனத்தில் SQLite மூலம் பாதுகாப்பாக சேமிக்கப்படுகின்றன.
           </p>
 
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <a href="/api/backup" download class="btn btn-success" style="text-decoration: none;">
-              📥 Export Complete Database Backup (JSON)
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 480px;">
+            <a href="/api/backup" download class="btn btn-primary" style="text-decoration: none;">
+              📥 முழு தரவுத்தள காப்பு கோப்பை பதிவிறக்கு (JSON Backup)
             </a>
 
-            <div style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
-              <label style="font-size: 0.85rem; font-weight: 600; display: block; margin-bottom: 0.25rem;">Restore from Backup JSON:</label>
-              <input type="file" id="restore-file-input" accept=".json">
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem; margin-top: 0.5rem;">
+              <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">காப்பு கோப்பிலிருந்து மீட்டெடு (Restore JSON):</label>
+              <input type="file" id="restore-file-input" accept=".json" class="form-control">
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Sub-view 6: Android APK Info -->
+      <div id="view-apk" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        <div class="card">
+          <div class="card-header">
+            <h3>Android APK & ஆப் நிறுவல் தகவல்</h3>
+            <span class="badge badge-green">பதிப்பு 1.0.0 (Capacitor)</span>
+          </div>
+          <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">
+            <p><strong>பயன்பாடு:</strong> DDevUltraHome — Tamil Nadu Civil Engineering & Scrap Valuation</p>
+            <p><strong>தொழில்நுட்பம்:</strong> Node.js 22, Vanilla JavaScript ESM, SQLite, Capacitor 8 Android Wrapper, PWA Service Worker.</p>
+            <p><strong>ஆஃப்லைன் திறன்:</strong> 100% ஆஃப்லைனில் அனைத்து 19 கணக்கீடுகளும் இயங்கும்.</p>
+            
+            <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button id="install-apk-btn" class="btn btn-primary">
+                📱 மொபைலில் இன்ஸ்டால் செய் (Install App)
+              </button>
+              <a href="https://github.com/vignesh0021/DDevUltraHome-/actions" target="_blank" class="btn btn-secondary" style="text-decoration: none;">
+                🌐 GitHub Actions APK Builds
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </main>
 
-  <script src="/js/app.js"></script>
+  <!-- =========================================================================
+       ACCESSIBLE MOBILE BOTTOM NAVIGATION BAR (5 PRIMARY DESTINATIONS)
+       ========================================================================= -->
+  <nav class="mobile-bottom-nav" aria-label="Primary Navigation">
+    <button class="nav-item-btn active" data-tab="tab-home" id="nav-home" type="button">
+      <span class="nav-icon" aria-hidden="true">🏠</span>
+      <span class="nav-label" data-i18n="nav.home">முகப்பு</span>
+    </button>
+
+    <button class="nav-item-btn" data-tab="tab-calc" id="nav-calc" type="button">
+      <span class="nav-icon" aria-hidden="true">📐</span>
+      <span class="nav-label" data-i18n="nav.calc">கணக்கீடுகள்</span>
+    </button>
+
+    <button class="nav-item-btn" data-tab="tab-rates" id="nav-rates" type="button">
+      <span class="nav-icon" aria-hidden="true">📊</span>
+      <span class="nav-label" data-i18n="nav.rates">பொருட்கள் விலை</span>
+    </button>
+
+    <button class="nav-item-btn" data-tab="tab-scrap" id="nav-scrap" type="button">
+      <span class="nav-icon" aria-hidden="true">⚖️</span>
+      <span class="nav-label" data-i18n="nav.scrap">ஸ்கிராப்</span>
+    </button>
+
+    <button class="nav-item-btn" data-tab="tab-more" id="nav-more" type="button">
+      <span class="nav-icon" aria-hidden="true">⋯</span>
+      <span class="nav-label" data-i18n="nav.more">மேலும்</span>
+    </button>
+  </nav>
+
+  <!-- Native App Controller (ES Module) -->
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>

@@ -3,12 +3,13 @@
  * Enables 100% offline operations for civil engineering calculations and estimates
  */
 
-const CACHE_NAME = 'ddevultrahome-v2';
+const CACHE_NAME = 'ddevultrahome-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
+  '/js/i18n.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
