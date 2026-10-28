@@ -31,6 +31,11 @@ import { MaterialPriceIntelligence, TN_DISTRICTS } from './intelligence/material
 import { ScrapRatesEngine } from './intelligence/scrapRates.js';
 import { OfflineCivilEngineProvider, aiService } from './ai/provider.js';
 import { defaultProviderRegistry } from './intelligence/providerArchitecture.js';
+import { BoqGenerator } from './plan/boqGenerator.js';
+import { MaterialProcurementEngine } from './plan/materialProcurement.js';
+import { TakeoffEngine } from './plan/takeoffEngine.js';
+import { ExcelExportEngine } from './plan/excelExport.js';
+import { PdfExtractor } from './plan/pdfExtractor.js';
 
 // --- Local Storage Database Emulation (for Standalone APK / Offline PWA) ---
 const STORAGE_KEYS = {
@@ -315,6 +320,60 @@ async function executeLocalRequest(url, options = {}) {
       csv += `GST (18%),,,,,,,${boq.financials.gst.amount}\r\n`;
       csv += `Grand Total Estimate (INR),,,,,,,${boq.financials.grandTotal}\r\n`;
       return createMockResponse(csv, 200, 'text/csv');
+    }
+
+    // 6b. Plan to Budget & Takeoff Engine (In-Process Dispatcher)
+    if (pathname === '/api/plan-budget/parse-plan') {
+      let buffer;
+      if (body.fileBase64) {
+        if (typeof Buffer !== 'undefined') {
+          buffer = Buffer.from(body.fileBase64, 'base64');
+        } else {
+          const binary = atob(body.fileBase64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          buffer = bytes;
+        }
+      } else if (body.rawText) {
+        buffer = typeof Buffer !== 'undefined' ? Buffer.from(body.rawText, 'utf-8') : new TextEncoder().encode(body.rawText);
+      } else {
+        return createMockResponse({ success: false, error: 'Missing fileBase64 or rawText in request body' }, 400);
+      }
+      const result = PdfExtractor.extractPlan(buffer, {
+        fileName: body.fileName || 'plan.pdf',
+        mimeType: body.mimeType || 'application/pdf'
+      });
+      return createMockResponse({ success: true, ...result });
+    }
+
+    if (pathname === '/api/plan-budget/calibrate-scale') {
+      const scale = TakeoffEngine.calibrateScale(body.pixelLength, body.realLengthMeters, body.unit);
+      return createMockResponse({ success: true, scale });
+    }
+
+    if (pathname === '/api/plan-budget/compute-polygon') {
+      const result = TakeoffEngine.computePolygonArea(body.points, body.scale);
+      return createMockResponse({ success: true, ...result });
+    }
+
+    if (pathname === '/api/plan-budget/generate-boq') {
+      const boq = BoqGenerator.generateDraftBoq(body);
+      return createMockResponse({ success: true, boq });
+    }
+
+    if (pathname === '/api/plan-budget/procurement') {
+      const materials = MaterialProcurementEngine.generateProcurementList(body.boqItems || []);
+      return createMockResponse({ success: true, materials });
+    }
+
+    if (pathname === '/api/plan-budget/export-excel') {
+      const xml = ExcelExportEngine.generateWorkbookXml(body.boq || {}, body.materials || []);
+      return createMockResponse(xml, 200, 'application/vnd.ms-excel; charset=utf-8');
+    }
+
+    if (pathname === '/api/plan-budget/export-csv') {
+      const csv = ExcelExportEngine.generateProcurementCsv(body.materials || []);
+      return createMockResponse(csv, 200, 'text/csv; charset=utf-8');
     }
 
     // 7. Projects & Estimates

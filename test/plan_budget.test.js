@@ -14,6 +14,7 @@ import { TakeoffEngine } from '../src/plan/takeoffEngine.js';
 import { BoqGenerator } from '../src/plan/boqGenerator.js';
 import { MaterialProcurementEngine } from '../src/plan/materialProcurement.js';
 import { ExcelExportEngine } from '../src/plan/excelExport.js';
+import { apiClient } from '../public/js/apiClient.js';
 
 describe('Plan to Budget & Takeoff Engine Test Suite', () => {
   // 1. PDF Text Operator and Drawing Classification Tests
@@ -255,4 +256,51 @@ describe('Plan to Budget & Takeoff Engine Test Suite', () => {
       assert.ok(csv.includes('MAT-STL-01'));
     });
   });
+
+  // 6. In-Process Client Dispatcher for Standalone APK & Offline PWA
+  describe('In-Process Client Dispatcher for Standalone APK & Offline PWA', () => {
+    it('dispatches /api/plan-budget/generate-boq in-process without network', async () => {
+      const rooms = [
+        { id: 'rm-1', name: 'Living & Dining Room', length: 4.88, width: 3.66, areaM2: 17.86, areaSqft: 192.2 },
+        { id: 'rm-2', name: 'Master Bedroom', length: 3.66, width: 3.66, areaM2: 13.40, areaSqft: 144.2 }
+      ];
+      const res = await apiClient.executeLocal('/api/plan-budget/generate-boq', {
+        method: 'POST',
+        body: { projectName: 'Guindy Residence', district: 'Chennai', floorsCount: 1, columnsCount: 12, footingsCount: 12, rooms }
+      });
+      assert.strictEqual(res.ok, true);
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.ok(data.boq.items.length >= 10);
+      assert.ok(data.boq.financials.grandTotal > 0);
+    });
+
+    it('dispatches /api/plan-budget/procurement in-process without network', async () => {
+      const boq = BoqGenerator.generateDraftBoq({ projectName: 'Test' });
+      const res = await apiClient.executeLocal('/api/plan-budget/procurement', {
+        method: 'POST',
+        body: { boqItems: boq.items }
+      });
+      assert.strictEqual(res.ok, true);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.ok(Array.isArray(data.materials));
+      assert.strictEqual(data.materials.length, 8);
+    });
+
+    it('dispatches /api/plan-budget/export-excel in-process without network', async () => {
+      const boq = BoqGenerator.generateDraftBoq({ projectName: 'Test' });
+      const materials = MaterialProcurementEngine.generateProcurementList(boq.items);
+      const res = await apiClient.executeLocal('/api/plan-budget/export-excel', {
+        method: 'POST',
+        body: { boq, materials }
+      });
+      assert.strictEqual(res.ok, true);
+      assert.strictEqual(res.headers.get('content-type'), 'application/vnd.ms-excel; charset=utf-8');
+      const text = await res.text();
+      assert.ok(text.includes('<?xml version="1.0" encoding="UTF-8"?>'));
+    });
+  });
 });
+

@@ -5,6 +5,8 @@
  * and multi-format export (Excel XML, PDF Print, CSV).
  */
 
+import { apiClient } from './apiClient.js';
+
 export class PlanBudgetController {
   constructor() {
     this.sheets = [];
@@ -94,8 +96,8 @@ export class PlanBudgetController {
       try {
         const base64Data = await this.readFileAsBase64(file);
         
-        // Post to backend plan parsing API
-        const response = await fetch('/api/plan-budget/parse-plan', {
+        // Post to plan parsing API (dispatches in-process if offline/Capacitor)
+        const response = await apiClient.request('/api/plan-budget/parse-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -422,8 +424,8 @@ export class PlanBudgetController {
       const district = document.getElementById('district-select')?.value || 'Chennai';
 
       try {
-        // 1. Call Backend /api/plan-budget/generate-boq
-        const response = await fetch('/api/plan-budget/generate-boq', {
+        // 1. Call /api/plan-budget/generate-boq via unified offline dispatcher
+        const response = await apiClient.request('/api/plan-budget/generate-boq', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -442,8 +444,8 @@ export class PlanBudgetController {
           this.currentBoq = data.boq;
           this.renderBoqTable(data.boq);
 
-          // 2. Fetch Procurement BOM
-          const procRes = await fetch('/api/plan-budget/procurement', {
+          // 2. Fetch Procurement BOM via unified offline dispatcher
+          const procRes = await apiClient.request('/api/plan-budget/procurement', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ boqItems: data.boq.items })
@@ -551,7 +553,7 @@ export class PlanBudgetController {
         }
 
         try {
-          const res = await fetch('/api/plan-budget/export-excel', {
+          const res = await apiClient.request('/api/plan-budget/export-excel', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -602,7 +604,7 @@ export class PlanBudgetController {
         }
 
         try {
-          const res = await fetch('/api/plan-budget/export-csv', {
+          const res = await apiClient.request('/api/plan-budget/export-csv', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ materials: this.currentMaterials })
@@ -641,7 +643,7 @@ export class PlanBudgetController {
           const projName = document.getElementById('plan-proj-name')?.value || 'சென்னை குடியிருப்பு இல்லம்';
           const district = document.getElementById('district-select')?.value || 'Chennai';
 
-          const response = await fetch('/api/projects', {
+          const response = await apiClient.request('/api/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -657,7 +659,7 @@ export class PlanBudgetController {
           const result = await response.json();
           if (result && result.id) {
             // Also save estimate record
-            await fetch('/api/estimates', {
+            await apiClient.request('/api/estimates', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
