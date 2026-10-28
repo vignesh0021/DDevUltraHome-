@@ -39,7 +39,9 @@ jobs:
 
       - name: Generate & Sync Capacitor Android
         run: |
-          npx cap add android || true
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
           npx cap sync android
           node scripts/generate-android-icons.js
 

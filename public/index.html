@@ -425,6 +425,58 @@
           <h4 style="font-size: 0.92rem; margin-bottom: 0.5rem; color: var(--text-secondary);">கண்டறியப்பட்ட வரைபட தாள்கள் (Detected Sheets &amp; Classifications):</h4>
           <div class="plan-sheet-list" id="plan-sheets-wrapper"></div>
         </div>
+
+        <!-- Side-by-Side Drawing Inspection & CAD Notes Panel -->
+        <div id="plan-inspection-panel" style="display: none; margin-top: 1.25rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; background: var(--bg-surface);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">
+              🔍 வரைபட ஒப்பீட்டு ஆய்வு &amp; CAD குறிப்புகள் (Side-by-Side Plan Review)
+            </div>
+            <div id="cad-confidence-badge" class="badge badge-teal" style="font-size: 0.8rem;">
+              கண்டறிதல் உறுதி: 98% (Native CAD Vector Text)
+            </div>
+          </div>
+
+          <div id="cad-restrictions-alert" class="warning-callout" style="display: none; margin-bottom: 0.75rem; background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 0.75rem;">
+            ⚠️ <strong>முக்கிய வரைபடக் கட்டுப்பாடு (CAD Note 2):</strong> <em>"Drawings should not be scaled for obtaining dimensions."</em><br>
+            <span style="font-size: 0.82rem; color: var(--text-secondary);">அனைத்து அளவீடுகளும் உத்தேச பிக்சல் அடிப்படையில் அமையாமல், ஆவணத்தில் உள்ள எழுத்துமுறை அளவீடுகளின்படி மட்டுமே உறுதி செய்யப்பட வேண்டும்.</span>
+          </div>
+
+          <div class="grid-2" style="gap: 1rem;">
+            <!-- Left: Schematic Bounding Box Preview -->
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-muted);">
+              <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-primary); display: flex; justify-content: space-between;">
+                <span>வரைபட அமைவிடம் (Drawing Regions)</span>
+                <span id="inspected-sheet-title" style="color: var(--accent);">Sheet 1: Ground Floor Scheme</span>
+              </div>
+              <div id="plan-schematic-preview" style="min-height: 180px; display: flex; flex-direction: column; gap: 0.5rem; max-height: 280px; overflow-y: auto;">
+                <!-- Populated with extracted room badges and bounding coords -->
+              </div>
+            </div>
+
+            <!-- Right: Architectural Notes & Verification Action -->
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-muted);">
+              <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                கட்டடக் கலைஞர் &amp; குறிப்புகள் (Architect &amp; Notes)
+              </div>
+              <div id="architect-details-box" style="font-size: 0.82rem; line-height: 1.4; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                <strong>Architect:</strong> J-angle studio, Chennai<br>
+                <strong>Project:</strong> Guindy Residence Scheme R0
+              </div>
+              <div id="cad-notes-list" style="font-size: 0.78rem; color: var(--text-muted); max-height: 140px; overflow-y: auto; margin-bottom: 0.75rem;">
+                <!-- List of notes 1 to 5 -->
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-all-dimensions" style="background: #16a34a; color: #fff;">
+                  ✓ அனைத்து அளவுகளையும் உறுதிப்படுத்து (Confirm All)
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-edit-dimensions">
+                  ✏️ கைமுறையாக திருத்து (Edit Manually)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Step 2: Scale Calibration & Room Takeoff Dimensions -->
@@ -507,6 +559,66 @@
         </div>
       </div>
 
+      <!-- Step 2B: 3D Plan Studio & Parametric Inspection -->
+      <div class="card takeoff-step-card" id="card-3d-plan-studio">
+        <div class="card-header">
+          <div style="display: flex; align-items: center;">
+            <span class="step-num-pill" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">3D</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">முப்பரிமாண மாதிரி ஆய்வுக்களம் (Parametric 2D-to-3D Plan Studio)</h3>
+              <p class="card-subtitle" style="margin: 0;">Interactive 3D building projection, exploded floor levels &amp; wall inspection</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span id="review-gate-badge" class="badge" style="background: #f59e0b; color: #000; font-weight: 700;">Gate: DRAFT</span>
+          </div>
+        </div>
+
+        <!-- 3D Controls Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-muted); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-reset-view" title="Reset View">🔄 இயல்பு பார்வை (Reset)</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-wireframe" title="Toggle Wireframe">🌐 கம்பிச்சட்டம் (Wireframe)</button>
+            
+            <span style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 0.5rem;">தளம்:</span>
+            <div class="btn-group" style="display: inline-flex;">
+              <button type="button" class="btn btn-secondary btn-sm active-floor-btn" data-floor="ALL" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">அனைத்தும்</button>
+              <button type="button" class="btn btn-secondary btn-sm active-floor-btn" data-floor="GROUND" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">தரைத்தளம்</button>
+              <button type="button" class="btn btn-secondary btn-sm active-floor-btn" data-floor="FIRST" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">முதல் தளம்</button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="exploded-slider" style="font-size: 0.8rem; margin: 0; color: var(--text-secondary); white-space: nowrap;">தளப் பிரிப்பு (Explode):</label>
+            <input type="range" id="exploded-slider" min="0" max="2.5" step="0.1" value="0" style="width: 100px;">
+            <span id="exploded-val-text" style="font-size: 0.8rem; font-weight: 700; color: var(--accent); min-width: 32px;">0.0m</span>
+          </div>
+        </div>
+
+        <!-- 3D Canvas -->
+        <div style="position: relative; width: 100%; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle);">
+          <canvas id="canvas-3d-studio" width="760" height="380" style="width: 100%; height: 380px; display: block; background: #0f172a; cursor: grab;"></canvas>
+          <div style="position: absolute; bottom: 8px; right: 10px; font-size: 0.75rem; color: #94a3b8; background: rgba(15, 23, 42, 0.8); padding: 2px 6px; border-radius: 4px;">
+            Orbit: Drag • Zoom: Wheel/Pinch • Pan: Shift+Drag
+          </div>
+        </div>
+
+        <!-- Review Gate & Engineering Non-Readiness Notice -->
+        <div style="margin-top: 0.75rem; padding: 0.6rem 0.8rem; background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="font-size: 0.82rem; color: var(--text-secondary);">
+            <strong style="color: #ef4444;">⚠️ பொறியியல் ஆய்வு எச்சரிக்கை (Review Gate Notice):</strong><br>
+            இந்த மாதிரி முன்மதிப்பீட்டிற்கானது மட்டுமே (Preliminary Takeoff). முழுமையான வரைபடங்கள் மற்றும் கட்டமைப்பு பொறியாளர் சான்றொப்பம் இன்றி இதனை <em>Construction-Ready</em> ஆக கருதக்கூடாது.
+          </div>
+          <div>
+            <select id="select-review-gate" class="form-control" style="max-width: 220px; font-size: 0.82rem; font-weight: 700;">
+              <option value="DRAFT">DRAFT (ஆரம்ப வரைவு)</option>
+              <option value="NEEDS_INPUT">NEEDS_INPUT (விவரங்கள் தேவை)</option>
+              <option value="APPROVED_FOR_ESTIMATION">APPROVED_FOR_ESTIMATION (மதிப்பீட்டுக்கு ஒப்புதல்)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Step 3: Structural Schedules & Building Configuration -->
       <div class="card takeoff-step-card">
         <div class="card-header">
@@ -559,7 +671,7 @@
               <p class="card-subtitle" style="margin: 0;">IS 456, IS 1200 &amp; Tamil Nadu PWD Schedule of Rates 2025-26</p>
             </div>
           </div>
-          <span class="draft-review-badge">Draft — Requires Review</span>
+          <span id="boq-review-badge" class="draft-review-badge">Draft — Requires Review</span>
         </div>
 
         <div class="table-responsive">

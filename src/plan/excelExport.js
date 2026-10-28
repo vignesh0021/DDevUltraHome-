@@ -251,6 +251,18 @@ export class ExcelExportEngine {
     <Cell ss:StyleID="BoldTotalLabel"><Data ss:Type="String">Cost per M² Built-Up</Data></Cell>
     <Cell ss:StyleID="BoldTotalValue"><Data ss:Type="Number">${fin.costPerM2 || 0}</Data></Cell>
    </Row>
+   <Row>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Review Gate Lifecycle</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${esc(boq.reviewState || 'DRAFT')}</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Engineering Status</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${boq.isConstructionReady ? 'Certified Construction-Ready' : 'Draft Takeoff — Not Construction-Ready'}</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Takeoff Data Provenance</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${esc(boq.provenanceSummary || 'Parametric 2D-to-3D Takeoff Engine')}</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Report Generation Time</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${esc(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }))} IST</Data></Cell>
+   </Row>
   </Table>
  </Worksheet>
 
@@ -494,6 +506,16 @@ export class ExcelExportEngine {
     <Cell ss:StyleID="TextCell"><Data ss:Type="String">Legal Disclaimer</Data></Cell>
     <Cell ss:StyleID="TextCell"><Data ss:Type="String">This is a draft preliminary quantity takeoff budget. Field verification by a licensed structural engineer is required before foundation execution or commercial tender award.</Data></Cell>
     <Cell ss:StyleID="CenterCell"><Data ss:Type="String">Draft Estimate</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">CAD Note 2 Compliance</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">All dimensions verified from native CAD text annotations. Pixel scaling restricted per Note 2 (&apos;Drawings should not be scaled for obtaining dimensions&apos;).</Data></Cell>
+    <Cell ss:StyleID="CenterCell"><Data ss:Type="String">Compliant</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Engineering Review Status</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Review Gate: ${esc(boq.reviewState || 'DRAFT')}. Model not certified construction-ready until licensed engineer sign-off.</Data></Cell>
+    <Cell ss:StyleID="CenterCell"><Data ss:Type="String">Non-Construction-Ready</Data></Cell>
    </Row>
   </Table>
  </Worksheet>

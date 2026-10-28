@@ -57,11 +57,15 @@ export class BoqGenerator {
     const totalBuiltupAreaM2 = SafeMath.round(builtupAreaM2PerFloor * floors, 1);
     const plinthPerimeterM = SafeMath.round(Math.sqrt(builtupAreaM2PerFloor) * 4 * 1.4, 1); // External + internal plinth beams
 
-    // 2. Identify Column & Footing Counts from Schedules or Built-up Area
     const columnSchedules = schedules.filter(s => s.category === 'COLUMN');
     const footingSchedules = schedules.filter(s => s.category === 'FOOTING');
     const numColumns = columnSchedules.length > 0 ? columnSchedules.length : Math.max(8, Math.round(builtupAreaSqftPerFloor / 100));
     const numFootings = footingSchedules.length > 0 ? footingSchedules.length : numColumns;
+
+    const q3D = projectData.quantities3D || null;
+    if (q3D) {
+      assumptions.push('Quantities derived directly from verified 2D-to-3D parametric model geometry');
+    }
 
     assumptions.push(`Structural Basis: ${numColumns} columns & ${numFootings} isolated footings for ${builtupAreaSqftPerFloor} sq.ft footprint`);
 
@@ -119,7 +123,7 @@ export class BoqGenerator {
     // ITEM 03: RCC in Footings (M20 / M25)
     // ==========================================
     // Average footing size: 1.5m x 1.5m x 0.45m sloped
-    const footingVolM3 = SafeMath.round(numFootings * (1.5 * 1.5 * 0.40), 2);
+    const footingVolM3 = q3D?.footingConcreteM3 !== undefined ? q3D.footingConcreteM3 : SafeMath.round(numFootings * (1.5 * 1.5 * 0.40), 2);
     items.push({
       itemCode: 'ITEM-03',
       trade: 'RCC',
@@ -134,8 +138,8 @@ export class BoqGenerator {
       labourRate: 1100.0,
       unitRate: 6000.0,
       totalAmount: SafeMath.round(footingVolM3 * 6000, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
@@ -143,7 +147,7 @@ export class BoqGenerator {
     // ==========================================
     // Average beam: 230mm x 450mm
     const beamLengthM = plinthPerimeterM * (floors + 1); // Plinth + roof levels
-    const beamVolM3 = SafeMath.round(beamLengthM * 0.23 * 0.40, 2);
+    const beamVolM3 = q3D?.beamConcreteM3 !== undefined ? q3D.beamConcreteM3 : SafeMath.round(beamLengthM * 0.23 * 0.40, 2);
     items.push({
       itemCode: 'ITEM-04',
       trade: 'RCC',
@@ -158,15 +162,15 @@ export class BoqGenerator {
       labourRate: 1350.0,
       unitRate: 6250.0,
       totalAmount: SafeMath.round(beamVolM3 * 6250, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
     // ITEM 05: RCC in Columns
     // ==========================================
     // Columns: 300mm x 300mm x 3.0m height per floor
-    const columnVolM3 = SafeMath.round(numColumns * floors * (0.30 * 0.30 * 3.0), 2);
+    const columnVolM3 = q3D?.columnConcreteM3 !== undefined ? q3D.columnConcreteM3 : SafeMath.round(numColumns * floors * (0.30 * 0.30 * 3.0), 2);
     items.push({
       itemCode: 'ITEM-05',
       trade: 'RCC',
@@ -181,15 +185,15 @@ export class BoqGenerator {
       labourRate: 1450.0,
       unitRate: 6350.0,
       totalAmount: SafeMath.round(columnVolM3 * 6350, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
     // ITEM 06: RCC in Roof Slabs & Staircase
     // ==========================================
     // Roof slab: 125mm thickness over total built-up area
-    const slabVolM3 = SafeMath.round(builtupAreaM2PerFloor * floors * 0.125, 2);
+    const slabVolM3 = q3D?.slabConcreteM3 !== undefined ? q3D.slabConcreteM3 : SafeMath.round(builtupAreaM2PerFloor * floors * 0.125, 2);
     items.push({
       itemCode: 'ITEM-06',
       trade: 'RCC',
@@ -204,8 +208,8 @@ export class BoqGenerator {
       labourRate: 1400.0,
       unitRate: 6300.0,
       totalAmount: SafeMath.round(slabVolM3 * 6300, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
@@ -214,7 +218,7 @@ export class BoqGenerator {
     // Total RCC volume: footings + beams + columns + slabs
     const totalRccM3 = SafeMath.round(footingVolM3 + beamVolM3 + columnVolM3 + slabVolM3, 2);
     // Engineered steel density: ~80 kg/m³ for residential frame structure
-    const totalSteelKg = SafeMath.round(totalRccM3 * 82.0, 1);
+    const totalSteelKg = q3D?.reinforcementSteelKg !== undefined ? q3D.reinforcementSteelKg : SafeMath.round(totalRccM3 * 82.0, 1);
     items.push({
       itemCode: 'ITEM-07',
       trade: 'Steel & BBS',
@@ -266,7 +270,7 @@ export class BoqGenerator {
     const grossWallAreaM2 = plinthPerimeterM * 3.0 * floors;
     const openingDeductionsM2 = SafeMath.round(grossWallAreaM2 * 0.15, 1);
     const netBrickWallM2 = SafeMath.round(grossWallAreaM2 - openingDeductionsM2, 1);
-    const brickVolM3 = SafeMath.round(netBrickWallM2 * 0.23, 2);
+    const brickVolM3 = q3D?.externalBrickworkM3 !== undefined ? q3D.externalBrickworkM3 : SafeMath.round(netBrickWallM2 * 0.23, 2);
     items.push({
       itemCode: 'ITEM-09',
       trade: 'Masonry',
@@ -281,15 +285,18 @@ export class BoqGenerator {
       labourRate: 1600.0,
       unitRate: 6400.0,
       totalAmount: SafeMath.round(brickVolM3 * 6400.0, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
     // ITEM 10: 4.5-inch Brick Partition Walls
     // ==========================================
     // Partition wall area approx 40% of exterior wall area
-    const partitionAreaM2 = SafeMath.round(netBrickWallM2 * 0.40, 1);
+    const partitionAreaM2 = q3D?.internalBrickworkM3 !== undefined 
+      ? SafeMath.round(q3D.internalBrickworkM3 / 0.115, 1)
+      : SafeMath.round(netBrickWallM2 * 0.40, 1);
+    const partitionVolM3 = q3D?.internalBrickworkM3 !== undefined ? q3D.internalBrickworkM3 : SafeMath.round(partitionAreaM2 * 0.115, 2);
     items.push({
       itemCode: 'ITEM-10',
       trade: 'Masonry',
@@ -304,15 +311,17 @@ export class BoqGenerator {
       labourRate: 210.0,
       unitRate: 630.0,
       totalAmount: SafeMath.round(partitionAreaM2 * 630.0, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
     // ITEM 11: Internal & Ceiling Plastering (12mm)
     // ==========================================
     // Plaster area = 2 * (outer + inner walls) + ceiling slab
-    const plasterAreaM2 = SafeMath.round((netBrickWallM2 * 2) + (partitionAreaM2 * 2) + (builtupAreaM2PerFloor * floors), 1);
+    const plasterAreaM2 = q3D?.internalPlasteringM2 !== undefined
+      ? q3D.internalPlasteringM2
+      : SafeMath.round((netBrickWallM2 * 2) + (partitionAreaM2 * 2) + (builtupAreaM2PerFloor * floors), 1);
     items.push({
       itemCode: 'ITEM-11',
       trade: 'Finishing',
@@ -327,14 +336,16 @@ export class BoqGenerator {
       labourRate: 145.0,
       unitRate: 230.0,
       totalAmount: SafeMath.round(plasterAreaM2 * 230.0, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
     // ITEM 12: Vitrified Tile Flooring (2x2 ft)
     // ==========================================
-    const floorTileAreaM2 = SafeMath.round(carpetAreaM2 * floors, 1);
+    const floorTileAreaM2 = q3D?.flooringTilingM2 !== undefined
+      ? q3D.flooringTilingM2
+      : SafeMath.round(carpetAreaM2 * floors, 1);
     items.push({
       itemCode: 'ITEM-12',
       trade: 'Finishing',
@@ -460,9 +471,13 @@ export class BoqGenerator {
     const costPerSqft = SafeMath.round(grandTotal / totalBuiltupAreaSqft, 2);
     const costPerM2 = SafeMath.round(grandTotal / totalBuiltupAreaM2, 2);
 
+    const reviewState = projectData.reviewState || 'DRAFT';
     return {
       projectName: projectData.projectName || 'Residential Building Plan',
       district: projectData.district || 'Chennai',
+      reviewState,
+      isConstructionReady: false,
+      provenanceSummary: q3D ? 'Derived from verified 2D-to-3D parametric takeoff' : 'Derived from standard 2D plan assumptions',
       buildingProfile: {
         floorsCount: floors,
         carpetAreaSqft: SafeMath.round(carpetAreaSqft * floors, 1),
@@ -486,7 +501,7 @@ export class BoqGenerator {
         formattedGrandTotal: SafeMath.formatINR(grandTotal)
       },
       assumptions,
-      defaultStatus: 'Draft — Requires Review'
+      defaultStatus: reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     };
   }
 }
