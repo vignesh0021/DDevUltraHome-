@@ -316,7 +316,7 @@ export class MaterialPriceIntelligence {
   /**
    * Determine freshness label according to observed date and source type
    */
-  static getFreshnessBadge(observedDateStr, isOfficialSor = false) {
+  static getFreshnessBadge(observedDateStr, isOfficialSor = false, now = new Date()) {
     if (isOfficialSor) {
       return {
         code: 'OFFICIAL_SOR',
@@ -336,8 +336,7 @@ export class MaterialPriceIntelligence {
     }
 
     const obs = new Date(observedDateStr);
-    const now = new Date('2026-10-27T16:42:16Z');
-    const diffDays = Math.floor((now.getTime() - obs.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.max(0, Math.floor((now.getTime() - obs.getTime()) / (1000 * 60 * 60 * 24)));
 
     if (diffDays <= 7) {
       return {
