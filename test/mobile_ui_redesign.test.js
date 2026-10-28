@@ -158,7 +158,7 @@ describe('Mobile-First UI/UX Redesign & Layout Integrity', () => {
 
     assert.match(css, /--safe-bottom:/, 'Safe area inset bottom defined');
     assert.match(css, /--safe-top:/, 'Safe area inset top defined');
-    assert.match(css, /--accent:\s*#0d9488;/, 'Professional teal accent defined');
+    assert.match(css, /--accent:\s*(#ea580c|#0d9488);/, 'Theme accent defined');
     assert.match(css, /'Mukta Malar'/, 'Tamil font stack configured');
     assert.match(css, /min-height:\s*48px;/, 'Accessible 48px mobile touch targets enforced');
     assert.match(css, /\[data-theme="dark"\]/, 'Dark theme token definitions exist');

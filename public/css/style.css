@@ -3,33 +3,47 @@
    Tamil Nadu Civil Engineering, PWD Material Intelligence & Scrap Management
    ========================================================================== */
 
-/* --- Fonts & CSS Variables (Design Tokens) --- */
+/* --- Fonts & CSS Variables (Design Tokens - UI/UX Pro Max Architecture) --- */
 :root {
-  /* Color Palette - Warm Neutral & Professional Teal */
+  /* Design System Color Tokens */
+  --color-primary: #64748b;
+  --color-secondary: #94a3b8;
+  --color-accent: #ea580c;
+  --color-background: #f8fafc;
+  --color-foreground: #334155;
+  --color-card: #ffffff;
+  --color-card-foreground: #334155;
+  --color-muted: #ebf0f5;
+  --color-muted-foreground: #475569;
+  --color-border: #e2e8f0;
+  --color-destructive: #dc2626;
+  --color-ring: #ea580c;
+
+  /* App Surface & Text Tokens */
   --bg-body: #f8fafc;
   --bg-surface: #ffffff;
   --bg-surface-elevated: #ffffff;
   --bg-muted: #f1f5f9;
-  --bg-accent-soft: #f0fdfa;
+  --bg-accent-soft: rgba(234, 88, 12, 0.08);
 
   --text-primary: #0f172a;    /* High-contrast dark navy */
   --text-secondary: #334155;  /* Slate 700 */
   --text-muted: #64748b;      /* Slate 500 */
   --text-inverse: #ffffff;
 
-  --accent: #0d9488;          /* Professional Teal 600 */
-  --accent-hover: #0f766e;    /* Teal 700 */
-  --accent-active: #115e59;   /* Teal 800 */
-  --accent-border: #99f6e4;   /* Teal 200 */
+  --accent: #ea580c;          /* High-Visibility Safety Orange */
+  --accent-hover: #c2410c;    /* Orange 700 */
+  --accent-active: #9a3412;   /* Orange 800 */
+  --accent-border: #fed7aa;   /* Orange 200 */
   --accent-contrast: #ffffff;
 
-  --primary: #0d9488;
-  --primary-hover: #0f766e;
-  --primary-soft: #f0fdfa;
+  --primary: #64748b;         /* Industrial Slate */
+  --primary-hover: #475569;
+  --primary-soft: #f1f5f9;
 
   --border-subtle: #e2e8f0;   /* Light gray border */
   --border-strong: #cbd5e1;
-  --focus-ring: rgba(13, 148, 136, 0.35);
+  --focus-ring: rgba(234, 88, 12, 0.35);
 
   --success: #16a34a;
   --success-soft: #dcfce7;
@@ -40,9 +54,18 @@
   --info: #0284c7;
   --info-soft: #e0f2fe;
 
+  /* Spacing Scale (8pt System Grid) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
   /* Typography */
-  --font-stack: 'Mukta Malar', 'Noto Sans Tamil', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-stack: 'Inter', 'Mukta Malar', 'Noto Sans Tamil', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Elevation & Borders */
   --radius-xs: 4px;
@@ -55,28 +78,50 @@
   --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
   --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
 
   --bottom-nav-height: 64px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
 }
 
-/* --- Dark Theme Support --- */
+/* --- Dark Theme Support (Swiss & OLED Contrast) --- */
 [data-theme="dark"] {
-  --bg-body: #090d16;
-  --bg-surface: #111a2e;
-  --bg-surface-elevated: #16223b;
-  --bg-muted: #1e293b;
-  --bg-accent-soft: rgba(13, 148, 136, 0.15);
+  --color-primary: #ea580c;
+  --color-secondary: #f97316;
+  --color-accent: #ea580c;
+  --color-background: #141210;
+  --color-foreground: #ffffff;
+  --color-card: #1e1b18;
+  --color-card-foreground: #ffffff;
+  --color-muted: #2c2723;
+  --color-muted-foreground: #94a3b8;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  --bg-body: #141210;
+  --bg-surface: #1e1b18;
+  --bg-surface-elevated: #282420;
+  --bg-muted: #2c2723;
+  --bg-accent-soft: rgba(234, 88, 12, 0.18);
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-inverse: #0f172a;
 
-  --border-subtle: #1e293b;
-  --border-strong: #334155;
-  --focus-ring: rgba(45, 212, 191, 0.4);
+  --accent: #ea580c;
+  --accent-hover: #f97316;
+  --accent-active: #c2410c;
+  --accent-border: #7c2d12;
+  --accent-contrast: #ffffff;
+
+  --primary: #94a3b8;
+  --primary-hover: #cbd5e1;
+  --primary-soft: #282420;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --focus-ring: rgba(234, 88, 12, 0.5);
 
   --success-soft: rgba(22, 163, 74, 0.2);
   --warning-soft: rgba(217, 119, 6, 0.2);
@@ -86,6 +131,7 @@
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 20px -3px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.7);
 }
 
 /* --- Reset & Global Box Sizing --- */
@@ -158,7 +204,7 @@ header.app-header {
 .brand-logo {
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
   color: #ffffff;
   border-radius: var(--radius-md);
   display: flex;
@@ -166,7 +212,7 @@ header.app-header {
   justify-content: center;
   font-size: 1.25rem;
   font-weight: 700;
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
   flex-shrink: 0;
 }
 
