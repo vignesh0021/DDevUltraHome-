@@ -25,44 +25,63 @@ export class WaterTankEngine {
     const assumptions = [];
 
     const shape = (params.shape || 'RECTANGULAR').toUpperCase();
-    const hCheck = Validator.positiveNumber('Tank Height/Depth', params.heightM);
+    const heightInput = params.heightM !== undefined 
+      ? params.heightM 
+      : (params.waterDepthM !== undefined ? params.waterDepthM : (params.depthM !== undefined ? params.depthM : params.depth));
+    const hCheck = Validator.positiveNumber('Tank Height/Depth', heightInput);
     if (!hCheck.valid) throw new Error(hCheck.error);
-    const totalHeight = hCheck.value;
-
+    
     const freeboard = Number(params.freeboardM) !== undefined ? Number(params.freeboardM) : 0.20;
-    if (freeboard >= totalHeight) {
-      throw new Error('Freeboard cannot be equal to or greater than the tank height.');
+    let totalHeight;
+    let effectiveWaterDepth;
+
+    if (params.heightM !== undefined) {
+      totalHeight = hCheck.value;
+      if (freeboard >= totalHeight) {
+        throw new Error('Freeboard cannot be equal to or greater than the tank height.');
+      }
+      effectiveWaterDepth = SafeMath.round(totalHeight - freeboard, 3);
+    } else {
+      // waterDepthM was provided as net water depth
+      effectiveWaterDepth = hCheck.value;
+      totalHeight = SafeMath.round(effectiveWaterDepth + freeboard, 3);
     }
-    const effectiveWaterDepth = SafeMath.round(totalHeight - freeboard, 3);
-    assumptions.push(`Air gap freeboard = ${freeboard * 1000}mm => Effective water depth = ${effectiveWaterDepth}m`);
+
+    assumptions.push(`Air gap freeboard = ${freeboard * 1000}mm => Effective water depth = ${effectiveWaterDepth}m (Total internal height = ${totalHeight}m)`);
 
     let grossVolumeM3 = 0;
     let netWaterVolumeM3 = 0;
+    let lM = 0;
+    let wM = 0;
+    let diaM = 0;
 
     if (shape === 'CYLINDRICAL') {
-      const dCheck = Validator.positiveNumber('Internal Diameter', params.diameterM);
+      const diaInput = params.diameterM !== undefined ? params.diameterM : params.diameter;
+      const dCheck = Validator.positiveNumber('Internal Diameter', diaInput);
       if (!dCheck.valid) throw new Error(dCheck.error);
-      const dia = dCheck.value;
-      const area = (Math.PI * dia * dia) / 4;
+      diaM = dCheck.value;
+      const area = (Math.PI * diaM * diaM) / 4;
 
       grossVolumeM3 = SafeMath.round(area * totalHeight, 4);
       netWaterVolumeM3 = SafeMath.round(area * effectiveWaterDepth, 4);
 
-      steps.push(`Cylindrical tank: Internal diameter = ${dia}m, Cross section area = ${SafeMath.round(area, 3)} m²`);
+      steps.push(`Cylindrical tank: Internal diameter = ${diaM}m, Cross section area = ${SafeMath.round(area, 3)} m²`);
       steps.push(`Gross storage volume = ${SafeMath.round(area, 3)} m² × ${totalHeight}m = ${grossVolumeM3} m³`);
     } else {
-      const lCheck = Validator.positiveNumber('Tank Length', params.lengthM);
-      const wCheck = Validator.positiveNumber('Tank Width', params.widthM);
+      const lInput = params.lengthM !== undefined ? params.lengthM : params.length;
+      const wInput = params.widthM !== undefined ? params.widthM : params.width;
+      const lCheck = Validator.positiveNumber('Tank Length', lInput);
+      const wCheck = Validator.positiveNumber('Tank Width', wInput);
       if (!lCheck.valid) throw new Error(lCheck.error);
       if (!wCheck.valid) throw new Error(wCheck.error);
 
-      const l = lCheck.value;
-      const w = wCheck.value;
+      lM = lCheck.value;
+      wM = wCheck.value;
 
-      grossVolumeM3 = SafeMath.round(l * w * totalHeight, 4);
-      netWaterVolumeM3 = SafeMath.round(l * w * effectiveWaterDepth, 4);
+      grossVolumeM3 = SafeMath.round(lM * wM * totalHeight, 4);
+      netWaterVolumeM3 = SafeMath.round(lM * wM * effectiveWaterDepth, 4);
 
-      steps.push(`Rectangular tank: ${l}m (L) × ${w}m (W) × ${totalHeight}m (H)`);
+      steps.push(`Rectangular tank: ${lM}m (L) × ${wM}m (W) × ${totalHeight}m (H)`);
       steps.push(`Gross internal volume = ${grossVolumeM3} m³ (${SafeMath.round(grossVolumeM3 * CONSTANTS.CFT_PER_M3, 1)} cft)`);
     }
 
@@ -70,6 +89,10 @@ export class WaterTankEngine {
     const grossCapacityLitres = Math.round(grossVolumeM3 * LITRES_PER_M3);
 
     steps.push(`Effective Water Capacity = ${netWaterVolumeM3} m³ × 1000 L/m³ = ${netCapacityLitres.toLocaleString('en-IN')} Litres`);
+
+    const persons = Number(params.personsCount || params.numberOfOccupants) || 5;
+    const demandDays = Number(params.demandDays || params.storageDays) || 2;
+    const estimatedDemandLitres = persons * 135 * demandDays;
 
     return {
       tankShape: shape,
@@ -80,6 +103,15 @@ export class WaterTankEngine {
       netCapacityLitres,
       netCapacityGallons: SafeMath.round(netCapacityLitres * 0.219969, 1),
       netCapacityCft: SafeMath.round(netWaterVolumeM3 * CONSTANTS.CFT_PER_M3, 2),
+      // Frontend convenience aliases
+      actualCapacityLitres: netCapacityLitres,
+      capacityLitres: netCapacityLitres,
+      estimatedDemandLitres,
+      demandDays,
+      internalLengthM: lM,
+      internalWidthM: wM,
+      waterDepthM: effectiveWaterDepth,
+      recommendedMixGrade: 'M25 / M30 (Waterproofing)',
       assumptions,
       calculationSteps: steps,
       disclaimer: 'For underground sumps, ensure waterproof plastering with integral waterproofing compound (e.g. Dr. Fixit LW+) and sump cover.'

@@ -457,11 +457,11 @@ main.app-content {
 .form-group select, 
 .form-group textarea {
   width: 100%;
-  min-height: 46px; /* Accessible mobile touch target */
+  min-height: 48px; /* Strict accessible mobile 48px touch target */
   padding: 0.6rem 0.85rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  font-size: 0.95rem;
+  font-size: 1rem; /* 16px prevents automatic browser zoom on Android viewports */
   font-family: inherit;
   background-color: var(--bg-surface);
   color: var(--text-primary);
@@ -637,13 +637,13 @@ main.app-content {
 
 .search-input {
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   padding: 0.65rem 1rem 0.65rem 2.4rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   color: var(--text-primary);
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-family: inherit;
 }
 

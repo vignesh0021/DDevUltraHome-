@@ -42,18 +42,20 @@ export class CmdaFeeEngine {
   static estimateFees(params) {
     const steps = [];
 
-    const plotCheck = Validator.positiveNumber('Plot Area', params.plotAreaSqft);
-    const builtCheck = Validator.positiveNumber('Built-up Area', params.totalBuiltupSqft);
-
-    if (!plotCheck.valid) throw new Error(plotCheck.error);
+    const builtSqftInput = params.totalBuiltupSqft !== undefined ? params.totalBuiltupSqft : params.builtupAreaSqft;
+    const builtCheck = Validator.positiveNumber('Built-up Area', builtSqftInput);
     if (!builtCheck.valid) throw new Error(builtCheck.error);
-
-    const plotSqft = plotCheck.value;
     const builtSqft = builtCheck.value;
+
+    const plotSqftInput = params.plotAreaSqft !== undefined ? params.plotAreaSqft : Math.round(builtSqft / 1.5);
+    const plotCheck = Validator.positiveNumber('Plot Area', plotSqftInput);
+    if (!plotCheck.valid) throw new Error(plotCheck.error);
+    const plotSqft = plotCheck.value;
+
     const plotM2 = SafeMath.round(plotSqft / 10.7639, 2);
     const builtM2 = SafeMath.round(builtSqft / 10.7639, 2);
 
-    const zoneKey = params.locationZone || 'GCC_CORE';
+    const zoneKey = params.locationZone || params.authority || 'GCC_CORE';
     const zone = LOCATION_ZONE_RATES[zoneKey] || LOCATION_ZONE_RATES['GCC_CORE'];
     const constrRateSqft = Number(params.estimatedCostPerSqft) || 2400;
 
@@ -96,6 +98,11 @@ export class CmdaFeeEngine {
     return {
       jurisdiction: zone.name,
       areas: { plotAreaSqft: plotSqft, plotAreaM2: plotM2, builtupSqft: builtSqft, builtupM2: builtM2 },
+      // Frontend convenience aliases
+      scrutinyFee: scrutinyFee,
+      developmentCharge: totalDevCharges,
+      permitFee: gccFees,
+      totalEstimatedFee: totalStatutoryFees,
       feeBreakdown: {
         scrutinyFee: { amount: scrutinyFee, formatted: SafeMath.formatINR(scrutinyFee) },
         developmentCharges: {

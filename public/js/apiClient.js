@@ -29,8 +29,8 @@ import { PlinthEngine } from './engine/plinth.js';
 import { PileEngine } from './engine/pile.js';
 import { MaterialPriceIntelligence, TN_DISTRICTS } from './intelligence/materialRates.js';
 import { ScrapRatesEngine } from './intelligence/scrapRates.js';
-import { ScrapValuationEngine } from './intelligence/scrapValuation.js';
-import { OfflineCivilEngineProvider } from './ai/provider.js';
+import { OfflineCivilEngineProvider, aiService } from './ai/provider.js';
+import { defaultProviderRegistry } from './intelligence/providerArchitecture.js';
 
 // --- Local Storage Database Emulation (for Standalone APK / Offline PWA) ---
 const STORAGE_KEYS = {
@@ -170,11 +170,11 @@ async function executeLocalRequest(url, options = {}) {
     }
 
     if (pathname === '/api/calculate/finishing') {
-      const type = (body.finishingType || 'PLASTER').toUpperCase();
+      const type = (body.finishingType || body.type || 'PLASTER').toUpperCase();
       let result;
       if (type === 'PLASTER') result = FinishingEngine.calculatePlaster(body);
       else if (type === 'PAINT') result = FinishingEngine.calculatePainting(body);
-      else if (type === 'FLOORING') result = FinishingEngine.calculateFlooring(body);
+      else if (type === 'FLOORING' || type === 'TILES') result = FinishingEngine.calculateFlooring(body);
       else throw new Error(`Unknown finishing type: ${type}`);
       return createMockResponse(result);
     }
@@ -185,7 +185,7 @@ async function executeLocalRequest(url, options = {}) {
 
     if (pathname === '/api/calculate/bbs') {
       let result;
-      if (body.type === 'STIRRUP') {
+      if (body.type === 'STIRRUP' || body.beamWidthMm || body.memberWidthMm || !body.scheduleEntries) {
         result = BbsEngine.calculateStirrup(body);
       } else {
         result = BbsEngine.generateSchedule(body.scheduleEntries || []);
@@ -226,7 +226,7 @@ async function executeLocalRequest(url, options = {}) {
     }
 
     if (pathname === '/api/mbook/calculate') {
-      return createMockResponse(MBookEngine.calculateItemQuantity(body.entries || []));
+      return createMockResponse(MBookEngine.calculateItemQuantity(body.entries || body.items || []));
     }
 
     if (pathname === '/api/mbook/ra-bill') {
@@ -257,10 +257,47 @@ async function executeLocalRequest(url, options = {}) {
       return createMockResponse(PileEngine.calculate(body));
     }
 
-    // 5. AI Assistant & Knowledge Base
+    // 5. AI Assistant & Multi-Provider Architecture
     if (pathname === '/api/ai/ask') {
-      const response = await offlineCivilAi.ask(body.prompt || '', body.context || {});
+      const response = await aiService.ask(body.prompt || '', body.context || {});
       return createMockResponse(response);
+    }
+
+    if (pathname === '/api/ai/config') {
+      if (options.method === 'POST') {
+        aiService.configure(body);
+        return createMockResponse({ success: true, config: aiService.getConfig() });
+      }
+      return createMockResponse(aiService.getConfig());
+    }
+
+    if (pathname === '/api/ai/test') {
+      const result = await aiService.testConnection();
+      return createMockResponse(result);
+    }
+
+    // 5b. Price Providers Architecture
+    if (pathname === '/api/providers') {
+      return createMockResponse({
+        providers: defaultProviderRegistry.getProviders(),
+        activeProvider: defaultProviderRegistry.activeProviderId
+      });
+    }
+
+    if (pathname === '/api/providers/set') {
+      defaultProviderRegistry.setActiveProvider(body.providerId);
+      if (body.customUrl) defaultProviderRegistry.setCustomEndpoint(body.customUrl);
+      return createMockResponse({ success: true });
+    }
+
+    if (pathname === '/api/providers/test') {
+      const res = await defaultProviderRegistry.testActiveConnection();
+      return createMockResponse(res);
+    }
+
+    if (pathname === '/api/providers/flush-cache') {
+      const res = defaultProviderRegistry.flushCache();
+      return createMockResponse(res);
     }
 
     // 6. BOQ CSV Export

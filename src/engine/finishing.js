@@ -77,11 +77,16 @@ export class FinishingEngine {
 
     return {
       workType: 'Plastering',
+      workTypeCode: 'PLASTER',
       spec: spec.description,
+      thicknessMm: spec.thicknessMm,
       areaM2,
       areaSqft,
       dryVolumeM3: dryVolume,
       materials: {
+        cementBags: Math.ceil(cementBags),
+        sandM3: sandVol,
+        sandTnUnits: sandUnits,
         cement: {
           volumeM3: cementVol,
           weightKg: cementKg,
@@ -106,7 +111,8 @@ export class FinishingEngine {
   /**
    * Painting & Wall Care Estimation
    * @param {Object} params
-   * @param {number} params.wallAreaM2 - Surface area in sq.meters
+   * @param {number} [params.wallAreaM2] - Surface area in sq.meters
+   * @param {number} [params.areaM2] - Alternative parameter for surface area
    * @param {boolean} [params.includePutty=true] - 2 coats wall putty
    * @param {boolean} [params.includePrimer=true] - 1 coat primer
    * @param {boolean} [params.includeEmulsion=true] - 2 coats acrylic emulsion paint
@@ -115,7 +121,8 @@ export class FinishingEngine {
     const steps = [];
     const assumptions = [];
 
-    const aCheck = Validator.positiveNumber('Painting Area', params.wallAreaM2);
+    const areaInput = params.wallAreaM2 !== undefined ? params.wallAreaM2 : params.areaM2;
+    const aCheck = Validator.positiveNumber('Painting Area', areaInput);
     if (!aCheck.valid) throw new Error(aCheck.error);
     const areaM2 = aCheck.value;
     const areaSqft = SafeMath.round(areaM2 * 10.7639, 2);
@@ -123,6 +130,7 @@ export class FinishingEngine {
 
     const result = {
       workType: 'Painting & Surface Preparation',
+      workTypeCode: 'PAINT',
       areaM2,
       areaSqft,
       materials: {}
@@ -168,6 +176,11 @@ export class FinishingEngine {
       };
     }
 
+    // Convenience aliases for frontend rendering
+    result.materials.puttyKg = result.materials.putty?.weightKg || 0;
+    result.materials.primerLitres = result.materials.primer?.litres || 0;
+    result.materials.emulsionPaintLitres = result.materials.paint?.litres || 0;
+
     result.assumptions = assumptions;
     result.calculationSteps = steps;
     result.disclaimer = 'Paint coverage varies with surface porosity, moisture content, dilution with water, and application technique (brush, roller, or spray).';
@@ -177,7 +190,8 @@ export class FinishingEngine {
   /**
    * Flooring & Tiling Estimation
    * @param {Object} params
-   * @param {number} params.floorAreaM2 - Room floor area in sq.meters
+   * @param {number} [params.floorAreaM2] - Room floor area in sq.meters
+   * @param {number} [params.areaM2] - Alternative parameter for floor area
    * @param {number} [params.perimeterM=0] - Perimeter for 4" (100mm) skirting
    * @param {string} [params.tileType='VITRIFIED_2X2'] - Key from TILE_SIZES
    * @param {number} [params.tileWastagePercent=8] - Tile cutting wastage %
@@ -188,7 +202,8 @@ export class FinishingEngine {
     const steps = [];
     const assumptions = [];
 
-    const aCheck = Validator.positiveNumber('Floor Area', params.floorAreaM2);
+    const areaInput = params.floorAreaM2 !== undefined ? params.floorAreaM2 : params.areaM2;
+    const aCheck = Validator.positiveNumber('Floor Area', areaInput);
     if (!aCheck.valid) throw new Error(aCheck.error);
     const floorAreaM2 = aCheck.value;
     const floorAreaSqft = SafeMath.round(floorAreaM2 * 10.7639, 2);
@@ -251,6 +266,7 @@ export class FinishingEngine {
 
     return {
       workType: 'Flooring & Tiling',
+      workTypeCode: 'TILES',
       tileType: tile.name,
       areas: { floorAreaM2, skirtingAreaM2, totalAreaM2: totalTilingAreaM2, totalAreaSqft: totalTilingAreaSqft },
       tiles: {
@@ -275,6 +291,12 @@ export class FinishingEngine {
           unit: 'cft / TN Units'
         },
         groutKg: groutKg
+      },
+      materials: {
+        tilesCount: boxes || tilesRequired,
+        netTileAreaM2: floorAreaM2,
+        beddingCementBags: Math.ceil(totalCementBags),
+        beddingSandTnUnits: bedSandUnits
       },
       assumptions,
       calculationSteps: steps,

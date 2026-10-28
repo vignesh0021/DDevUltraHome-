@@ -32,10 +32,11 @@ export class ConcreteQcEngine {
     const steps = [];
     const assumptions = [];
 
-    const grade = (params.grade || 'M20').toUpperCase();
+    const grade = (params.grade || params.mixGrade || 'M20').toUpperCase();
     const fck = CHARACTERISTIC_STRENGTH[grade] || 20.0;
-    const age = Number(params.testAgeDays) === 7 ? 7 : 28;
-    const loads = Array.isArray(params.breakingLoadsKn) ? params.breakingLoadsKn : [];
+    const age = Number(params.testAgeDays !== undefined ? params.testAgeDays : params.testingAgeDays) === 7 ? 7 : 28;
+    const loadsRaw = params.breakingLoadsKn !== undefined ? params.breakingLoadsKn : params.cubeFailureLoadsKn;
+    const loads = Array.isArray(loadsRaw) ? loadsRaw : [];
 
     if (loads.length < 3) {
       throw new Error('A valid test batch requires at least 3 cube specimen failure loads per IS 516.');
@@ -108,6 +109,9 @@ export class ConcreteQcEngine {
       percentOfFckAchieved: percentAchieved,
       isVariationWithin15Percent: !hasVariationAnomaly,
       isStrengthAchieved,
+      isCompliant: overallPass,
+      passed: overallPass,
+      cubeStrengthsNmm2: individualStrengths.map(s => s.compressiveStrengthNmm2),
       resultStatus: overallPass ? 'PASS' : (isStrengthAchieved ? 'MARGINAL_VARIATION' : 'FAIL'),
       remarks: overallPass 
         ? `Compliant with IS 456. Concrete has achieved ${percentAchieved}% of characteristic strength at ${age} days.`

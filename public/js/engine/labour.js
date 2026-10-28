@@ -78,9 +78,18 @@ export class LabourEngine {
     const steps = [];
     const assumptions = [];
 
-    const norm = LABOUR_PRODUCTIVITY_NORMS[params.activityKey];
+    const keyMap = {
+      'RCC_WORK': 'RCC_CONCRETE_M3',
+      'BRICK_WORK': 'BRICK_MASONRY_M3',
+      'PLASTERING': 'PLASTERING_12MM_M2',
+      'EXCAVATION': 'EARTHWORK_EXCAVATION_M3'
+    };
+    const rawKey = params.activityKey || params.activity;
+    const resolvedKey = keyMap[rawKey] || rawKey;
+
+    const norm = LABOUR_PRODUCTIVITY_NORMS[resolvedKey];
     if (!norm) {
-      throw new Error(`Unknown labour activity key: ${params.activityKey}`);
+      throw new Error(`Unknown labour activity key: ${rawKey}`);
     }
 
     const qCheck = Validator.positiveNumber('Work Quantity', params.quantity);
@@ -114,13 +123,20 @@ export class LabourEngine {
       steps.push(`${tradeInfo.name}: ${qty} × ${factor} = ${manDays} man-days @ ₹${tradeInfo.ratePerDay}/day = ₹${cost.toLocaleString('en-IN')}`);
     }
 
+    const masonDays = (breakdown.find(b => b.trade === 'mason' || b.trade === 'tileMason')?.manDays) || 0;
+    const mazdoorDays = (breakdown.find(b => b.trade === 'barBender' || b.trade === 'carpenter')?.manDays) || 0;
+    const helperDays = (breakdown.find(b => b.trade === 'helper')?.manDays) || 0;
+
     return {
-      activity: params.activityKey,
+      activity: resolvedKey,
       description: norm.description,
       quantity: qty,
       unit: norm.unit,
       totalManDays,
       totalLabourCost,
+      masonDays,
+      mazdoorDays,
+      helperDays,
       breakdown,
       calculationSteps: steps,
       disclaimer: 'Labour output is based on standard 8-hour workday and normal site working conditions.'

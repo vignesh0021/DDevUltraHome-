@@ -59,26 +59,39 @@ export class DurabilityEngine {
     const steps = [];
     const warnings = [];
 
-    const expKey = (params.exposureCondition || 'SEVERE').toUpperCase();
+    let expKey = (params.exposureCondition || '').toUpperCase();
+    if (!expKey && params.coastalDistance) {
+      if (params.coastalDistance === 'COASTAL_CRITICAL') expKey = 'VERY_SEVERE';
+      else if (params.coastalDistance === 'COASTAL_MODERATE') expKey = 'SEVERE';
+      else expKey = 'MODERATE';
+    }
+    if (!expKey) expKey = 'SEVERE';
+
     const config = EXPOSURE_CONDITIONS[expKey] || EXPOSURE_CONDITIONS['SEVERE'];
-    const elem = (params.elementType || 'SLAB').toLowerCase();
+    
+    let elem = (params.elementType || '').toLowerCase();
+    if (!elem && params.structuralElement) {
+      elem = params.structuralElement === 'SUBSTRUCTURE' ? 'footing' : 'column';
+    }
+    if (!elem) elem = 'slab';
 
     steps.push(`Selected Exposure Category: ${config.name}`);
     steps.push(`Environmental Description: ${config.description}`);
 
     const gradeOrder = { 'M15': 15, 'M20': 20, 'M25': 25, 'M30': 30, 'M35': 35, 'M40': 40 };
-    const propGradeVal = gradeOrder[(params.proposedGrade || 'M20').toUpperCase()] || 20;
+    const propGradeStr = (params.proposedGrade || 'M20').toUpperCase();
+    const propGradeVal = gradeOrder[propGradeStr] || 20;
     const minGradeVal = gradeOrder[config.minRccGrade] || 30;
 
     const isGradeSufficient = propGradeVal >= minGradeVal;
-    steps.push(`Proposed Grade: ${params.proposedGrade} (Characteristic strength ${propGradeVal} N/mm²), IS 456 Minimum Required = ${config.minRccGrade} (${minGradeVal} N/mm²)`);
+    steps.push(`Proposed Grade: ${propGradeStr} (Characteristic strength ${propGradeVal} N/mm²), IS 456 Minimum Required = ${config.minRccGrade} (${minGradeVal} N/mm²)`);
 
     if (!isGradeSufficient) {
-      warnings.push(`⚠️ GRADE DEFICIT: Under IS 456 Table 5, ${config.name} strictly mandates minimum ${config.minRccGrade} for reinforced concrete. Using ${params.proposedGrade} will cause accelerated chloride-induced rebar corrosion.`);
+      warnings.push(`⚠️ GRADE DEFICIT: Under IS 456 Table 5, ${config.name} strictly mandates minimum ${config.minRccGrade} for reinforced concrete. Using ${propGradeStr} will cause accelerated chloride-induced rebar corrosion.`);
     }
 
     const minCover = config.nominalCoversMm[elem] || config.nominalCoversMm['slab'];
-    const propCover = Number(params.proposedCoverMm) || 20;
+    const propCover = Number(params.proposedCoverMm) || (elem === 'footing' ? 50 : 25);
     const isCoverSufficient = propCover >= minCover;
     steps.push(`Element: ${elem.toUpperCase()}, Proposed Cover = ${propCover}mm, IS 456 Table 16 Mandatory Nominal Cover = ${minCover}mm`);
 
@@ -98,13 +111,18 @@ export class DurabilityEngine {
 
     return {
       exposureCategory: config.name,
+      // Frontend UI convenience aliases
+      exposureCondition: config.name,
+      minConcreteGrade: config.minRccGrade,
+      minNominalCoverMm: minCover,
+      maxWaterCementRatio: config.maxWaterCementRatio,
       complianceStatus: isFullyCompliant ? 'DURABILITY_COMPLIANT' : 'NON_COMPLIANT_CORROSION_RISK',
       verdict: isFullyCompliant
         ? `Compliant with IS 456:2000 Durability provisions for ${config.name}.`
         : `Deficits identified. Modifications required to prevent early corrosion and spalling.`,
       specifications: {
         minimumConcreteGrade: config.minRccGrade,
-        proposedConcreteGrade: params.proposedGrade,
+        proposedConcreteGrade: propGradeStr,
         minimumCementContentKgM3: config.minCementKgM3,
         maximumWaterCementRatio: config.maxWaterCementRatio,
         proposedWaterCementRatio: propWc,

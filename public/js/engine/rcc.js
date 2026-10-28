@@ -327,6 +327,7 @@ export class RccEngine {
       count,
       dimensions: { lengthM: lM, widthM: wM, depthM: dM },
       rccVolumeM3: totalVolume,
+      concreteVolumeM3: totalVolume,
       pccVolumeM3: totalPccVolume,
       shutteringAreaM2: totalShuttering,
       steel: {

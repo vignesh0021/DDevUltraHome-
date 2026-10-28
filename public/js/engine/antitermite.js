@@ -32,14 +32,16 @@ export class AntiTermiteEngine {
     const steps = [];
     const assumptions = [];
 
-    const aCheck = Validator.positiveNumber('Plinth Area', params.plinthAreaM2);
+    const plinthInput = params.plinthAreaM2 !== undefined ? params.plinthAreaM2 : (params.plinthAreaSqft ? params.plinthAreaSqft / 10.7639 : null);
+    const aCheck = Validator.positiveNumber('Plinth Area', plinthInput);
     if (!aCheck.valid) throw new Error(aCheck.error);
     const plinthM2 = aCheck.value;
+    const plinthSqft = SafeMath.round(plinthM2 * 10.7639, 1);
 
-    const perimM = Number(params.perimeterM) || Math.round(Math.sqrt(plinthM2) * 4);
+    const perimM = Number(params.perimeterM || params.perimeterLengthM) || Math.round(Math.sqrt(plinthM2) * 4);
     const trenchM2 = Number(params.trenchAreaM2) || SafeMath.round(plinthM2 * 0.60, 2);
 
-    const chemKey = params.chemical || 'CHLORPYRIFOS_20EC';
+    const chemKey = params.chemical || params.chemicalType || 'CHLORPYRIFOS_20EC';
     const chem = CHEMICAL_CONFIG[chemKey] || CHEMICAL_CONFIG['CHLORPYRIFOS_20EC'];
     steps.push(`Selected Chemical: ${chem.name} (Dilution: 1 Part Chemical + ${chem.dilutionRatio} Parts Water)`);
 
@@ -76,6 +78,8 @@ export class AntiTermiteEngine {
 
     return {
       chemicalName: chem.name,
+      chemicalType: chem.name,
+      plinthAreaSqft: plinthSqft,
       areas: { plinthAreaM2: plinthM2, perimeterM: perimM, trenchAreaM2: trenchM2 },
       stagesLitres: {
         stage1Trench: stage1Litres,
@@ -85,6 +89,7 @@ export class AntiTermiteEngine {
       },
       totalEmulsionLitres,
       concentratedChemicalLitres: chemicalLitres,
+      chemicalConcentrateLitres: chemicalLitres,
       cans5LitreRequired: cans5Litre,
       waterLitresRequired: waterLitres,
       assumptions,

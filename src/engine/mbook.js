@@ -13,32 +13,40 @@ export class MBookEngine {
    * [{ description: 'Grid A-B Outer Wall', nos: 2, lengthM: 6.0, breadthM: 0.23, depthM: 3.0 }]
    */
   static calculateItemQuantity(entries) {
-    if (!Array.isArray(entries) || entries.length === 0) return 0;
+    if (!Array.isArray(entries) || entries.length === 0) return { entries: [], totalQuantity: 0, totalAmount: 0 };
 
     let total = 0;
+    let unitRate = 0;
     const computedEntries = entries.map((e, idx) => {
-      const nos = Number(e.nos) || 1;
-      const l = Number(e.lengthM) || 0;
-      const b = Number(e.breadthM) || 0;
-      const d = Number(e.depthM) !== undefined ? Number(e.depthM) : 1; // 1 if area calculation
+      const nos = Number(e.nos !== undefined ? e.nos : (e.count !== undefined ? e.count : 1)) || 1;
+      const l = Number(e.lengthM !== undefined ? e.lengthM : (e.length !== undefined ? e.length : 0)) || 0;
+      const b = Number(e.breadthM !== undefined ? e.breadthM : (e.breadth !== undefined ? e.breadth : 0)) || 0;
+      const d = Number(e.depthM !== undefined ? e.depthM : (e.depth !== undefined ? e.depth : 1));
+      const rate = Number(e.unitRate !== undefined ? e.unitRate : (e.rate !== undefined ? e.rate : 0));
+      if (rate > 0) unitRate = rate;
 
       const qty = SafeMath.round(nos * l * b * d, 3);
       total = SafeMath.round(total + qty, 3);
 
       return {
         index: idx + 1,
-        location: e.location || `Location ${idx + 1}`,
+        location: e.location || e.description || `Location ${idx + 1}`,
         nos,
         lengthM: l,
         breadthM: b,
         depthM: d,
+        unitRate: rate,
         quantity: qty
       };
     });
 
+    const totalAmount = unitRate > 0 ? SafeMath.round(total * unitRate, 2) : 0;
+
     return {
       entries: computedEntries,
-      totalQuantity: total
+      totalQuantity: total,
+      unitRate,
+      totalAmount
     };
   }
 

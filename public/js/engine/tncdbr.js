@@ -26,16 +26,19 @@ export class TncdbrEngine {
 
     const plotCheck = Validator.positiveNumber('Plot Area', params.plotAreaSqft);
     const roadCheck = Validator.positiveNumber('Road Width', params.roadWidthM);
-    const gfCheck = Validator.positiveNumber('Ground Floor Area', params.proposedGroundFloorSqft);
-    const totCheck = Validator.positiveNumber('Total Built-up Area', params.proposedTotalBuiltupSqft);
-
     if (!plotCheck.valid) throw new Error(plotCheck.error);
     if (!roadCheck.valid) throw new Error(roadCheck.error);
-    if (!gfCheck.valid) throw new Error(gfCheck.error);
-    if (!totCheck.valid) throw new Error(totCheck.error);
 
     const plotSqft = plotCheck.value;
     const roadM = roadCheck.value;
+
+    const gfInput = params.proposedGroundFloorSqft !== undefined ? params.proposedGroundFloorSqft : Math.round(plotSqft * 0.65);
+    const totInput = params.proposedTotalBuiltupSqft !== undefined ? params.proposedTotalBuiltupSqft : Math.round(plotSqft * 1.30);
+    const gfCheck = Validator.positiveNumber('Ground Floor Area', gfInput);
+    const totCheck = Validator.positiveNumber('Total Built-up Area', totInput);
+    if (!gfCheck.valid) throw new Error(gfCheck.error);
+    if (!totCheck.valid) throw new Error(totCheck.error);
+
     const gfSqft = gfCheck.value;
     const totalSqft = totCheck.value;
     const heightM = Number(params.buildingHeightM) || 7.5;
@@ -115,6 +118,16 @@ export class TncdbrEngine {
       verdict: isFullyCompliant 
         ? 'Plan complies with Tamil Nadu Combined Development and Building Rules, 2019 (TNCDBR).' 
         : 'Plan does not comply with TNCDBR 2019. See violations list before submitting to CMDA/DTCP.',
+      // Frontend convenience aliases
+      plotAreaSqft: plotSqft,
+      permissibleFsi: permissibleFsi,
+      maxBuiltupAreaSqft: maxAllowedTotalSqft,
+      setbacks: {
+        frontM: minFrontM,
+        rearM: minRearM,
+        side1M: minSideM,
+        side2M: minSideM
+      },
       metrics: {
         plotAreaSqft: plotSqft,
         roadWidthM: roadM,

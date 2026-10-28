@@ -45,6 +45,7 @@ const STATIC_ASSETS = [
   '/js/engine/wastage.js',
   '/js/engine/watertank.js',
   '/js/intelligence/materialRates.js',
+  '/js/intelligence/providerArchitecture.js',
   '/js/intelligence/scrapRates.js',
   '/js/intelligence/scrapValuation.js'
 ];

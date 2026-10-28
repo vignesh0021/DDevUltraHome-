@@ -33,8 +33,8 @@ import { PlinthEngine } from './src/engine/plinth.js';
 import { PileEngine } from './src/engine/pile.js';
 import { MaterialPriceIntelligence, TN_DISTRICTS } from './src/intelligence/materialRates.js';
 import { ScrapRatesEngine } from './src/intelligence/scrapRates.js';
-import { ScrapValuationEngine } from './src/intelligence/scrapValuation.js';
 import { aiService } from './src/ai/provider.js';
+import { defaultProviderRegistry } from './src/intelligence/providerArchitecture.js';
 import { I18n } from './src/i18n/translations.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -183,11 +183,11 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/calculate/finishing' && req.method === 'POST') {
       const body = await parseJsonBody(req);
-      const type = (body.finishingType || 'PLASTER').toUpperCase();
+      const type = (body.finishingType || body.type || 'PLASTER').toUpperCase();
       let result;
       if (type === 'PLASTER') result = FinishingEngine.calculatePlaster(body);
       else if (type === 'PAINT') result = FinishingEngine.calculatePainting(body);
-      else if (type === 'FLOORING') result = FinishingEngine.calculateFlooring(body);
+      else if (type === 'FLOORING' || type === 'TILES') result = FinishingEngine.calculateFlooring(body);
       else throw new Error(`Unknown finishing type: ${type}`);
       return sendJson(res, 200, result);
     }
@@ -201,7 +201,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/calculate/bbs' && req.method === 'POST') {
       const body = await parseJsonBody(req);
       let result;
-      if (body.type === 'STIRRUP') {
+      if (body.type === 'STIRRUP' || body.beamWidthMm || body.memberWidthMm || !body.scheduleEntries) {
         result = BbsEngine.calculateStirrup(body);
       } else {
         result = BbsEngine.generateSchedule(body.scheduleEntries || []);
@@ -286,7 +286,7 @@ const server = http.createServer(async (req, res) => {
     // M-Book Quantity Measurement
     if (pathname === '/api/mbook/calculate' && req.method === 'POST') {
       const body = await parseJsonBody(req);
-      const result = MBookEngine.calculateItemQuantity(body.entries || []);
+      const result = MBookEngine.calculateItemQuantity(body.entries || body.items || []);
       return sendJson(res, 200, result);
     }
 
@@ -344,6 +344,45 @@ const server = http.createServer(async (req, res) => {
       const body = await parseJsonBody(req);
       const response = await aiService.ask(body.prompt || '', body.context || {});
       return sendJson(res, 200, response);
+    }
+
+    if (pathname === '/api/ai/config') {
+      if (req.method === 'POST') {
+        const body = await parseJsonBody(req);
+        aiService.configure(body);
+        return sendJson(res, 200, { success: true, config: aiService.getConfig() });
+      }
+      return sendJson(res, 200, aiService.getConfig());
+    }
+
+    if (pathname === '/api/ai/test' && req.method === 'POST') {
+      const result = await aiService.testConnection();
+      return sendJson(res, 200, result);
+    }
+
+    // Price Providers Architecture
+    if (pathname === '/api/providers' && req.method === 'GET') {
+      return sendJson(res, 200, {
+        providers: defaultProviderRegistry.getProviders(),
+        activeProvider: defaultProviderRegistry.activeProviderId
+      });
+    }
+
+    if (pathname === '/api/providers/set' && req.method === 'POST') {
+      const body = await parseJsonBody(req);
+      defaultProviderRegistry.setActiveProvider(body.providerId);
+      if (body.customUrl) defaultProviderRegistry.setCustomEndpoint(body.customUrl);
+      return sendJson(res, 200, { success: true });
+    }
+
+    if (pathname === '/api/providers/test' && req.method === 'POST') {
+      const resTest = await defaultProviderRegistry.testActiveConnection();
+      return sendJson(res, 200, resTest);
+    }
+
+    if (pathname === '/api/providers/flush-cache' && req.method === 'POST') {
+      const resFlush = defaultProviderRegistry.flushCache();
+      return sendJson(res, 200, resFlush);
     }
 
     // Project & Estimate DB Management

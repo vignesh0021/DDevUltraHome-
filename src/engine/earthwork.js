@@ -48,7 +48,7 @@ export class EarthworkEngine {
     }
 
     // Swell / Bulking factor for carting away
-    const swell = Number(params.bulkingFactor) || 1.25;
+    const swell = Number(params.bulkingFactor || params.swellingFactor) || 1.25;
     const looseExcavatedVolume = SafeMath.round(totalBankVolume * swell, 3);
     assumptions.push(`Soil bulking factor = ${swell} (soil swells when loosened)`);
     steps.push(`Loose soil volume after digging = ${totalBankVolume} m³ × ${swell} = ${looseExcavatedVolume} m³`);
@@ -82,6 +82,8 @@ export class EarthworkEngine {
       steps.push(`Deficit soil to import for plinth filling = ${deficitSoilRequired} m³ (${SafeMath.round(deficitSoilRequired * CONSTANTS.CFT_PER_TN_UNIT, 2)} TN Units gravel/soil)`);
     }
 
+    const lorryLoads10Ton = Math.max(1, Math.ceil(looseExcavatedVolume * 1.6 / 10));
+
     return {
       workType: 'Earthwork Excavation & Backfilling',
       dimensions: { lengthM: lM, widthM: wM, depthM: dM, count },
@@ -89,6 +91,12 @@ export class EarthworkEngine {
       inSituExcavationCft: totalBankCft,
       inSituExcavationTnUnits: totalBankUnits,
       looseExcavatedM3: looseExcavatedVolume,
+      // Frontend convenience aliases
+      excavationVolumeM3: totalBankVolume,
+      excavationVolumeCft: totalBankCft,
+      looseVolumeM3: looseExcavatedVolume,
+      soilType: params.soilType || 'Ordinary Soil / Clayey Loam',
+      lorryLoads10Ton,
       backfill: {
         pitBackfillM3: pitBackfillCompacted,
         plinthFillingM3: plinthVol,

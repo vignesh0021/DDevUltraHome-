@@ -49,11 +49,11 @@ export class BbsEngine {
     const steps = [];
     const assumptions = [];
 
-    const wMm = Number(params.memberWidthMm) || 0;
-    const dMm = Number(params.memberDepthMm) || 0;
-    const barDia = Number(params.barDiameterMm) || 8;
-    const cover = Number(params.clearCoverMm) || 25;
-    const hookAngle = Number(params.hookAngle) || 135;
+    const wMm = Number(params.memberWidthMm !== undefined ? params.memberWidthMm : params.beamWidthMm) || 0;
+    const dMm = Number(params.memberDepthMm !== undefined ? params.memberDepthMm : params.beamDepthMm) || 0;
+    const barDia = Number(params.barDiameterMm !== undefined ? params.barDiameterMm : params.stirrupBarDiaMm) || 8;
+    const cover = Number(params.clearCoverMm !== undefined ? params.clearCoverMm : params.coverMm) || 25;
+    const hookAngle = Number(params.hookAngle !== undefined ? params.hookAngle : params.hookAngleDeg) || 135;
 
     if (wMm <= 0 || dMm <= 0 || barDia <= 0) {
       throw new Error('Valid member dimensions and rebar diameter are required for stirrup calculation.');
@@ -91,7 +91,9 @@ export class BbsEngine {
       coreWidthMm: a,
       coreDepthMm: b,
       hookLengthMm: hookLength,
+      hookExtensionMm: hookLength,
       totalBendDeductionsMm: totalBendDeductions,
+      bendDeductionsMm: totalBendDeductions,
       cuttingLengthMm,
       cuttingLengthM,
       unitWeightKgM: unitWeight,

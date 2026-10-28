@@ -30,21 +30,23 @@ export class GeotechEngine {
     const steps = [];
     const assumptions = [];
 
-    const loadCheck = Validator.positiveNumber('Column Axial Load', params.columnAxialLoadKn);
+    const loadInput = params.columnAxialLoadKn !== undefined ? params.columnAxialLoadKn : params.columnLoadKn;
+    const loadCheck = Validator.positiveNumber('Column Axial Load', loadInput);
     if (!loadCheck.valid) throw new Error(loadCheck.error);
     const pServiceKn = loadCheck.value;
 
-    let sbc = Number(params.sbcKnm2);
+    const soilKey = params.soilTypeKey || params.soilType;
+    let sbc = Number(params.sbcKnm2 !== undefined ? params.sbcKnm2 : (params.safeBearingCapacityKnM2 !== undefined ? params.safeBearingCapacityKnM2 : params.sbc));
     if (!sbc || sbc <= 0) {
-      const soil = TN_SOIL_SBC_BENCHMARKS[params.soilTypeKey] || TN_SOIL_SBC_BENCHMARKS['CHENNAI_MEDIUM_CLAY'];
+      const soil = TN_SOIL_SBC_BENCHMARKS[soilKey] || TN_SOIL_SBC_BENCHMARKS['CHENNAI_MEDIUM_CLAY'];
       sbc = soil.sbcKnm2;
       assumptions.push(`Soil classification: ${soil.name} (SBC = ${sbc} kN/m²)`);
     } else {
       assumptions.push(`Design Safe Bearing Capacity (SBC) = ${sbc} kN/m²`);
     }
 
-    const cxM = (params.columnWidthMm || 300) / 1000;
-    const cyM = (params.columnDepthMm || 300) / 1000;
+    const cxM = (params.columnWidthMm || params.columnSizeMm || 300) / 1000;
+    const cyM = (params.columnDepthMm || params.columnSizeMm || 300) / 1000;
     steps.push(`Column Service Load: P = ${pServiceKn} kN, Column Size = ${cxM * 1000}mm × ${cyM * 1000}mm`);
 
     // 1. Footing Self-Weight Allowance: 10% of column axial load (IS 1904 norm)
@@ -122,6 +124,13 @@ export class GeotechEngine {
       serviceLoadKn: pServiceKn,
       sbcKnm2: sbc,
       isSafe: isPressureSafe,
+      // Frontend UI convenience aliases
+      requiredAreaM2: requiredAreaM2,
+      footingLengthM: sideM,
+      footingWidthM: sideM,
+      footingThicknessMm: totalDepthMm,
+      soilType: (TN_SOIL_SBC_BENCHMARKS[soilKey] ? TN_SOIL_SBC_BENCHMARKS[soilKey].name : (params.soilType || 'Medium Stiff Clay')),
+      safeBearingCapacityKnM2: sbc,
       footingDimensions: {
         lengthM: sideM,
         widthM: sideM,

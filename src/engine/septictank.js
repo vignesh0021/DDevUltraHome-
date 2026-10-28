@@ -22,7 +22,8 @@ export class SepticTankEngine {
     const steps = [];
     const assumptions = [];
 
-    const uCheck = Validator.positiveNumber('Number of Users', params.users);
+    const userInput = params.users !== undefined ? params.users : params.usersCount;
+    const uCheck = Validator.positiveNumber('Number of Users', userInput);
     if (!uCheck.valid) throw new Error(uCheck.error);
     const users = uCheck.value;
 
@@ -88,6 +89,12 @@ export class SepticTankEngine {
       occupancy: users,
       dailySewageLitres,
       liquidCapacityLitres: totalLiquidLitres,
+      // Frontend convenience aliases
+      recommendedLengthM: lengthM,
+      recommendedWidthM: widthM,
+      recommendedLiquidDepthM: liquidDepthM,
+      totalVolumeM3: actualGrossVolumeM3,
+      totalCapacityLitres: totalLiquidLitres,
       dimensions: {
         lengthM,
         widthM,

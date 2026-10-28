@@ -25,7 +25,7 @@ export class PileEngine {
     if (!loadCheck.valid) throw new Error(loadCheck.error);
     const pServiceKn = loadCheck.value;
 
-    const dShaftMm = Number(params.pileDiameterMm) || 300;
+    const dShaftMm = Number(params.pileDiameterMm !== undefined ? params.pileDiameterMm : params.shaftDiameterMm) || 300;
     const dShaftM = dShaftMm / 1000;
     const depthM = Number(params.pileLengthM) || 4.0;
     const cuKnM2 = Number(params.cohesionCpkN) || 60; // Cohesion in kN/m²
@@ -98,6 +98,10 @@ export class PileEngine {
 
     return {
       serviceLoadKn: pServiceKn,
+      // Frontend convenience aliases
+      safeLoadCapacityKn: qSafeKn,
+      pilesCountRequired: pilesNeeded,
+      bulbDiameterMm: dBulbMm,
       pileDimensions: {
         shaftDiameterMm: dShaftMm,
         bulbDiameterMm: dBulbMm,

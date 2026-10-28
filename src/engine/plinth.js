@@ -18,12 +18,19 @@ export class PlinthEngine {
     const steps = [];
     const warnings = [];
 
-    const aCheck = Validator.positiveNumber('Plinth Area', params.plinthAreaSqft);
+    const plinthSqftInput = params.plinthAreaSqft !== undefined ? params.plinthAreaSqft : 1000;
+    const aCheck = Validator.positiveNumber('Plinth Area', plinthSqftInput);
     if (!aCheck.valid) throw new Error(aCheck.error);
     const plinthSqft = aCheck.value;
     const plinthM2 = SafeMath.round(plinthSqft / 10.7639, 2);
 
-    const proposedPlinthHeightMm = Number(params.plinthHeightAboveRoadMm) || 600;
+    let proposedPlinthHeightMm = Number(params.plinthHeightAboveRoadMm);
+    if (!proposedPlinthHeightMm || proposedPlinthHeightMm <= 0) {
+      const roadLevel = Number(params.roadLevelMm) || 0;
+      if (params.floodRiskZone === 'HIGH_FLOOD_RISK') proposedPlinthHeightMm = Math.max(900, roadLevel + 450);
+      else if (params.floodRiskZone === 'MODERATE_RISK') proposedPlinthHeightMm = Math.max(600, roadLevel + 300);
+      else proposedPlinthHeightMm = Math.max(450, roadLevel + 150);
+    }
     const minMandatoryPlinthHeightMm = 600; // Post-Michaung 2-ft guideline
 
     steps.push(`Plinth Footprint: ${plinthSqft} sq.ft (${plinthM2} m²)`);
@@ -82,6 +89,11 @@ export class PlinthEngine {
     return {
       plinthLevelStatus: isFloodSafe ? 'COMPLIANT_POST_MICHAUNG_STANDARD' : 'SUB_STANDARD_FLOOD_RISK',
       plinthHeightMm: proposedPlinthHeightMm,
+      // Frontend convenience aliases
+      recommendedPlinthHeightMm: proposedPlinthHeightMm,
+      heightAboveRoadMm: proposedPlinthHeightMm,
+      dpcThicknessMm: 50,
+      riskLevelText: (params.floodRiskZone === 'HIGH_FLOOD_RISK' ? 'அதி தீவிர வெள்ள அபாய மண்டலம் (+900mm உயர்த்தவும்)' : 'நிலையான மழை/வெள்ள நீர் தடுப்பு மட்டம் (+600mm)'),
       minRecommendedHeightMm: minMandatoryPlinthHeightMm,
       areas: { plinthAreaSqft: plinthSqft, plinthAreaM2: plinthM2 },
       fillMaterials: {

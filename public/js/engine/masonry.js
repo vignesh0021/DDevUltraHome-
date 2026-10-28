@@ -111,8 +111,10 @@ export class MasonryEngine {
     const steps = [];
     const assumptions = [];
 
-    const lCheck = Validator.positiveNumber('Wall Length', params.wallLength);
-    const hCheck = Validator.positiveNumber('Wall Height', params.wallHeight);
+    const lengthInput = params.wallLength !== undefined ? params.wallLength : params.length;
+    const heightInput = params.wallHeight !== undefined ? params.wallHeight : params.height;
+    const lCheck = Validator.positiveNumber('Wall Length', lengthInput);
+    const hCheck = Validator.positiveNumber('Wall Height', heightInput);
     if (!lCheck.valid) throw new Error(lCheck.error);
     if (!hCheck.valid) throw new Error(hCheck.error);
 
@@ -136,6 +138,9 @@ export class MasonryEngine {
         openingArea += area;
         steps.push(`Deduction #${idx + 1}: ${count} opening(s) of ${opW}m × ${opH}m = -${SafeMath.round(area, 2)} m²`);
       });
+    } else if (Number(params.openingsDeductionAreaM2) > 0) {
+      openingArea = Number(params.openingsDeductionAreaM2);
+      steps.push(`Deduction: Net specified opening area = -${SafeMath.round(openingArea, 2)} m²`);
     }
 
     const netWallArea = Math.max(0, SafeMath.round(grossWallArea - openingArea, 3));
@@ -164,7 +169,7 @@ export class MasonryEngine {
 
     // Number of bricks required = Net wall volume / Nominal volume of 1 brick
     const exactBricksCount = netWallVolume / singleNominalVolume;
-    const brickWastage = Number(params.brickWastagePercent) || 5;
+    const brickWastage = params.brickWastagePercent !== undefined ? Number(params.brickWastagePercent) : (Number(params.wastagePercent) || 5);
     const totalBricksWithWastage = Math.ceil(exactBricksCount * (1 + brickWastage / 100));
     steps.push(`Nominal brick volume with mortar = ${nomL} × ${nomW} × ${nomH} = ${SafeMath.round(singleNominalVolume, 6)} m³`);
     steps.push(`Theoretical brick count = ${netWallVolume} m³ / ${SafeMath.round(singleNominalVolume, 6)} m³ = ${SafeMath.round(exactBricksCount, 1)} nos.`);
@@ -187,7 +192,7 @@ export class MasonryEngine {
     steps.push(`Dry mortar volume = ${SafeMath.round(wetMortarVolume, 4)} m³ wet × ${DRY_MORTAR_FACTOR} (dry factor) × ${1 + mortarWastage/100} = ${dryMortarVolume} m³`);
 
     // Mortar ingredients (Cement & Sand)
-    const mKey = params.mortarMix || '1:5';
+    const mKey = params.mortarMix || params.mortarRatio || '1:5';
     const mix = MORTAR_MIXES[mKey] || MORTAR_MIXES['1:5'];
     const totalMortarParts = mix.cement + mix.sand;
 
@@ -231,6 +236,11 @@ export class MasonryEngine {
           tnUnits: sandTnUnits,
           weightTonnes: sandTonnes,
           unit: 'cft / TN Units'
+        },
+        mortar: {
+          cementBags: Math.ceil(cementBags),
+          sandM3: sandVolumeM3,
+          sandTnUnits: sandTnUnits
         }
       },
       assumptions,

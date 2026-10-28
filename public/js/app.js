@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrapCalculator();
   initBoq();
   initAiAssistant();
+  initDataSourcesSettings();
   initProjectProfile();
   initApkInstallPrompt();
 
@@ -463,36 +464,98 @@ function initCalculators() {
 
   // 2. RCC Calculator
   const rccForm = document.getElementById('form-rcc');
+  const rccTypeSelect = document.getElementById('rcc-type');
+  if (rccTypeSelect) {
+    const updateRccLabels = () => {
+      const type = rccTypeSelect.value;
+      const dimL = document.getElementById('rcc-dim-l');
+      const dimW = document.getElementById('rcc-dim-w');
+      const dimD = document.getElementById('rcc-dim-d');
+      const steelPct = document.getElementById('rcc-steel-pct');
+      const lblL = dimL?.closest('.form-group')?.querySelector('label');
+      const lblW = dimW?.closest('.form-group')?.querySelector('label');
+      const lblD = dimD?.closest('.form-group')?.querySelector('label');
+
+      if (type === 'SLAB') {
+        if (lblL) lblL.innerHTML = 'நீளம் (Length) <span class="label-unit">m</span>';
+        if (lblW) lblW.innerHTML = 'அகலம் (Width) <span class="label-unit">m</span>';
+        if (lblD) lblD.innerHTML = 'தடிமன் (Thickness) <span class="label-unit">mm</span>';
+        if (dimL && !dimL.dataset.userEdited) dimL.value = '5.0';
+        if (dimW && !dimW.dataset.userEdited) dimW.value = '4.0';
+        if (dimD && !dimD.dataset.userEdited) dimD.value = '125';
+        if (steelPct && !steelPct.dataset.userEdited) steelPct.value = '0.8';
+      } else if (type === 'BEAM') {
+        if (lblL) lblL.innerHTML = 'நீளம் (Span) <span class="label-unit">m</span>';
+        if (lblW) lblW.innerHTML = 'அகலம் (Width) <span class="label-unit">mm</span>';
+        if (lblD) lblD.innerHTML = 'ஆழம் (Depth) <span class="label-unit">mm</span>';
+        if (dimL && !dimL.dataset.userEdited) dimL.value = '4.0';
+        if (dimW && !dimW.dataset.userEdited) dimW.value = '230';
+        if (dimD && !dimD.dataset.userEdited) dimD.value = '450';
+        if (steelPct && !steelPct.dataset.userEdited) steelPct.value = '1.5';
+      } else if (type === 'COLUMN') {
+        if (lblL) lblL.innerHTML = 'உயரம் (Height) <span class="label-unit">m</span>';
+        if (lblW) lblW.innerHTML = 'அகலம் (Width) <span class="label-unit">mm</span>';
+        if (lblD) lblD.innerHTML = 'ஆழம் (Depth) <span class="label-unit">mm</span>';
+        if (dimL && !dimL.dataset.userEdited) dimL.value = '3.0';
+        if (dimW && !dimW.dataset.userEdited) dimW.value = '230';
+        if (dimD && !dimD.dataset.userEdited) dimD.value = '450';
+        if (steelPct && !steelPct.dataset.userEdited) steelPct.value = '2.0';
+      } else if (type === 'FOOTING') {
+        if (lblL) lblL.innerHTML = 'நீளம் (Length) <span class="label-unit">m</span>';
+        if (lblW) lblW.innerHTML = 'அகலம் (Width) <span class="label-unit">m</span>';
+        if (lblD) lblD.innerHTML = 'ஆழம் (Depth) <span class="label-unit">mm</span>';
+        if (dimL && !dimL.dataset.userEdited) dimL.value = '1.5';
+        if (dimW && !dimW.dataset.userEdited) dimW.value = '1.5';
+        if (dimD && !dimD.dataset.userEdited) dimD.value = '450';
+        if (steelPct && !steelPct.dataset.userEdited) steelPct.value = '0.8';
+      }
+    };
+    rccTypeSelect.addEventListener('change', updateRccLabels);
+    ['rcc-dim-l', 'rcc-dim-w', 'rcc-dim-d', 'rcc-steel-pct'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => { el.dataset.userEdited = 'true'; });
+    });
+  }
+
   if (rccForm) {
     rccForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const elemType = document.getElementById('rcc-type').value;
+      const countVal = parseInt(document.getElementById('rcc-count').value, 10) || 1;
+      const steelVal = parseFloat(document.getElementById('rcc-steel-pct').value) || 0.8;
+      const gradeVal = document.getElementById('rcc-grade').value;
+
+      const rawL = parseFloat(document.getElementById('rcc-dim-l').value);
+      const rawW = parseFloat(document.getElementById('rcc-dim-w').value);
+      const rawD = parseFloat(document.getElementById('rcc-dim-d').value);
+
       const payload = {
         elementType: elemType,
-        mixGrade: document.getElementById('rcc-grade').value,
-        steelPercentage: parseFloat(document.getElementById('rcc-steel-pct').value) || 0.8,
-        count: parseInt(document.getElementById('rcc-count').value, 10) || 1
+        mixGrade: gradeVal,
+        steelPercentage: steelVal,
+        count: countVal
       };
 
       if (elemType === 'SLAB') {
-        payload.length = parseFloat(document.getElementById('rcc-dim-l').value);
-        payload.width = parseFloat(document.getElementById('rcc-dim-w').value);
-        payload.thickness = parseFloat(document.getElementById('rcc-dim-d').value);
+        payload.length = rawL;
+        payload.width = rawW;
+        payload.thickness = rawD;
         payload.thicknessUnit = 'mm';
       } else if (elemType === 'BEAM') {
-        payload.span = parseFloat(document.getElementById('rcc-dim-l').value);
-        payload.width = parseFloat(document.getElementById('rcc-dim-w').value) * 1000;
-        payload.depth = parseFloat(document.getElementById('rcc-dim-d').value);
+        payload.span = rawL;
+        // If entered as meters (< 5), convert to mm, else already mm
+        payload.width = rawW < 5 ? rawW * 1000 : rawW;
+        payload.depth = rawD < 5 ? rawD * 1000 : rawD;
         payload.dimensionUnit = 'mm';
       } else if (elemType === 'COLUMN') {
-        payload.height = parseFloat(document.getElementById('rcc-dim-l').value);
-        payload.width = parseFloat(document.getElementById('rcc-dim-w').value) * 1000;
-        payload.depth = parseFloat(document.getElementById('rcc-dim-d').value);
+        payload.height = rawL;
+        payload.width = rawW < 5 ? rawW * 1000 : rawW;
+        payload.depth = rawD < 5 ? rawD * 1000 : rawD;
         payload.dimensionUnit = 'mm';
       } else if (elemType === 'FOOTING') {
-        payload.length = parseFloat(document.getElementById('rcc-dim-l').value);
-        payload.width = parseFloat(document.getElementById('rcc-dim-w').value);
-        payload.depth = parseFloat(document.getElementById('rcc-dim-d').value) / 1000;
+        payload.length = rawL;
+        payload.width = rawW;
+        payload.depth = rawD > 10 ? rawD / 1000 : rawD; // in meters
       }
 
       try {
@@ -601,6 +664,7 @@ function initCalculators() {
     bbsForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const payload = {
+        type: 'STIRRUP',
         beamWidthMm: parseFloat(document.getElementById('bbs-beam-w').value),
         beamDepthMm: parseFloat(document.getElementById('bbs-beam-d').value),
         coverMm: parseFloat(document.getElementById('bbs-cover').value),
@@ -1036,32 +1100,44 @@ function renderFinishingOutput(data) {
   box.style.display = 'block';
 
   const tbody = document.getElementById('fin-out-tbody');
-  const m = data.materials;
+  const m = data.materials || {};
   let rows = '';
 
-  if (data.workType === 'PLASTER') {
+  const typeCode = (data.workTypeCode || data.workType || '').toUpperCase();
+
+  if (typeCode.includes('PLASTER')) {
+    const cementBags = m.cementBags ?? data.cementBags ?? '—';
+    const sandM3 = m.sandM3 ?? data.sandM3 ?? '—';
+    const sandUnits = m.sandTnUnits ?? data.sandTnUnits ?? '—';
     rows = `
-      <tr><td>சிமெண்ட் (Cement):</td><td><strong>${m.cementBags} Bags</strong></td></tr>
-      <tr><td>மணல் (Sand):</td><td><strong>${m.sandM3} m³ (${m.sandTnUnits} Units)</strong></td></tr>
-      <tr><td>பூச்சு தடிமன்:</td><td>${data.thicknessMm} mm</td></tr>
+      <tr><td>சிமெண்ட் (Cement):</td><td><strong>${cementBags} Bags</strong></td></tr>
+      <tr><td>மணல் (Sand):</td><td><strong>${sandM3} m³ (${sandUnits} Units)</strong></td></tr>
+      <tr><td>பூச்சு தடிமன்:</td><td>${data.thicknessMm || 12} mm</td></tr>
     `;
-  } else if (data.workType === 'PAINT') {
+  } else if (typeCode.includes('PAINT')) {
+    const puttyKg = m.puttyKg ?? data.puttyKg ?? '—';
+    const primerL = m.primerLitres ?? data.primerLitres ?? '—';
+    const paintL = m.emulsionPaintLitres ?? data.emulsionPaintLitres ?? '—';
     rows = `
-      <tr><td>வால் புட்டி (Putty 2 Coats):</td><td><strong>${m.puttyKg} kg</strong></td></tr>
-      <tr><td>பிரைமர் (Primer 1 Coat):</td><td><strong>${m.primerLitres} Litres</strong></td></tr>
-      <tr><td>எமல்ஷன் பெயிண்ட் (2 Coats):</td><td><strong>${m.emulsionPaintLitres} Litres</strong></td></tr>
+      <tr><td>வால் புட்டி (Putty 2 Coats):</td><td><strong>${puttyKg} kg</strong></td></tr>
+      <tr><td>பிரைமர் (Primer 1 Coat):</td><td><strong>${primerL} Litres</strong></td></tr>
+      <tr><td>எமல்ஷன் பெயிண்ட் (2 Coats):</td><td><strong>${paintL} Litres</strong></td></tr>
     `;
-  } else if (data.workType === 'TILES') {
+  } else if (typeCode.includes('TILE') || typeCode.includes('FLOOR')) {
+    const tiles = m.tilesCount ?? data.tilesCount ?? '—';
+    const area = m.netTileAreaM2 ?? data.netTileAreaM2 ?? '—';
+    const bedBags = m.beddingCementBags ?? data.beddingCementBags ?? '—';
+    const bedSand = m.beddingSandTnUnits ?? data.beddingSandTnUnits ?? '—';
     rows = `
-      <tr><td>டைல்ஸ் (Tiles 600x600mm):</td><td><strong>${m.tilesCount} Boxes (${m.netTileAreaM2} m²)</strong></td></tr>
-      <tr><td>பெட்டிங் சிமெண்ட்:</td><td><strong>${m.beddingCementBags} Bags</strong></td></tr>
-      <tr><td>பெட்டிங் மணல்:</td><td><strong>${m.beddingSandTnUnits} Units</strong></td></tr>
+      <tr><td>டைல்ஸ் (Tiles 600x600mm):</td><td><strong>${tiles} Boxes (${area} m²)</strong></td></tr>
+      <tr><td>பெட்டிங் சிமெண்ட்:</td><td><strong>${bedBags} Bags</strong></td></tr>
+      <tr><td>பெட்டிங் மணல்:</td><td><strong>${bedSand} Units</strong></td></tr>
     `;
   }
 
   tbody.innerHTML = rows;
   const ol = document.getElementById('fin-out-steps');
-  ol.innerHTML = (data.steps || []).map(s => `<li>${s}</li>`).join('');
+  if (ol) ol.innerHTML = (data.steps || data.calculationSteps || []).map(s => `<li>${s}</li>`).join('');
 }
 
 function renderEarthworkOutput(data) {
@@ -1159,13 +1235,14 @@ function renderQcOutput(data) {
   const heroBox = document.getElementById('qc-hero-box');
   heroBox.style.background = isPassed ? 'var(--bg-accent-soft)' : 'var(--danger-soft)';
 
+  const strengths = data.cubeStrengthsNmm2 || data.specimens?.map(s => s.compressiveStrengthNmm2) || [];
   const tbody = document.getElementById('qc-out-tbody');
   tbody.innerHTML = `
     <tr><td>இலக்கு பலம் (Target Strength):</td><td><strong>${data.targetStrengthNmm2} N/mm²</strong></td></tr>
     <tr><td>கிடைத்த சராசரி பலம்:</td><td><strong>${data.averageStrengthNmm2} N/mm²</strong></td></tr>
-    <tr><td>கியூப் 1 அழுத்தம்:</td><td>${data.cubeStrengthsNmm2[0]} N/mm²</td></tr>
-    <tr><td>கியூப் 2 அழுத்தம்:</td><td>${data.cubeStrengthsNmm2[1]} N/mm²</td></tr>
-    <tr><td>கியூப் 3 அழுத்தம்:</td><td>${data.cubeStrengthsNmm2[2]} N/mm²</td></tr>
+    <tr><td>கியூப் 1 அழுத்தம்:</td><td>${strengths[0] ?? '—'} N/mm²</td></tr>
+    <tr><td>கியூப் 2 அழுத்தம்:</td><td>${strengths[1] ?? '—'} N/mm²</td></tr>
+    <tr><td>கியூப் 3 அழுத்தம்:</td><td>${strengths[2] ?? '—'} N/mm²</td></tr>
   `;
 }
 
@@ -1174,12 +1251,13 @@ function renderAntiTermiteOutput(data) {
   if (!box) return;
   box.style.display = 'block';
 
+  const conc = data.chemicalConcentrateLitres || data.concentratedChemicalLitres || '—';
   const tbody = document.getElementById('term-out-tbody');
   tbody.innerHTML = `
-    <tr><td>தேவையான மருந்து (Chemical):</td><td><strong>${data.chemicalConcentrateLitres} Litres</strong></td></tr>
+    <tr><td>தேவையான மருந்து (Chemical):</td><td><strong>${conc} Litres</strong></td></tr>
     <tr><td>மருந்து கலவை நீர் (Emulsion):</td><td><strong>${data.totalEmulsionLitres} Litres</strong></td></tr>
-    <tr><td>மருந்து வகை:</td><td>${data.chemicalType}</td></tr>
-    <tr><td>அஸ்திவாரம் மற்றும் தரை பரப்பு:</td><td>${data.plinthAreaSqft} sq.ft</td></tr>
+    <tr><td>மருந்து வகை:</td><td>${data.chemicalType || data.chemicalName || '—'}</td></tr>
+    <tr><td>அஸ்திவாரம் மற்றும் தரை பரப்பு:</td><td>${data.plinthAreaSqft || (data.areas?.plinthAreaM2 ? (data.areas.plinthAreaM2 * 10.7639).toFixed(1) : '—')} sq.ft</td></tr>
   `;
 }
 
@@ -1546,6 +1624,133 @@ function initAiAssistant() {
   const input = document.getElementById('chat-input');
   const container = document.getElementById('chat-messages');
 
+  // AI Settings Drawer Controls
+  const toggleBtn = document.getElementById('ai-settings-toggle');
+  const panel = document.getElementById('ai-settings-panel');
+  const provSelect = document.getElementById('ai-provider-select');
+  const keyGroup = document.getElementById('ai-key-group');
+  const apiKeyInput = document.getElementById('ai-api-key');
+  const advGroup = document.getElementById('ai-advanced-group');
+  const modelInput = document.getElementById('ai-model-name');
+  const urlGroup = document.getElementById('ai-url-group');
+  const urlInput = document.getElementById('ai-base-url');
+  const saveBtn = document.getElementById('ai-save-cfg-btn');
+  const testBtn = document.getElementById('ai-test-cfg-btn');
+  const resetBtn = document.getElementById('ai-reset-cfg-btn');
+  const feedback = document.getElementById('ai-cfg-feedback');
+  const provBadge = document.getElementById('ai-current-prov-badge');
+  const statusBadge = document.getElementById('ai-status-badge');
+
+  if (toggleBtn && panel) {
+    toggleBtn.addEventListener('click', () => {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+
+  const updateAiFieldVisibility = (prov) => {
+    if (prov === 'offline') {
+      if (keyGroup) keyGroup.style.display = 'none';
+      if (advGroup) advGroup.style.display = 'none';
+      if (provBadge) provBadge.textContent = 'Offline Civil Expert';
+      if (statusBadge) statusBadge.textContent = 'Offline Civil Expert Active';
+    } else {
+      if (keyGroup) keyGroup.style.display = 'block';
+      if (advGroup) advGroup.style.display = 'block';
+      if (urlGroup) urlGroup.style.display = prov === 'custom' ? 'block' : 'none';
+      if (prov === 'gemini') {
+        if (modelInput) modelInput.placeholder = 'gemini-1.5-flash';
+        if (provBadge) provBadge.textContent = 'Google Gemini';
+        if (statusBadge) statusBadge.textContent = 'Google Gemini Active';
+      } else if (prov === 'groq') {
+        if (modelInput) modelInput.placeholder = 'llama-3.3-70b-versatile';
+        if (provBadge) provBadge.textContent = 'Groq Cloud';
+        if (statusBadge) statusBadge.textContent = 'Groq Cloud Active';
+      } else if (prov === 'openrouter') {
+        if (modelInput) modelInput.placeholder = 'meta-llama/llama-3.2-3b-instruct:free';
+        if (provBadge) provBadge.textContent = 'OpenRouter';
+        if (statusBadge) statusBadge.textContent = 'OpenRouter Active';
+      } else if (prov === 'custom') {
+        if (modelInput) modelInput.placeholder = 'llama3';
+        if (provBadge) provBadge.textContent = 'Custom Endpoint';
+        if (statusBadge) statusBadge.textContent = 'Custom Endpoint Active';
+      }
+    }
+  };
+
+  if (provSelect) {
+    provSelect.addEventListener('change', () => updateAiFieldVisibility(provSelect.value));
+  }
+
+  // Load saved config
+  try {
+    const saved = localStorage.getItem('ddev_ai_config');
+    if (saved) {
+      const cfg = JSON.parse(saved);
+      if (provSelect && cfg.provider) provSelect.value = cfg.provider;
+      if (apiKeyInput && cfg.apiKey) apiKeyInput.value = cfg.apiKey;
+      if (modelInput && cfg.model) modelInput.value = cfg.model;
+      if (urlInput && cfg.baseUrl) urlInput.value = cfg.baseUrl;
+      updateAiFieldVisibility(cfg.provider || 'offline');
+    }
+  } catch {}
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const prov = provSelect ? provSelect.value : 'offline';
+      const key = apiKeyInput ? apiKeyInput.value : '';
+      const model = modelInput ? modelInput.value : '';
+      const baseUrl = urlInput ? urlInput.value : '';
+      const payload = { provider: prov, apiKey: key, model, baseUrl, disabled: prov === 'offline' };
+
+      try {
+        await apiClient.request('/api/ai/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        localStorage.setItem('ddev_ai_config', JSON.stringify(payload));
+        if (feedback) feedback.innerHTML = '<span style="color:var(--accent);">✓ அமைப்புகள் வெற்றிகரமாக சேமிக்கப்பட்டன (Saved)</span>';
+        updateAiFieldVisibility(prov);
+      } catch (err) {
+        if (feedback) feedback.innerHTML = `<span style="color:var(--danger);">சேமிப்பதில் பிழை: ${err.message}</span>`;
+      }
+    });
+  }
+
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      if (feedback) feedback.innerHTML = 'இணைப்பு சோதிக்கப்படுகிறது (Testing connection)...';
+      try {
+        const res = await apiClient.request('/api/ai/test', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          if (feedback) feedback.innerHTML = `<span style="color:var(--accent);">✓ இணைப்பு வெற்றி: ${data.message} (${data.latencyMs}ms)</span>`;
+        } else {
+          if (feedback) feedback.innerHTML = `<span style="color:var(--danger);">⚠️ இணைப்பு தோல்வி: ${data.message}</span>`;
+        }
+      } catch (err) {
+        if (feedback) feedback.innerHTML = `<span style="color:var(--danger);">பிழை: ${err.message}</span>`;
+      }
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      if (provSelect) provSelect.value = 'offline';
+      if (apiKeyInput) apiKeyInput.value = '';
+      if (modelInput) modelInput.value = '';
+      if (urlInput) urlInput.value = '';
+      localStorage.removeItem('ddev_ai_config');
+      await apiClient.request('/api/ai/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: 'offline', disabled: true })
+      });
+      updateAiFieldVisibility('offline');
+      if (feedback) feedback.innerHTML = '<span style="color:var(--accent);">ஆஃப்லைன் சிவில் நிபுணர் நிலைக்கு மீட்டமைக்கப்பட்டது.</span>';
+    });
+  }
+
   if (form && input && container) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1564,7 +1769,8 @@ function initAiAssistant() {
           body: JSON.stringify({ prompt: question })
         });
         const data = await res.json();
-        loadingBubble.innerHTML = `<strong>DDevUltraHome Civil Knowledge Engine:</strong><br>${data.answer.replace(/\n/g, '<br>')}`;
+        const header = data.provider || 'DDevUltraHome Civil Knowledge Engine';
+        loadingBubble.innerHTML = `<strong>${header}:</strong><br>${data.answer.replace(/\n/g, '<br>')}`;
       } catch (err) {
         loadingBubble.textContent = 'கேள்விக்கு பதிலளிப்பதில் பிழை ஏற்பட்டது.';
       }
@@ -1579,6 +1785,115 @@ function initAiAssistant() {
       }
     });
   });
+}
+
+// --- Data Sources / Price Provider Settings ---
+function initDataSourcesSettings() {
+  const provSelect = document.getElementById('ds-provider-select');
+  const customUrlGroup = document.getElementById('ds-custom-url-group');
+  const customUrlInput = document.getElementById('ds-custom-url');
+  const testBtn = document.getElementById('ds-test-btn');
+  const flushBtn = document.getElementById('ds-flush-btn');
+  const statusMsg = document.getElementById('ds-status-msg');
+  const badge = document.getElementById('ds-active-badge');
+  const exportBtn = document.getElementById('ds-export-btn');
+  const importBtn = document.getElementById('ds-import-btn');
+  const fileInput = document.getElementById('ds-file-input');
+  const importStatus = document.getElementById('ds-import-status');
+
+  if (provSelect) {
+    provSelect.addEventListener('change', async () => {
+      const val = provSelect.value;
+      if (customUrlGroup) customUrlGroup.style.display = val === 'public_api' ? 'block' : 'none';
+      if (badge) {
+        const badgeMap = {
+          dealer_quote: 'Dealer Quotes Active',
+          pwd_sor: 'TN PWD SOR Active',
+          public_api: 'Public/Custom API Active',
+          offline_reference: 'Offline Baseline Active'
+        };
+        badge.textContent = badgeMap[val] || val;
+      }
+      try {
+        await apiClient.request('/api/providers/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerId: val, customUrl: customUrlInput?.value || '' })
+        });
+        localStorage.setItem('ddev_active_provider', val);
+        if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--accent);">✓ விலை மூலம் வெற்றிகரமாக மாற்றப்பட்டது.</span>';
+        loadMaterialRates();
+      } catch (err) {
+        if (statusMsg) statusMsg.textContent = `பிழை: ${err.message}`;
+      }
+    });
+  }
+
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      if (statusMsg) statusMsg.textContent = 'இணைப்பு சோதிக்கப்படுகிறது...';
+      try {
+        const res = await apiClient.request('/api/providers/test', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          if (statusMsg) statusMsg.innerHTML = `<span style="color:var(--accent);">✓ ${data.message} (${data.latencyMs}ms)</span>`;
+        } else {
+          if (statusMsg) statusMsg.innerHTML = `<span style="color:var(--danger);">⚠️ ${data.message}</span>`;
+        }
+      } catch (err) {
+        if (statusMsg) statusMsg.innerHTML = `<span style="color:var(--danger);">பிழை: ${err.message}</span>`;
+      }
+    });
+  }
+
+  if (flushBtn) {
+    flushBtn.addEventListener('click', async () => {
+      try {
+        await apiClient.request('/api/providers/flush-cache', { method: 'POST' });
+        if (statusMsg) statusMsg.innerHTML = '<span style="color:var(--accent);">✓ உள்ளூர் நினைவகம் அழிக்கப்பட்டு புதுப்பிக்கப்பட்டது.</span>';
+        loadMaterialRates();
+      } catch (err) {
+        if (statusMsg) statusMsg.textContent = `பிழை: ${err.message}`;
+      }
+    });
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      try {
+        const raw = localStorage.getItem('ddev_custom_rates') || '{}';
+        const blob = new Blob([raw], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `DDevUltraHome_Custom_Rates_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert(`Export failed: ${err.message}`);
+      }
+    });
+  }
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = JSON.parse(event.target.result);
+          localStorage.setItem('ddev_custom_rates', JSON.stringify(content));
+          if (importStatus) importStatus.innerHTML = '<span style="color:var(--accent);">✓ தனிப்பயன் விலைகள் வெற்றிகரமாக இறக்குமதி செய்யப்பட்டன.</span>';
+          loadMaterialRates();
+        } catch (err) {
+          if (importStatus) importStatus.innerHTML = `<span style="color:var(--danger);">JSON வடிவப் பிழை: ${err.message}</span>`;
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
 }
 
 function appendChatMessage(sender, text) {

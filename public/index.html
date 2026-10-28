@@ -34,26 +34,44 @@
         <!-- District Selector Dropdown (All 38 TN Districts) -->
         <div class="district-picker-wrap">
           <select id="district-select" class="district-select" aria-label="Select Tamil Nadu District" title="Tamil Nadu District">
-            <option value="Chennai" selected>சென்னை (Chennai)</option>
+            <option value="Ariyalur">அரியலூர் (Ariyalur)</option>
             <option value="Chengalpattu">செங்கல்பட்டு (Chengalpattu)</option>
-            <option value="Kanchipuram">காஞ்சிபுரம் (Kanchipuram)</option>
-            <option value="Tiruvallur">திருவள்ளூர் (Tiruvallur)</option>
+            <option value="Chennai" selected>சென்னை (Chennai)</option>
             <option value="Coimbatore">கோயம்புத்தூர் (Coimbatore)</option>
-            <option value="Madurai">மதுரை (Madurai)</option>
-            <option value="Tiruchirappalli">திருச்சிராப்பள்ளி (Trichy)</option>
-            <option value="Salem">சேலம் (Salem)</option>
-            <option value="Tirunelveli">திருநெல்வேலி (Tirunelveli)</option>
-            <option value="Erode">ஈரோடு (Erode)</option>
-            <option value="Vellore">வேலூர் (Vellore)</option>
-            <option value="Thanjavur">தஞ்சாவூர் (Thanjavur)</option>
-            <option value="Tiruppur">திருப்பூர் (Tiruppur)</option>
-            <option value="Dindigul">திண்டுக்கல் (Dindigul)</option>
             <option value="Cuddalore">கடலூர் (Cuddalore)</option>
-            <option value="Villupuram">விழுப்புரம் (Villupuram)</option>
+            <option value="Dharmapuri">தர்மபுரி (Dharmapuri)</option>
+            <option value="Dindigul">திண்டுக்கல் (Dindigul)</option>
+            <option value="Erode">ஈரோடு (Erode)</option>
+            <option value="Kallakurichi">கள்ளக்குறிச்சி (Kallakurichi)</option>
+            <option value="Kanchipuram">காஞ்சிபுரம் (Kanchipuram)</option>
             <option value="Kanyakumari">கன்னியாகுமரி (Kanyakumari)</option>
             <option value="Karur">கரூர் (Karur)</option>
+            <option value="Krishnagiri">கிருஷ்ணகிரி (Krishnagiri)</option>
+            <option value="Madurai">மதுரை (Madurai)</option>
+            <option value="Mayiladuthurai">மயிலாடுதுறை (Mayiladuthurai)</option>
+            <option value="Nagapattinam">நாகப்பட்டினம் (Nagapattinam)</option>
             <option value="Namakkal">நாமக்கல் (Namakkal)</option>
+            <option value="Nilgiris">நீலகிரி (Nilgiris)</option>
+            <option value="Perambalur">பெரம்பலூர் (Perambalur)</option>
+            <option value="Pudukkottai">புதுக்கோட்டை (Pudukkottai)</option>
+            <option value="Ramanathapuram">இராமநாதபுரம் (Ramanathapuram)</option>
+            <option value="Ranipet">ராணிப்பேட்டை (Ranipet)</option>
+            <option value="Salem">சேலம் (Salem)</option>
+            <option value="Sivaganga">சிவகங்கை (Sivaganga)</option>
+            <option value="Tenkasi">தென்காசி (Tenkasi)</option>
+            <option value="Thanjavur">தஞ்சாவூர் (Thanjavur)</option>
+            <option value="Theni">தேனி (Theni)</option>
             <option value="Thoothukudi">தூத்துக்குடி (Thoothukudi)</option>
+            <option value="Tiruchirappalli">திருச்சிராப்பள்ளி (Tiruchirappalli)</option>
+            <option value="Tirunelveli">திருநெல்வேலி (Tirunelveli)</option>
+            <option value="Tirupathur">திருப்பத்தூர் (Tirupathur)</option>
+            <option value="Tiruppur">திருப்பூர் (Tiruppur)</option>
+            <option value="Tiruvallur">திருவள்ளூர் (Tiruvallur)</option>
+            <option value="Tiruvannamalai">திருவண்ணாமலை (Tiruvannamalai)</option>
+            <option value="Tiruvarur">திருவாரூர் (Tiruvarur)</option>
+            <option value="Vellore">வேலூர் (Vellore)</option>
+            <option value="Viluppuram">விழுப்புரம் (Viluppuram)</option>
+            <option value="Virudhunagar">விருதுநகர் (Virudhunagar)</option>
           </select>
         </div>
 
@@ -1825,6 +1843,14 @@
                 <p data-i18n="more.apkDesc">ஆப் பதிப்பு 1.0.0, ஆஃப்லைன் PWA மற்றும் APK தகவல்.</p>
               </div>
             </div>
+
+            <div class="more-menu-card" data-more-target="view-datasources">
+              <div class="more-card-icon">🌐</div>
+              <div class="more-card-body">
+                <h4>விலை தரவு மூலங்கள் & API அமைப்புகள்</h4>
+                <p>TN PWD SOR, சந்தை விலை மேற்கோள்கள், API மூலங்கள் & தற்காலிக நினைவகம்.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1987,6 +2013,51 @@
             <span class="badge badge-green" id="ai-status-badge">Offline Civil Expert Active</span>
           </div>
 
+          <!-- AI Provider Configuration Drawer / Card -->
+          <div class="card" style="margin-bottom: 1rem; border-left: 3px solid var(--accent); background: var(--bg-card);">
+            <div class="card-header" style="cursor: pointer;" id="ai-settings-toggle">
+              <div>
+                <h4 style="margin: 0; font-size: 0.95rem;">⚙️ AI சேவை அமைப்புகள் & API சாவி (Configure AI Engine)</h4>
+                <p class="card-subtitle" style="font-size: 0.75rem;">Google Gemini, Groq, OpenRouter அல்லது 100% இலவச ஆஃப்லைன் நிபுணர்</p>
+              </div>
+              <span class="badge badge-teal" id="ai-current-prov-badge">Offline Expert</span>
+            </div>
+            <div id="ai-settings-panel" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-subtle); margin-top: 0.75rem;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>AI வழங்குநர் (Provider)</label>
+                  <select id="ai-provider-select" class="form-control">
+                    <option value="offline" selected>ஆஃப்லைன் சிவில் நிபுணர் (Offline Expert — 100% Free)</option>
+                    <option value="gemini">Google Gemini (Gemini 1.5 / 2.5 Flash)</option>
+                    <option value="groq">Groq Cloud (Llama 3.3 70B — Free Tier)</option>
+                    <option value="openrouter">OpenRouter (Free / Open Models)</option>
+                    <option value="custom">தனிப்பயன் OpenAI-Compatible Endpoint</option>
+                  </select>
+                </div>
+                <div class="form-group" id="ai-key-group" style="display: none;">
+                  <label>API சாவி (API Key — Masked & Stored Locally)</label>
+                  <input type="password" id="ai-api-key" placeholder="AI API Key (Ex: gsk_... or AIza...)" class="form-control" autocomplete="off">
+                </div>
+              </div>
+              <div class="form-row" id="ai-advanced-group" style="display: none;">
+                <div class="form-group">
+                  <label>மாடல் பெயர் (Model Name)</label>
+                  <input type="text" id="ai-model-name" placeholder="Default model for provider" class="form-control">
+                </div>
+                <div class="form-group" id="ai-url-group" style="display: none;">
+                  <label>Base URL</label>
+                  <input type="url" id="ai-base-url" placeholder="http://localhost:11434/v1" class="form-control">
+                </div>
+              </div>
+              <div class="btn-group" style="margin-top: 0.5rem;">
+                <button type="button" class="btn btn-primary btn-sm" id="ai-save-cfg-btn">அமைப்புகளை சேமி (Save Settings)</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="ai-test-cfg-btn">இணைப்பை சரிபார் (Test)</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="ai-reset-cfg-btn">மீட்டமை (Reset to Offline)</button>
+              </div>
+              <div id="ai-cfg-feedback" style="margin-top: 0.5rem; font-size: 0.8rem;"></div>
+            </div>
+          </div>
+
           <!-- Quick Prompts Pills -->
           <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.75rem;" class="no-print">
             <button class="chip-btn quick-prompt-btn">M20 mix ratio & bags</button>
@@ -2131,6 +2202,59 @@
                 🌐 GitHub Actions APK Builds
               </a>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-view 7: Data Sources & Price Providers -->
+      <div id="view-datasources" class="more-subview" style="display: none;">
+        <button class="btn btn-secondary btn-sm more-back-btn" style="margin-bottom: 1rem;">← மேலும் பக்கத்திற்கு திரும்புக (Back)</button>
+        
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3>விலை தரவு மூலங்கள் (Price Providers)</h3>
+                <p class="card-subtitle">Active Data Sources & Provenance Architecture</p>
+              </div>
+              <span class="badge badge-teal" id="ds-active-badge">Dealer Quotes Active</span>
+            </div>
+            
+            <div class="form-group">
+              <label>செயலில் உள்ள விலை மூலம் (Active Provider)</label>
+              <select id="ds-provider-select" class="form-control">
+                <option value="dealer_quote" selected>தமிழ்நாடு சந்தை விலை (Regional Dealer Network)</option>
+                <option value="pwd_sor">அரசு PWD Schedule of Rates (SOR 2025-26)</option>
+                <option value="public_api">பொது / தனிப்பயன் API (Configurable Endpoint)</option>
+                <option value="offline_reference">உள்ளமைக்கப்பட்ட ஆஃப்லைன் அடிப்படை (Offline Baseline)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="ds-custom-url-group" style="display: none;">
+              <label>தனிப்பயன் API முகவரி (Custom Price API URL)</label>
+              <input type="url" id="ds-custom-url" placeholder="https://api.yourdomain.com/rates" class="form-control">
+            </div>
+
+            <div class="btn-group" style="margin-top: 1rem;">
+              <button type="button" class="btn btn-primary btn-sm" id="ds-test-btn">இணைப்பை சரிபார் (Test Connection)</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="ds-flush-btn">தற்காலிக நினைவகத்தை அழி (Flush Cache)</button>
+            </div>
+            <div id="ds-status-msg" style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>தனிப்பயன் விலைகள் மேலாண்மை (Custom Rates)</h3>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+              ஒப்பந்ததாரர்கள் தங்கள் உள்ளூர் சந்தை விலைகளை JSON வடிவில் ஏற்றுமதி செய்யவோ அல்லது இறக்குமதி செய்யவோ முடியும்.
+            </p>
+            <div class="btn-group">
+              <button type="button" class="btn btn-secondary btn-sm" id="ds-export-btn">📥 ஏற்றுமதி செய் (Export JSON)</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="ds-import-btn">📤 இறக்குமதி செய் (Import JSON)</button>
+            </div>
+            <input type="file" id="ds-file-input" accept=".json" style="display: none;">
+            <div id="ds-import-status" style="margin-top: 0.5rem; font-size: 0.85rem;"></div>
           </div>
         </div>
       </div>

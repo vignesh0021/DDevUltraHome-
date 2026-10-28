@@ -34,7 +34,7 @@ export class RwhEngine {
     const roofSqft = rCheck.value;
     const roofM2 = SafeMath.round(roofSqft / 10.7639, 2);
 
-    const pavedSqft = Number(params.pavedAreaSqft) || 0;
+    const pavedSqft = Number(params.pavedAreaSqft !== undefined ? params.pavedAreaSqft : params.openPlotAreaSqft) || 0;
     const pavedM2 = SafeMath.round(pavedSqft / 10.7639, 2);
 
     const soilPerc = (params.soilPercolation || 'MODERATE').toUpperCase();
@@ -101,6 +101,10 @@ export class RwhEngine {
 
     return {
       annualPotentialLitres: totalAnnualHarvestLitres,
+      annualRainfallYieldLitres: totalAnnualHarvestLitres,
+      roofAreaSqft: roofSqft,
+      recommendedWellDiameterM: 1.0,
+      recommendedWellDepthM: boreDepthM,
       annualRoofLitres,
       annualPavedLitres,
       peakStormLitres,
