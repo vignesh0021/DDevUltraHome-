@@ -1,0 +1,399 @@
+/**
+ * DDevUltraHome Design System
+ * Brand Palette: Deep Construction Navy (#0B192C, #1E3E62) & Royal Gold Accent (#D97706, #F59E0B)
+ * Mobile-First, Accessible Touch Targets (>=48px), Safe Area Inset Support
+ */
+
+:root {
+  /* Brand Core Colors */
+  --brand-navy-950: #060D17;
+  --brand-navy-900: #0B192C;
+  --brand-navy-800: #132A4A;
+  --brand-navy-700: #1E3E62;
+  --brand-navy-600: #2B527E;
+  
+  --brand-gold-700: #B45309;
+  --brand-gold-600: #D97706;
+  --brand-gold-500: #F59E0B;
+  --brand-gold-400: #FBBF24;
+  --brand-gold-100: #FEF3C7;
+  --brand-gold-50:  #FFFBEB;
+
+  /* Semantic State Colors */
+  --color-success: #10B981;
+  --color-success-bg: #ECFDF5;
+  --color-success-border: #A7F3D0;
+  
+  --color-warning: #F59E0B;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FDE68A;
+  
+  --color-danger: #EF4444;
+  --color-danger-bg: #FEF2F2;
+  --color-danger-border: #FECACA;
+  
+  --color-info: #3B82F6;
+  --color-info-bg: #EFF6FF;
+  --color-info-border: #BFDBFE;
+
+  /* Surfaces & Backgrounds */
+  --bg-app: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F1F5F9;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+
+  /* Typography Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-on-navy: #FFFFFF;
+  --text-on-gold: #78350F;
+
+  /* Borders & Dividers */
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
+  --border-focus: #1E3E62;
+
+  /* Spacing Scale */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 20px 25px -5px rgba(11, 25, 44, 0.15), 0 8px 10px -6px rgba(11, 25, 44, 0.1);
+
+  /* Transitions */
+  --trans-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --trans-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Component Classes */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge-status.badge-active { background: var(--color-success-bg); color: #065F46; border: 1px solid var(--color-success-border); }
+.badge-status.badge-paid { background: var(--color-success-bg); color: #065F46; border: 1px solid var(--color-success-border); }
+.badge-status.badge-pending { background: var(--color-warning-bg); color: #92400E; border: 1px solid var(--color-warning-border); }
+.badge-status.badge-unpaid { background: var(--color-danger-bg); color: #991B1B; border: 1px solid var(--color-danger-border); }
+.badge-status.badge-advance { background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; }
+.badge-status.badge-verified { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+
+/* Business App Shell Header */
+.business-header {
+  background: linear-gradient(135deg, var(--brand-navy-900) 0%, var(--brand-navy-800) 100%);
+  color: #FFFFFF;
+  padding: calc(var(--space-sm) + env(safe-area-inset-top, 0px)) var(--space-md) var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--brand-gold-500);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #FFFFFF;
+  padding: 2px;
+}
+
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+
+.brand-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-gold-400);
+  letter-spacing: 0.02em;
+}
+
+/* Role Selector Pill */
+.role-badge-selector {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: var(--trans-fast);
+}
+
+.role-badge-selector:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.role-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-gold-400);
+  box-shadow: 0 0 6px var(--brand-gold-500);
+}
+
+.role-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* Executive Dashboard KPI Card Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--trans-fast), box-shadow var(--trans-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--brand-navy-700);
+}
+
+.kpi-card.kpi-cash::before { background: var(--color-success); }
+.kpi-card.kpi-advance::before { background: #6366F1; }
+.kpi-card.kpi-payable::before { background: var(--color-danger); }
+.kpi-card.kpi-net::before { background: var(--brand-gold-500); }
+
+.kpi-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.kpi-amount {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.kpi-subtext {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Nav Tab Bar (Business Modules Navigation) */
+.business-subnav {
+  display: flex;
+  gap: 8px;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.business-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.business-tab-btn {
+  white-space: nowrap;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--trans-fast);
+  min-height: 40px;
+}
+
+.business-tab-btn.active {
+  background: var(--brand-navy-900);
+  color: #FFFFFF;
+  border-color: var(--brand-navy-900);
+}
+
+.business-tab-btn.active .tab-icon {
+  color: var(--brand-gold-400);
+}
+
+/* Form & Input Controls */
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.form-control {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  background: #FFFFFF;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand-navy-700);
+  box-shadow: 0 0 0 3px rgba(30, 62, 98, 0.15);
+}
+
+/* Buttons */
+.btn-primary {
+  min-height: 48px;
+  background: var(--brand-navy-900);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--trans-fast);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-gold {
+  min-height: 48px;
+  background: var(--brand-gold-600);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.btn-outline {
+  min-height: 48px;
+  background: transparent;
+  color: var(--brand-navy-900);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Floating Action Button (FAB) */
+.fab-add {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand-gold-600);
+  color: #FFFFFF;
+  border: none;
+  box-shadow: var(--shadow-float);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 90;
+  transition: transform var(--trans-fast);
+}
+
+.fab-add:active {
+  transform: scale(0.92);
+}

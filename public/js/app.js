@@ -6,6 +6,8 @@
 import { i18n, I18N_DATA } from './i18n.js';
 import { apiClient } from './apiClient.js';
 import { PlanBudgetController } from './planBudget.js';
+import { ScreenRouter } from './screens/index.js';
+import { BusinessApi } from './businessApi.js';
 
 // Global Application State
 export const state = {
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDataSourcesSettings();
   initProjectProfile();
   initApkInstallPrompt();
+  initBusinessPlatform();
 
   // Initialize Plan to Budget Module
   const planBudgetController = new PlanBudgetController();
@@ -68,6 +71,50 @@ document.addEventListener('DOMContentLoaded', () => {
     timeElem.textContent = `Generated on: ${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN')}`;
   }
 });
+
+// --- Construction Business Management Platform Controller ---
+function initBusinessPlatform() {
+  const mountEl = document.getElementById('business-screen-mount');
+  if (!mountEl) return;
+
+  const router = new ScreenRouter(mountEl);
+  const activeUser = BusinessApi.getActiveUser();
+  const roleDisplay = document.getElementById('active-role-display');
+  if (roleDisplay && activeUser) {
+    const roleEmoji = {
+      OWNER: '👑 OWNER',
+      ACCOUNTANT: '📊 ACCOUNTANT',
+      SITE_MANAGER: '👷 SITE MANAGER',
+      ENGINEER: '📐 ENGINEER',
+      CLIENT: '🏠 CLIENT'
+    };
+    roleDisplay.textContent = roleEmoji[activeUser.role] || activeUser.role;
+  }
+
+  window.appNavigate = (screenKey) => {
+    document.querySelectorAll('.business-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-screen') === screenKey);
+    });
+    router.navigate(screenKey);
+  };
+
+  document.querySelectorAll('.business-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const screen = btn.getAttribute('data-screen');
+      window.appNavigate(screen);
+    });
+  });
+
+  const headerRoleBtn = document.getElementById('btn-header-role');
+  if (headerRoleBtn) {
+    headerRoleBtn.addEventListener('click', () => {
+      window.appNavigate('settings');
+    });
+  }
+
+  // Initial screen mount
+  router.navigate('dashboard');
+}
 
 // --- Theme Management (Light & Dark) ---
 function initTheme() {

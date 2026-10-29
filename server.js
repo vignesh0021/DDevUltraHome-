@@ -41,6 +41,7 @@ import { TakeoffEngine } from './src/plan/takeoffEngine.js';
 import { BoqGenerator } from './src/plan/boqGenerator.js';
 import { MaterialProcurementEngine } from './src/plan/materialProcurement.js';
 import { ExcelExportEngine } from './src/plan/excelExport.js';
+import { BusinessApiRouter } from './src/api/router.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,7 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'ddevultrahome.sqlite');
 const db = new AppDatabase(DB_FILE);
+const businessRouter = new BusinessApiRouter();
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -119,6 +121,17 @@ const server = http.createServer(async (req, res) => {
         region: 'Tamil Nadu, India',
         standards: ['IS 456', 'IS 1200', 'IS 2502', 'TN PWD SOR 2025-26']
       });
+    }
+
+    // Business Management Platform Endpoints
+    if (pathname.startsWith('/api/business')) {
+      let body = {};
+      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+        body = await parseJsonBody(req);
+      }
+      const query = Object.fromEntries(urlObj.searchParams.entries());
+      const result = await businessRouter.handle(pathname, req.method, body, query);
+      return sendJson(res, result.status, result.data);
     }
 
     if (pathname === '/api/districts' && req.method === 'GET') {

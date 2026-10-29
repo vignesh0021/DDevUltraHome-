@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/design-system.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#ea580c">
   <meta name="mobile-web-app-capable" content="yes">
@@ -112,6 +113,69 @@
          ========================================================================= -->
     <div id="tab-home" class="tab-pane active">
       
+      <!-- D DEV ULTRA HOMES — Construction Business Management Platform -->
+      <section class="business-platform-section" style="background: white; border-radius: var(--radius-lg); border: 2px solid var(--brand-navy-900); box-shadow: var(--shadow-md); margin-bottom: 1.5rem; overflow: hidden;">
+        <!-- Platform Header -->
+        <div style="background: linear-gradient(135deg, var(--brand-navy-950) 0%, var(--brand-navy-800) 100%); padding: 14px 18px; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--brand-gold-500); flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="/assets/ddevultrahome-logo-transparent.png" alt="D DEV ULTRA HOMES" style="width: 32px; height: 32px; object-fit: contain; background: white; border-radius: 6px; padding: 2px;">
+            <div>
+              <div style="font-size: 15px; font-weight: 800; letter-spacing: 0.05em; color: white;">D DEV ULTRA HOMES</div>
+              <div style="font-size: 11px; font-weight: 600; color: var(--brand-gold-400);">வணிக மேலாண்மை தளம் (Business Management Suite)</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="role-badge-selector" id="btn-header-role" title="Active RBAC Role">
+              <span class="role-indicator-dot"></span>
+              <span class="role-label" id="active-role-display">👑 OWNER</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- 12-Screen Business Subnav Bar -->
+        <nav class="business-subnav" aria-label="Business Modules">
+          <button class="business-tab-btn active" data-screen="dashboard" type="button">
+            <span class="tab-icon">🏢</span> Dashboard
+          </button>
+          <button class="business-tab-btn" data-screen="projects" type="button">
+            <span class="tab-icon">🏗️</span> Projects
+          </button>
+          <button class="business-tab-btn" data-screen="clients" type="button">
+            <span class="tab-icon">👥</span> Clients
+          </button>
+          <button class="business-tab-btn" data-screen="quotations" type="button">
+            <span class="tab-icon">📑</span> Quotes
+          </button>
+          <button class="business-tab-btn" data-screen="income" type="button">
+            <span class="tab-icon">💰</span> Receipts
+          </button>
+          <button class="business-tab-btn" data-screen="expenses" type="button">
+            <span class="tab-icon">💳</span> Expenses
+          </button>
+          <button class="business-tab-btn" data-screen="suppliers" type="button">
+            <span class="tab-icon">🏭</span> Suppliers
+          </button>
+          <button class="business-tab-btn" data-screen="progress" type="button">
+            <span class="tab-icon">📈</span> Progress
+          </button>
+          <button class="business-tab-btn" data-screen="documents" type="button">
+            <span class="tab-icon">📁</span> Vault &amp; OCR
+          </button>
+          <button class="business-tab-btn" data-screen="reports" type="button">
+            <span class="tab-icon">📊</span> P&amp;L Reports
+          </button>
+          <button class="business-tab-btn" data-screen="backup" type="button">
+            <span class="tab-icon">💾</span> Backup &amp; Sync
+          </button>
+          <button class="business-tab-btn" data-screen="settings" type="button">
+            <span class="tab-icon">⚙️</span> Settings
+          </button>
+        </nav>
+
+        <!-- Dynamic Mount Element for 12 Business Screens -->
+        <div id="business-screen-mount" style="background: var(--bg-app); min-height: 480px;"></div>
+      </section>
+
       <!-- Official Brand Identity Hero Banner -->
       <div class="brand-hero-card">
         <div class="brand-hero-inner">
