@@ -233,8 +233,8 @@ export class BoqGenerator {
       labourRate: 11.5,
       unitRate: 76.0,
       totalAmount: SafeMath.round(totalSteelKg * 76.0, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================
@@ -360,8 +360,8 @@ export class BoqGenerator {
       labourRate: 190.0,
       unitRate: 710.0,
       totalAmount: SafeMath.round(floorTileAreaM2 * 710.0, 2),
-      confidenceStatus: 'High',
-      reviewStatus: 'Draft — Requires Review'
+      confidenceStatus: q3D ? 'Verified 3D' : 'High',
+      reviewStatus: projectData.reviewState === 'APPROVED_FOR_ESTIMATION' ? 'Approved for Budget' : 'Draft — Requires Review'
     });
 
     // ==========================================

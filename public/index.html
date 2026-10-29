@@ -13,6 +13,14 @@
   <meta name="theme-color" content="#ea580c">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three.module.js",
+      "three/addons/controls/OrbitControls.js": "/vendor/OrbitControls.js"
+    }
+  }
+  </script>
 </head>
 <body>
 
@@ -577,6 +585,14 @@
         <!-- 3D Controls Toolbar -->
         <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-muted); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
           <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+            <!-- View Mode Switchers -->
+            <div class="btn-group" style="display: inline-flex;">
+              <button type="button" class="btn btn-primary btn-sm view-mode-btn" id="btn-3d-dollhouse" data-mode="DOLLHOUSE" title="Isometric Dollhouse 3D View">🏠 3D இல்லம் (Dollhouse)</button>
+              <button type="button" class="btn btn-secondary btn-sm view-mode-btn" id="btn-3d-plan" data-mode="PLAN" title="2D Orthographic Floor Plan View">📐 2D வரைபடம் (Plan)</button>
+              <button type="button" class="btn btn-secondary btn-sm view-mode-btn" id="btn-3d-walkthrough" data-mode="WALKTHROUGH" title="First-Person Walkthrough">🚶 உள்நடை (Walkthrough)</button>
+            </div>
+
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-fit" title="Fit to Model">🎯 பொருத்து (Fit)</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-reset-view" title="Reset View">🔄 இயல்பு பார்வை (Reset)</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-wireframe" title="Toggle Wireframe">🌐 கம்பிச்சட்டம் (Wireframe)</button>
             
@@ -600,6 +616,21 @@
           <canvas id="canvas-3d-studio" width="760" height="380" style="width: 100%; height: 380px; display: block; background: #0f172a; cursor: grab;"></canvas>
           <div style="position: absolute; bottom: 8px; right: 10px; font-size: 0.75rem; color: #94a3b8; background: rgba(15, 23, 42, 0.8); padding: 2px 6px; border-radius: 4px;">
             Orbit: Drag • Zoom: Wheel/Pinch • Pan: Shift+Drag
+          </div>
+        </div>
+
+        <!-- Element Inspector Card (shows selected element metadata on click) -->
+        <div id="element-inspector-card" style="display: none; margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); border-left: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <span id="inspector-badge" class="badge" style="background: var(--bg-muted); color: var(--text-primary); margin-bottom: 4px;">Wall</span>
+              <h4 id="inspector-title" style="margin: 0 0 4px 0; font-size: 0.95rem;">Living Room Wall</h4>
+              <p id="inspector-desc" style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">Dimensions: 4.88m x 2.80m • Thickness: 230mm • Area: 13.66 m²</p>
+            </div>
+            <div style="text-align: right;">
+              <span id="inspector-provenance" style="font-size: 0.75rem; color: #10b981; font-weight: 600; display: block;">Native CAD Text</span>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-close-inspector" style="margin-top: 4px; padding: 2px 6px; font-size: 0.75rem;">✕ மூடு</button>
+            </div>
           </div>
         </div>
 

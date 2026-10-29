@@ -24,10 +24,11 @@ describe('Phase E, F, G: Parametric 2D-to-3D Plan Studio & Connected BOQ', () =>
     const result = studio.buildModelFrom2DPlan(sampleRooms);
 
     assert.ok(result.elementsSummary.wallsCount > 0, 'Must generate walls');
-    assert.ok(result.elementsSummary.slabsCount >= 3, 'Must generate Ground, First, and Terrace slabs');
-    assert.ok(result.elementsSummary.columnsCount >= 4, 'Must generate structural column grid');
-    assert.ok(result.elementsSummary.footingsCount >= 4, 'Must generate isolated footings');
-    assert.ok(result.elementsSummary.openingsCount > 0, 'Must generate door and window openings');
+    assert.ok(result.elementsSummary.slabsCount > 0, 'Must generate floor slabs');
+    assert.equal(result.elementsSummary.columnsCount, 0, 'Must NOT invent columns without structural schedule');
+    assert.equal(result.elementsSummary.footingsCount, 0, 'Must NOT invent footings without structural schedule');
+    assert.ok(result.elementsSummary.doorsCount > 0, 'Must generate doors');
+    assert.ok(result.elementsSummary.windowsCount > 0, 'Must generate windows');
 
     assert.equal(studio.isConstructionReady, false, 'Non-negotiable rule: Must never be labeled construction ready without engineer review');
   });
@@ -45,8 +46,8 @@ describe('Phase E, F, G: Parametric 2D-to-3D Plan Studio & Connected BOQ', () =>
     assert.ok(intWalls.every(w => w.thicknessM === 0.115), 'Internal walls must be 115mm thick');
 
     // Check opening cutouts
-    const doors = studio.elements.openings.filter(o => o.type === 'DOOR');
-    const windows = studio.elements.openings.filter(o => o.type === 'WINDOW');
+    const doors = studio.elements.doors;
+    const windows = studio.elements.windows;
     assert.ok(doors.length > 0);
     assert.ok(windows.length > 0);
     assert.equal(doors[0].heightM, 2.10, 'Standard door height must be 2.10m');
@@ -113,19 +114,27 @@ describe('Phase E, F, G: Parametric 2D-to-3D Plan Studio & Connected BOQ', () =>
     assert.ok(boq.provenanceSummary.includes('verified 2D-to-3D parametric takeoff'));
 
     // Verify 3D quantities replaced approximations in BOQ
-    const footingItem = boq.items.find(i => i.itemCode === 'ITEM-03');
-    assert.equal(footingItem.netQuantity, qty3D.footingConcreteM3);
-    assert.equal(footingItem.confidenceStatus, 'Verified 3D');
-
-    const columnItem = boq.items.find(i => i.itemCode === 'ITEM-05');
-    assert.equal(columnItem.netQuantity, qty3D.columnConcreteM3);
-    assert.equal(columnItem.confidenceStatus, 'Verified 3D');
-
     const slabItem = boq.items.find(i => i.itemCode === 'ITEM-06');
     assert.equal(slabItem.netQuantity, qty3D.slabConcreteM3);
     assert.equal(slabItem.confidenceStatus, 'Verified 3D');
 
     const steelItem = boq.items.find(i => i.itemCode === 'ITEM-07');
     assert.equal(steelItem.netQuantity, qty3D.reinforcementSteelKg);
+    assert.equal(steelItem.confidenceStatus, 'Verified 3D');
+
+    const extBrickItem = boq.items.find(i => i.itemCode === 'ITEM-09');
+    assert.equal(extBrickItem.netQuantity, qty3D.externalBrickworkM3);
+    assert.equal(extBrickItem.confidenceStatus, 'Verified 3D');
+
+    const intBrickItem = boq.items.find(i => i.itemCode === 'ITEM-10');
+    assert.equal(intBrickItem.confidenceStatus, 'Verified 3D');
+
+    const intPlasterItem = boq.items.find(i => i.itemCode === 'ITEM-11');
+    assert.equal(intPlasterItem.netQuantity, qty3D.internalPlasteringM2);
+    assert.equal(intPlasterItem.confidenceStatus, 'Verified 3D');
+
+    const tileItem = boq.items.find(i => i.itemCode === 'ITEM-12');
+    assert.equal(tileItem.netQuantity, qty3D.flooringTilingM2);
+    assert.equal(tileItem.confidenceStatus, 'Verified 3D');
   });
 });

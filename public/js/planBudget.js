@@ -517,6 +517,30 @@ export class PlanBudgetController {
   }
 
   bindStudio3DEvents() {
+    // 1. View Mode Switchers: Dollhouse, 2D Plan, Walkthrough
+    document.querySelectorAll('.view-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.currentTarget.getAttribute('data-mode') || e.target.getAttribute('data-mode');
+        if (mode) {
+          this.studio3D.setViewMode(mode);
+          document.querySelectorAll('.view-mode-btn').forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-secondary');
+          });
+          e.currentTarget.classList.remove('btn-secondary');
+          e.currentTarget.classList.add('btn-primary');
+        }
+      });
+    });
+
+    // 2. Fit to Model
+    const fitBtn = document.getElementById('btn-3d-fit');
+    if (fitBtn) {
+      fitBtn.addEventListener('click', () => {
+        this.studio3D.fitToModel();
+      });
+    }
+
     const resetBtn = document.getElementById('btn-3d-reset-view');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
@@ -525,6 +549,15 @@ export class PlanBudgetController {
         const txt = document.getElementById('exploded-val-text');
         if (slider) slider.value = 0;
         if (txt) txt.textContent = '0.0m';
+        document.querySelectorAll('.view-mode-btn').forEach(b => {
+          b.classList.remove('btn-primary');
+          b.classList.add('btn-secondary');
+        });
+        const dollhouseBtn = document.getElementById('btn-3d-dollhouse');
+        if (dollhouseBtn) {
+          dollhouseBtn.classList.remove('btn-secondary');
+          dollhouseBtn.classList.add('btn-primary');
+        }
         this.studio3D.render();
       });
     }
@@ -596,6 +629,51 @@ export class PlanBudgetController {
         tbl?.scrollIntoView({ behavior: 'smooth' });
       });
     }
+
+    // Close Inspector Card
+    const closeInspBtn = document.getElementById('btn-close-inspector');
+    if (closeInspBtn) {
+      closeInspBtn.addEventListener('click', () => {
+        const card = document.getElementById('element-inspector-card');
+        if (card) card.style.display = 'none';
+      });
+    }
+
+    // Attach 3D Raycasting selection listener
+    this.studio3D.onElementSelected = (elem) => {
+      this.showElementInspector(elem);
+    };
+  }
+
+  showElementInspector(elem) {
+    const card = document.getElementById('element-inspector-card');
+    if (!card || !elem) return;
+
+    const badge = document.getElementById('inspector-badge');
+    const title = document.getElementById('inspector-title');
+    const desc = document.getElementById('inspector-desc');
+    const prov = document.getElementById('inspector-provenance');
+
+    if (elem.thicknessM !== undefined) {
+      // Wall element
+      if (badge) badge.textContent = elem.isExternal ? 'வெளிப்புற சுவர் (External Wall)' : 'உட்புற சுவர் (Internal Partition)';
+      if (title) title.textContent = elem.id || 'Wall Element';
+      if (desc) desc.textContent = `நீளம்: ${elem.lengthM?.toFixed(2)}m • உயரம்: ${elem.heightM?.toFixed(2)}m • தடிமன்: ${(elem.thicknessM * 1000)?.toFixed(0)}mm • தளம்: ${elem.floor || 'Ground'}`;
+      if (prov) prov.textContent = elem.isExternal ? 'Exterior 230mm Masonry' : 'Interior 115mm Partition';
+    } else if (elem.areaM2 !== undefined) {
+      // Room slab element
+      if (badge) badge.textContent = 'அறை தளம் (Room Slab)';
+      if (title) title.textContent = elem.name || elem.id || 'Room Area';
+      if (desc) desc.textContent = `அளவு: ${elem.lengthM?.toFixed(2)}m x ${elem.widthM?.toFixed(2)}m • பரப்பு: ${elem.areaM2?.toFixed(2)} m² (${elem.areaSqft?.toFixed(1)} sqft)`;
+      if (prov) prov.textContent = elem.provenance || 'Architectural CAD Schedule';
+    } else {
+      if (badge) badge.textContent = 'மாதிரி உறுப்பு (Model Element)';
+      if (title) title.textContent = elem.name || elem.id || 'Selected Element';
+      if (desc) desc.textContent = `Type: ${elem.type || 'Structure'} • Floor: ${elem.floor || 'Ground'}`;
+      if (prov) prov.textContent = 'OpenPlan3D BIM Model';
+    }
+
+    card.style.display = 'block';
   }
 
   bindBoqGenerationEvents() {
