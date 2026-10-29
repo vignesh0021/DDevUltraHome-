@@ -343,10 +343,16 @@ export class PlanStudio3D {
     // Remove existing floor groups
     if (this.groundGroup) this.scene.remove(this.groundGroup);
     if (this.firstGroup) this.scene.remove(this.firstGroup);
+    if (this.floorGroups) {
+      this.floorGroups.forEach(grp => this.scene.remove(grp));
+    }
     this.meshMap.clear();
 
+    this.floorGroups = new Map();
     this.groundGroup = new THREE.Group();
     this.firstGroup = new THREE.Group();
+    this.floorGroups.set(0, this.groundGroup);
+    this.floorGroups.set(1, this.firstGroup);
     this.scene.add(this.groundGroup);
     this.scene.add(this.firstGroup);
 
@@ -387,7 +393,13 @@ export class PlanStudio3D {
     });
 
     this.floorPlan.floors.forEach(floor => {
-      const targetGroup = floor.level === 0 ? this.groundGroup : this.firstGroup;
+      let targetGroup = this.floorGroups.get(floor.level);
+      if (!targetGroup) {
+        targetGroup = new THREE.Group();
+        targetGroup.name = `FloorLevel_${floor.level}`;
+        this.floorGroups.set(floor.level, targetGroup);
+        this.scene.add(targetGroup);
+      }
 
       // 1. Build Floor Slabs for each room
       floor.rooms.forEach(rm => {
@@ -556,15 +568,26 @@ export class PlanStudio3D {
   }
 
   /**
-   * Set Active Floor filter: ALL, GROUND, FIRST
+   * Set Active Floor filter: ALL, GROUND, FIRST, SECOND, etc.
    */
   setActiveFloor(floor) {
     this.activeFloor = floor;
-    if (this.groundGroup) {
-      this.groundGroup.visible = (floor === 'ALL' || floor === 'GROUND');
-    }
-    if (this.firstGroup) {
-      this.firstGroup.visible = (floor === 'ALL' || floor === 'FIRST');
+    if (this.floorGroups) {
+      this.floorGroups.forEach((grp, lvl) => {
+        if (floor === 'ALL') {
+          grp.visible = true;
+        } else if (floor === 'GROUND' && lvl === 0) {
+          grp.visible = true;
+        } else if (floor === 'FIRST' && lvl === 1) {
+          grp.visible = true;
+        } else if (floor === 'SECOND' && lvl === 2) {
+          grp.visible = true;
+        } else if (floor === `FLOOR_${lvl}`) {
+          grp.visible = true;
+        } else {
+          grp.visible = false;
+        }
+      });
     }
     this.render();
   }
@@ -574,8 +597,10 @@ export class PlanStudio3D {
    */
   setExplodedView(offsetM) {
     this.explodedOffsetM = Math.max(0, Math.min(2.5, parseFloat(offsetM) || 0));
-    if (this.firstGroup) {
-      this.firstGroup.position.y = this.explodedOffsetM * 1.5;
+    if (this.floorGroups) {
+      this.floorGroups.forEach((grp, lvl) => {
+        grp.position.y = lvl * this.explodedOffsetM * 1.5;
+      });
     }
     this.render();
   }

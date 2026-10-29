@@ -82,7 +82,7 @@ export class PlanStudio3D {
         this.elements.walls.push({
           id: w.id,
           floorId: floor.id,
-          floor: floor.level === 0 ? 'GROUND_FLOOR' : 'FIRST_FLOOR',
+          floor: floor.level === 0 ? 'GROUND_FLOOR' : (floor.level === 1 ? 'FIRST_FLOOR' : (floor.level === 2 ? 'SECOND_FLOOR' : `FLOOR_${floor.level}`)),
           start: w.start,
           end: w.end,
           lengthM: w.lengthM,

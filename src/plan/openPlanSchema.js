@@ -69,34 +69,62 @@ export class OpenPlanSchema {
     const internalWallThick = options.internalWallThicknessM || 0.115; // 115mm partition wall
     const slabThicknessM = options.slabThicknessM || 0.15; // 150mm RCC slab
 
-    const groundRooms = rooms.filter(r => (r.floor || '').includes('GROUND') || !r.floor || r.pageNumber === 1);
-    const firstRooms = rooms.filter(r => (r.floor || '').includes('FIRST') || r.pageNumber === 2);
+    // Group rooms by floor
+    const floorGroups = new Map();
+    rooms.forEach(rm => {
+      let level = 0;
+      let name = 'Ground Floor (தரைத்தளம்)';
+      let code = 'GROUND_FLOOR';
+      const fStr = ((rm.floor || '') + ' ' + (rm.floorName || '') + ' ' + (rm.name || '')).toUpperCase();
+      if (fStr.includes('SECOND') || fStr.includes('FLOOR_3') || rm.pageNumber === 3) {
+        level = 2;
+        name = 'Second Floor (இரண்டாம் தளம்)';
+        code = 'SECOND_FLOOR';
+      } else if (fStr.includes('FIRST') || fStr.includes('FLOOR_2') || rm.pageNumber === 2) {
+        level = 1;
+        name = 'First Floor (முதல் தளம்)';
+        code = 'FIRST_FLOOR';
+      } else if (fStr.includes('THIRD') || fStr.includes('FLOOR_4') || rm.pageNumber === 4) {
+        level = 3;
+        name = 'Third Floor (மூன்றாம் தளம்)';
+        code = 'THIRD_FLOOR';
+      } else if (fStr.includes('TERRACE')) {
+        level = 3;
+        name = 'Terrace Floor (மொட்டை மாடி)';
+        code = 'TERRACE_FLOOR';
+      }
+      if (!floorGroups.has(level)) {
+        floorGroups.set(level, { level, name, code, rooms: [] });
+      }
+      floorGroups.get(level).rooms.push(rm);
+    });
 
     const floors = [];
-
-    // 1. Process Ground Floor
-    floors.push(this._buildFloor({
-      floorId: 'floor-0',
-      name: 'Ground Floor (தரைத்தளம்)',
-      level: 0,
-      elevationM: 0.0,
-      slabThicknessM,
-      floorHeightM,
-      rooms: groundRooms,
-      externalWallThick,
-      internalWallThick
-    }));
-
-    // 2. Process First Floor (if present)
-    if (firstRooms.length > 0) {
+    const sortedLevels = Array.from(floorGroups.keys()).sort((a, b) => a - b);
+    for (const lvl of sortedLevels) {
+      const g = floorGroups.get(lvl);
       floors.push(this._buildFloor({
-        floorId: 'floor-1',
-        name: 'First Floor (முதல் தளம்)',
-        level: 1,
-        elevationM: floorHeightM,
+        floorId: `floor-${lvl}`,
+        name: g.name,
+        level: lvl,
+        elevationM: lvl * floorHeightM,
         slabThicknessM,
         floorHeightM,
-        rooms: firstRooms,
+        rooms: g.rooms,
+        externalWallThick,
+        internalWallThick
+      }));
+    }
+
+    if (floors.length === 0) {
+      floors.push(this._buildFloor({
+        floorId: 'floor-0',
+        name: 'Ground Floor (தரைத்தளம்)',
+        level: 0,
+        elevationM: 0.0,
+        slabThicknessM,
+        floorHeightM,
+        rooms: [],
         externalWallThick,
         internalWallThick
       }));

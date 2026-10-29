@@ -148,6 +148,8 @@ export class PlanBudgetController {
             this.updateAreaTotals();
             this.studio3D.buildModelFrom2DPlan(this.rooms);
             this.studio3D.render();
+          } else {
+            console.warn('No architectural rooms detected in uploaded document. Retaining default plan.');
           }
 
           // Update Project Name and Floors Count if extracted

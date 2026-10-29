@@ -121,6 +121,7 @@ function initConnectionStatus() {
 // --- Bilingual Localization (தமிழ் & English) ---
 function initLocalization() {
   i18n.applyTranslations();
+  updateHomeDateStamp();
 
   const langBtn = document.getElementById('lang-toggle-btn');
   if (langBtn) {
@@ -130,7 +131,45 @@ function initLocalization() {
       state.currentLang = nextLang;
       initConnectionStatus();
       updateDistrictLabel();
+      updateHomeDateStamp();
     });
+  }
+}
+
+function updateHomeDateStamp() {
+  const dateEl = document.getElementById('home-date-stamp');
+  if (!dateEl) return;
+
+  const now = new Date();
+  const monthsTa = [
+    'ஜனவரி', 'பிப்ரவரி', 'மார்ச்', 'ஏப்ரல்', 'மே', 'ஜூன்',
+    'ஜூலை', 'ஆகஸ்ட்', 'செப்டம்பர்', 'அக்டோபர்', 'நவம்பர்', 'டிசம்பர்'
+  ];
+  const monthsEn = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
+    const parts = formatter.formatToParts(now);
+    const day = parts.find(p => p.type === 'day')?.value || now.getDate();
+    const monthIdx = (parseInt(parts.find(p => p.type === 'month')?.value, 10) || (now.getMonth() + 1)) - 1;
+    const year = parts.find(p => p.type === 'year')?.value || now.getFullYear();
+
+    if (state.currentLang === 'ta') {
+      dateEl.textContent = `இன்றைய தேதி: ${day} ${monthsTa[monthIdx]} ${year} (IST)`;
+    } else {
+      dateEl.textContent = `Date: ${day} ${monthsEn[monthIdx]} ${year} (IST)`;
+    }
+  } catch (err) {
+    // Fallback if Intl fails
+    dateEl.textContent = state.currentLang === 'ta' ? 'இன்றைய தேதி: 29 அக்டோபர் 2026 (IST)' : 'Date: 29 October 2026 (IST)';
   }
 }
 

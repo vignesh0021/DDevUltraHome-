@@ -339,10 +339,15 @@ async function executeLocalRequest(url, options = {}) {
       } else {
         return createMockResponse({ success: false, error: 'Missing fileBase64 or rawText in request body' }, 400);
       }
-      const result = PdfExtractor.extractPlan(buffer, {
-        fileName: body.fileName || 'plan.pdf',
-        mimeType: body.mimeType || 'application/pdf'
-      });
+      const result = typeof PdfExtractor.extractPlanAsync === 'function'
+        ? await PdfExtractor.extractPlanAsync(buffer, {
+            fileName: body.fileName || 'plan.pdf',
+            mimeType: body.mimeType || 'application/pdf'
+          })
+        : PdfExtractor.extractPlan(buffer, {
+            fileName: body.fileName || 'plan.pdf',
+            mimeType: body.mimeType || 'application/pdf'
+          });
       return createMockResponse({ success: true, ...result });
     }
 
