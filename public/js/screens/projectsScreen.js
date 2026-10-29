@@ -1,5 +1,7 @@
 /**
  * DDevUltraHome — Projects Management Screen
+ * Complete project directory with real contract breakdown, Schedule A specifications,
+ * milestone progress, and financial P&L inspection.
  */
 
 import { BusinessApi } from '../businessApi.js';
@@ -11,7 +13,7 @@ export const ProjectsScreen = {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <div>
             <h2 style="font-size: 18px; font-weight: 800; color: var(--brand-navy-900); margin: 0;">Projects Directory</h2>
-            <div style="font-size: 12px; color: var(--text-muted);">Active sites & contract deliverables</div>
+            <div style="font-size: 12px; color: var(--text-muted);">Active sites, client contracts & milestone deliverables</div>
           </div>
           <button id="btn-add-project" class="btn-primary" style="min-height: 40px; padding: 0 14px; font-size: 13px;">
             + Add Project
@@ -30,7 +32,7 @@ export const ProjectsScreen = {
           <form id="form-create-project">
             <div class="form-group">
               <label class="form-label">Project Name *</label>
-              <input type="text" id="inp-prj-name" class="form-control" required placeholder="e.g. Guindy Luxury Villa">
+              <input type="text" id="inp-prj-name" class="form-control" required placeholder="e.g. Kundrathur Residence">
             </div>
             <div class="form-group">
               <label class="form-label">Client *</label>
@@ -47,17 +49,17 @@ export const ProjectsScreen = {
               </div>
               <div class="form-group">
                 <label class="form-label">Project Code</label>
-                <input type="text" id="inp-prj-code" class="form-control" placeholder="PRJ-GND-01">
+                <input type="text" id="inp-prj-code" class="form-control" placeholder="PRJ-KUN-2026">
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="form-group">
                 <label class="form-label">Contract Value (₹)</label>
-                <input type="number" id="inp-prj-contract" class="form-control" step="1000" placeholder="e.g. 8500000">
+                <input type="number" id="inp-prj-contract" class="form-control" step="1000" placeholder="e.g. 4227400">
               </div>
               <div class="form-group">
                 <label class="form-label">Budgeted Cost (₹)</label>
-                <input type="number" id="inp-prj-budget" class="form-control" step="1000" placeholder="e.g. 6800000">
+                <input type="number" id="inp-prj-budget" class="form-control" step="1000" placeholder="e.g. 3400000">
               </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
@@ -67,6 +69,79 @@ export const ProjectsScreen = {
           </form>
         </div>
       </div>
+
+      <!-- Comprehensive Project Details Modal -->
+      <div id="modal-project-details" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="dtl-prj-code" style="font-size: 11px; font-weight: 800; color: var(--brand-gold-600); background: var(--brand-gold-50); padding: 2px 8px; border-radius: 4px;"></span>
+                <span id="dtl-prj-stage" class="badge-status badge-active"></span>
+              </div>
+              <h3 id="dtl-prj-name" style="margin: 6px 0 2px; font-size: 18px; font-weight: 800; color: var(--brand-navy-900);"></h3>
+              <div id="dtl-prj-client" style="font-size: 12px; color: var(--text-muted);"></div>
+            </div>
+            <button id="btn-close-details" class="btn-outline" style="min-height: 32px; width: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px;" type="button">✕</button>
+          </div>
+
+          <!-- Financial Health KPI Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 18px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px;">
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">CONTRACT VALUE</div>
+              <div id="dtl-val-contract" style="font-size: 15px; font-weight: 800; color: var(--brand-navy-900); margin-top: 2px;">₹0</div>
+            </div>
+            <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-md); padding: 10px;">
+              <div style="font-size: 11px; color: #1E40AF; font-weight: 700;">EARNED REVENUE</div>
+              <div id="dtl-val-revenue" style="font-size: 15px; font-weight: 800; color: #1E3A8A; margin-top: 2px;">₹0</div>
+            </div>
+            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-md); padding: 10px;">
+              <div style="font-size: 11px; color: #92400E; font-weight: 700;">UNEARNED ADVANCE</div>
+              <div id="dtl-val-advance" style="font-size: 15px; font-weight: 800; color: #B45309; margin-top: 2px;">₹0</div>
+            </div>
+            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius-md); padding: 10px;">
+              <div style="font-size: 11px; color: #166534; font-weight: 700;">OPERATING PROFIT</div>
+              <div id="dtl-val-profit" style="font-size: 15px; font-weight: 800; color: #15803D; margin-top: 2px;">₹0</div>
+            </div>
+          </div>
+
+          <!-- Milestones Schedule (Schedule B) -->
+          <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900); margin: 0;">Contract Payment Milestones</h4>
+              <span id="dtl-milestone-count" style="font-size: 11px; color: var(--text-muted);">8 Stages</span>
+            </div>
+            <div id="dtl-milestones-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+            </div>
+          </div>
+
+          <!-- Schedule A Specifications & Scope -->
+          <div style="background: #F8FAFC; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px; margin-bottom: 18px;">
+            <div style="font-size: 13px; font-weight: 800; color: var(--brand-navy-900); margin-bottom: 6px;">
+              📋 Schedule A Engineering Specifications
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.5;">
+              • <strong>RCC Framed Structure:</strong> 5" slab, 5" cut lintel, 2" sunshade<br>
+              • <strong>Masonry:</strong> 9" flyash bricks (CM 1:5) in external walls; 4.5" partition walls (CM 1:4)<br>
+              • <strong>Approved Cement:</strong> Dalmia, Coromandel, UltraTech, Ramco (HDPE/paper bags)<br>
+              • <strong>Reinforcement:</strong> ISI 550D TMT bars<br>
+              • <strong>Flooring & Wall:</strong> 4'×2' Vitrified tiles (Kag/Anuj @ ₹50/sqft base); 1'×1' toilet tiles to 7ft<br>
+              • <strong>Joinery & Woodwork:</strong> First quality teak wood main door (3'6"×7'), UPVC sliding windows<br>
+              • <strong>Electrical & Plumbing:</strong> Orbit 3-phase wiring, Parryware sanitary fittings
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btn-dtl-record-receipt" class="btn-primary" style="flex: 1; min-height: 42px; font-size: 13px;">
+              💰 Record Receipt / Advance
+            </button>
+            <button id="btn-dtl-record-expense" class="btn-outline" style="flex: 1; min-height: 42px; font-size: 13px;">
+              💳 Record Expense
+            </button>
+          </div>
+        </div>
+      </div>
     `;
 
     // Load projects and clients
@@ -74,6 +149,8 @@ export const ProjectsScreen = {
 
     // Modal controls
     const modal = container.querySelector('#modal-new-project');
+    const detailsModal = container.querySelector('#modal-project-details');
+
     container.querySelector('#btn-add-project')?.addEventListener('click', async () => {
       await this.populateClientDropdown(container);
       modal.style.display = 'flex';
@@ -81,6 +158,10 @@ export const ProjectsScreen = {
 
     container.querySelector('#btn-cancel-prj')?.addEventListener('click', () => {
       modal.style.display = 'none';
+    });
+
+    container.querySelector('#btn-close-details')?.addEventListener('click', () => {
+      detailsModal.style.display = 'none';
     });
 
     container.querySelector('#form-create-project')?.addEventListener('submit', async (e) => {
@@ -101,6 +182,21 @@ export const ProjectsScreen = {
         await this.loadProjects(container);
       } catch (err) {
         alert('Failed to save project: ' + err.message);
+      }
+    });
+
+    // Quick action navigators from details modal
+    container.querySelector('#btn-dtl-record-receipt')?.addEventListener('click', () => {
+      detailsModal.style.display = 'none';
+      if (typeof window.appNavigate === 'function') {
+        window.appNavigate('income');
+      }
+    });
+
+    container.querySelector('#btn-dtl-record-expense')?.addEventListener('click', () => {
+      detailsModal.style.display = 'none';
+      if (typeof window.appNavigate === 'function') {
+        window.appNavigate('expenses');
       }
     });
   },
@@ -124,13 +220,18 @@ export const ProjectsScreen = {
       listEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           ${projects.map(p => `
-            <div class="project-card" data-id="${p.id}" style="background: white; border-radius: var(--radius-md); border: 1px solid var(--border-light); padding: 16px; box-shadow: var(--shadow-sm); cursor: pointer;">
+            <div class="project-card" data-id="${p.id}" style="background: white; border-radius: var(--radius-md); border: 1px solid var(--border-light); padding: 16px; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                  <span style="font-size: 11px; font-weight: 700; color: var(--brand-gold-600); background: var(--brand-gold-50); padding: 2px 6px; border-radius: 4px;">
-                    ${p.project_code || 'PRJ'}
-                  </span>
-                  <div style="font-size: 15px; font-weight: 800; color: var(--brand-navy-900); margin-top: 4px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 800; color: var(--brand-gold-600); background: var(--brand-gold-50); padding: 2px 6px; border-radius: 4px;">
+                      ${p.project_code || 'PRJ'}
+                    </span>
+                    <span style="font-size: 10px; font-weight: 700; color: var(--brand-navy-700); background: #F1F5F9; padding: 2px 5px; border-radius: 4px;">
+                      ${p.current_stage || 'FOUNDATION'}
+                    </span>
+                  </div>
+                  <div style="font-size: 15px; font-weight: 800; color: var(--brand-navy-900); margin-top: 6px;">
                     ${p.name}
                   </div>
                   <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
@@ -141,13 +242,13 @@ export const ProjectsScreen = {
                   ${p.status || 'ACTIVE'}
                 </span>
               </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 12px;">
                 <div>
-                  <span style="color: var(--text-muted);">Contract:</span>
+                  <span style="color: var(--text-muted);">Contract Value:</span>
                   <strong style="color: var(--brand-navy-900); margin-left: 4px;">₹${(p.contract_value || 0).toLocaleString('en-IN')}</strong>
                 </div>
                 <div>
-                  <span style="color: var(--brand-navy-700); font-weight: 700;">View Financials →</span>
+                  <span style="color: var(--brand-gold-600); font-weight: 800;">Inspect Contract & Milestones →</span>
                 </div>
               </div>
             </div>
@@ -158,7 +259,7 @@ export const ProjectsScreen = {
       listEl.querySelectorAll('.project-card').forEach(card => {
         card.addEventListener('click', () => {
           const prjId = card.getAttribute('data-id');
-          this.viewProjectDetails(prjId);
+          this.viewProjectDetails(container, prjId);
         });
       });
     } catch (e) {
@@ -177,13 +278,52 @@ export const ProjectsScreen = {
     }
   },
 
-  async viewProjectDetails(prjId) {
+  async viewProjectDetails(container, prjId) {
+    const detailsModal = container.querySelector('#modal-project-details');
     try {
       const res = await BusinessApi.request(`/projects/${prjId}`);
-      const { project, financials } = res;
-      alert(`Project: ${project.name} (${project.project_code})\nClient: ${project.client_name}\nContract Value: ₹${(project.contract_value || 0).toLocaleString('en-IN')}\nEarned Revenue: ₹${(financials.earnedRevenue || 0).toLocaleString('en-IN')}\nUnearned Advance: ₹${(financials.unearnedAdvanceLiability || 0).toLocaleString('en-IN')}\nOperating Profit: ₹${(financials.operatingProfit || 0).toLocaleString('en-IN')}`);
+      const { project, financials = {}, milestones = [] } = res;
+
+      container.querySelector('#dtl-prj-code').textContent = project.project_code || 'PRJ';
+      container.querySelector('#dtl-prj-stage').textContent = project.current_stage || 'ACTIVE';
+      container.querySelector('#dtl-prj-name').textContent = project.name;
+      container.querySelector('#dtl-prj-client').textContent = `Client: ${project.client_name || 'N/A'} (${project.client_phone || 'N/A'}) • Site: ${project.site_address}`;
+
+      container.querySelector('#dtl-val-contract').textContent = `₹${(project.contract_value || 0).toLocaleString('en-IN')}`;
+      container.querySelector('#dtl-val-revenue').textContent = `₹${(financials.earnedRevenue || 0).toLocaleString('en-IN')}`;
+      container.querySelector('#dtl-val-advance').textContent = `₹${(financials.unearnedAdvanceLiability || 0).toLocaleString('en-IN')}`;
+      container.querySelector('#dtl-val-profit').textContent = `₹${(financials.operatingProfit || 0).toLocaleString('en-IN')}`;
+
+      container.querySelector('#dtl-milestone-count').textContent = `${milestones.length} Stages`;
+
+      const listEl = container.querySelector('#dtl-milestones-list');
+      if (milestones.length === 0) {
+        listEl.innerHTML = `<div style="font-size: 12px; color: var(--text-muted); padding: 10px;">No milestones created yet.</div>`;
+      } else {
+        listEl.innerHTML = milestones.map(m => `
+          <div style="background: white; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1; padding-right: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 800; color: var(--brand-navy-900);">${m.milestone_code || 'MS'}</span>
+                <span style="font-size: 12px; font-weight: 700; color: var(--brand-navy-800);">${m.title}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                ${m.description ? m.description.substring(0, 75) + '...' : ''}
+              </div>
+            </div>
+            <div style="text-align: right; min-width: 90px;">
+              <strong style="font-size: 12px; color: var(--brand-navy-900);">₹${(m.invoice_amount || 0).toLocaleString('en-IN')}</strong>
+              <div style="font-size: 10px; margin-top: 2px;">
+                <span class="badge-status badge-${(m.status || 'not_started').toLowerCase()}">${m.status}</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      detailsModal.style.display = 'flex';
     } catch (err) {
-      alert('Error fetching project: ' + err.message);
+      alert('Error fetching project details: ' + err.message);
     }
   }
 };

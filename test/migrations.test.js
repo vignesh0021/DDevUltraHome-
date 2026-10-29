@@ -16,15 +16,23 @@ describe('DDevUltraHome Versioned Migration Framework & Relational Schema', () =
     db.close();
   });
 
-  test('runs migrations 001 and 002 sequentially on a clean database', () => {
+  test('runs migrations 001, 002 and 003 sequentially on a clean database', () => {
     const result = runner.runMigrations();
 
-    assert.equal(result.appliedCount, 2, 'Should have applied exactly 2 migrations');
-    assert.equal(result.currentVersion, 2, 'Current schema version must be 2');
+    assert.equal(result.appliedCount, 3, 'Should have applied exactly 3 migrations');
+    assert.equal(result.currentVersion, 3, 'Current schema version must be 3');
 
     // Verify migration tracking table
     const applied = runner.getAppliedVersions();
-    assert.deepEqual(applied, [1, 2]);
+    assert.deepEqual(applied, [1, 2, 3]);
+
+    // Verify Kundrathur real project was seeded
+    const kundrathur = db.queryOne("SELECT * FROM projects WHERE id = 'prj-kun-01';");
+    assert.ok(kundrathur, 'Kundrathur project must be seeded');
+    assert.equal(kundrathur.contract_value, 4227400.00);
+
+    const milestones = db.query("SELECT * FROM milestones WHERE project_id = 'prj-kun-01' ORDER BY target_percentage ASC;");
+    assert.equal(milestones.length, 8, 'Kundrathur project must have all 8 contract milestones');
 
     // Second run should be a no-op (idempotent)
     const secondRun = runner.runMigrations();

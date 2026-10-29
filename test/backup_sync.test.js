@@ -47,9 +47,9 @@ describe('DDevUltraHome Backup & Cloud Synchronization Service', () => {
     assert.equal(snapshot.payload.meta.app, 'DDevUltraHome');
     assert.equal(snapshot.payload.meta.company, 'D DEV ULTRA HOMES');
     assert.ok(snapshot.dataHash.length === 64, 'SHA-256 hash has 64 hex characters');
-    assert.ok(snapshot.summary.totalRecords > 0, 'Includes seeded users and company settings');
-    assert.equal(snapshot.payload.data.projects.length, 1);
-    assert.equal(snapshot.payload.data.projects[0].project_code, 'PRJ-TNR-01');
+    assert.ok(snapshot.payload.data.projects.length >= 1);
+    assert.ok(snapshot.payload.data.projects.some(p => p.project_code === 'PRJ-TNR-01'));
+    assert.ok(snapshot.payload.data.projects.some(p => p.project_code === 'PRJ-KUN-2026'));
   });
 
   test('rule: exports backup to local JSON file with file size and hash integrity', () => {
