@@ -89,3 +89,18 @@ The drawing contains explicit CAD text positions:
 - **CAD Restrictions Enforced**:
   - Drawing Note 2 explicitly mandates: *"Drawings should not be scaled for obtaining dimensions."*
   - All geometry is constructed strictly from written dimensions, with pixel scaling restricted.
+
+---
+
+## 5. Build Verification and Artifact Provenance
+
+- **Feature Branch**: `feature/open-source-3d-plan-viewer`
+- **Commit SHA**: `6bcc8fa`
+- **Unit & Integration Tests**: 147 passed across 44 suites (0 failures)
+- **GitHub Actions Workflow**: `Build Android APK (DDevUltraHome)`
+- **Run ID**: `40799992592` (Status: `completed`, Conclusion: `success`)
+- **Artifact ID**: `12865527943`
+- **Artifact Name**: `DDevUltraHome-Debug-APK`
+- **Binary Target**: `app-debug.apk` and `release-apk/app-debug.apk` (12,303,935 bytes)
+- **SHA-256 Checksum**: `8ebe12df3542cd11de3072e9ba14bbb553fe8278290e7cca9d0846cb6cca2bd1`
+- **Verification**: APK contains 62 offline assets, including `/vendor/three.module.js`, `/vendor/OrbitControls.js`, OpenPlan3D schema, and Three.js 2D/3D Plan Studio with zero network dependencies at runtime.
