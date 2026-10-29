@@ -51,7 +51,15 @@ export class BusinessApiRouter {
    * @param {Object} context { user, token }
    */
   async handle(pathname, method, body = {}, query = {}, context = {}) {
-    const route = pathname.replace(/^\/api\/business/, '');
+    const rawRoute = pathname.replace(/^\/api\/business/, '');
+    const [routePath, queryString] = rawRoute.split('?');
+    const route = routePath;
+    if (queryString) {
+      const parsedParams = new URLSearchParams(queryString);
+      for (const [k, v] of parsedParams.entries()) {
+        if (query[k] === undefined) query[k] = v;
+      }
+    }
 
     // 1. Authentication routes (no auth required)
     if (route === '/auth/login' && method === 'POST') {
@@ -374,13 +382,21 @@ export class BusinessApiRouter {
     }
 
     if (route === '/suppliers/invoices' && method === 'POST') {
-      const invoice = this.financialService.recordSupplierInvoice(body);
-      return { status: 201, data: { success: true, invoice } };
+      try {
+        const invoice = this.financialService.recordSupplierInvoice(body);
+        return { status: 201, data: { success: true, invoice } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
     }
 
     if (route === '/suppliers/payments' && method === 'POST') {
-      const payment = this.financialService.recordSupplierPayment(body);
-      return { status: 200, data: { success: true, payment } };
+      try {
+        const payment = this.financialService.recordSupplierPayment(body);
+        return { status: 200, data: { success: true, payment } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
     }
 
     // 9. Milestones & Progress
