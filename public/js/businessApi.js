@@ -179,6 +179,53 @@ export const BusinessApi = {
       };
     }
 
+    if (endpoint === '/quotations') {
+      const stored = localStorage.getItem('ddev_offline_quotations');
+      let quotations = stored ? JSON.parse(stored) : [
+        {
+          id: 'quo-kun-01',
+          quotation_number: 'QUO-2026-001',
+          revision_number: 0,
+          project_id: 'prj-kun-01',
+          client_id: 'cli-thiumani-01',
+          title: 'Residential Villa Construction — Kundrathur (G+1 Villa + Headroom)',
+          project_name: 'Kundrathur Residence (G+1 Villa)',
+          client_name: 'Mr. Thiumani P.',
+          subtotal: 4227400.00,
+          tax_rate: 0.00,
+          total_amount: 4227400.00,
+          status: 'DRAFT',
+          created_at: '2026-04-04'
+        }
+      ];
+
+      if (method === 'POST' && data) {
+        const newQ = {
+          id: `quo_off_${Date.now()}`,
+          quotation_number: `QUO-2026-${(quotations.length + 1).toString().padStart(3, '0')}`,
+          revision_number: 0,
+          title: data.title || 'Construction Estimate',
+          total_amount: data.items ? data.items.reduce((s, itm) => s + (parseFloat(itm.totalPrice) || 0), 0) : 0,
+          status: 'DRAFT',
+          created_at: new Date().toISOString(),
+          client_name: 'Assigned Client',
+          ...data
+        };
+        quotations.unshift(newQ);
+        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotations));
+        return { success: true, quotation: newQ };
+      }
+
+      return { success: true, quotations };
+    }
+
+    if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/html')) {
+      return {
+        success: true,
+        html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:30px;"><div style="border-bottom:2px solid #0B192C;padding-bottom:10px;"><h2 style="color:#0B192C;margin:0;">D DEV ULTRA HOMES</h2><p style="color:#D97706;font-weight:bold;margin:2px 0;">Building your dreams</p><p style="color:#64748B;font-size:12px;margin:2px 0;">6a MGR Nagar, 2nd Cross Street, Velachery, Chennai - 600042</p></div><h3 style="margin-top:20px;">OFFICIAL ESTIMATE &amp; PROPOSAL: QUO-2026-001 (Rev 0)</h3><p>Client: <strong>Mr. Thiumani P.</strong> (Anakaputhur, Chennai)</p><p>Project: <strong>Kundrathur Residence (G+1 Villa)</strong></p><p>Total Proposal: <strong style="color:#0B192C;font-size:16px;">₹42,27,400</strong></p><p style="font-size:12px;color:#475569;">Schedule A Engineering Specifications &amp; Schedule B 8-Stage Payment Terms Apply.</p><div style="margin-top:50px;display:flex;justify-content:space-between;"><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Authorized Builder Signatory</div><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Client / House Owner Signature</div></div></body></html>`
+      };
+    }
+
     return { success: true, offline: true, endpoint, data };
   }
 };

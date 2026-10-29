@@ -131,6 +131,13 @@ const server = http.createServer(async (req, res) => {
       }
       const query = Object.fromEntries(urlObj.searchParams.entries());
       const result = await businessRouter.handle(pathname, req.method, body, query);
+      if (pathname.endsWith('/html') && result.data && result.data.html) {
+        res.writeHead(result.status, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(result.data.html);
+      }
       return sendJson(res, result.status, result.data);
     }
 

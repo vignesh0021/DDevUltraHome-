@@ -22,6 +22,7 @@ import { AuthService } from '../services/authService.js';
 import { FinancialService } from '../services/financialService.js';
 import { DocumentService } from '../services/documentService.js';
 import { SyncService } from '../services/syncService.js';
+import { QuotationService } from '../services/quotationService.js';
 
 export class BusinessApiRouter {
   constructor(db = null) {
@@ -30,6 +31,7 @@ export class BusinessApiRouter {
     this.financialService = new FinancialService(this.db);
     this.documentService = new DocumentService(this.db);
     this.syncService = new SyncService(this.db);
+    this.quotationService = new QuotationService(this.db);
 
     // Ensure migrations are up-to-date
     try {
@@ -200,53 +202,58 @@ export class BusinessApiRouter {
       return { status: 201, data: { success: true, client } };
     }
 
-    // 5. Quotations
+    // 5. Quotations & Revisions
     if (route === '/quotations' && method === 'GET') {
-      const { projectId } = query;
-      let sql = `
-        SELECT q.*, p.name as project_name, c.name as client_name
-        FROM quotations q
-        JOIN projects p ON q.project_id = p.id
-        JOIN clients c ON q.client_id = c.id
-        WHERE 1=1
-      `;
-      const params = [];
-      if (projectId) {
-        sql += ' AND q.project_id = ?';
-        params.push(projectId);
-      }
-      sql += ' ORDER BY q.created_at DESC;';
-      const quotations = this.db.query(sql, params);
+      const quotations = this.quotationService.listQuotations(query);
       return { status: 200, data: { success: true, quotations } };
     }
 
     if (route === '/quotations' && method === 'POST') {
-      const { projectId, clientId, quotationNumber, items = [], totalAmount, notes } = body;
-      const id = `quot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const qNum = quotationNumber || `QUOT-${Date.now().toString().slice(-5)}`;
+      try {
+        const quotation = this.quotationService.createQuotation(body);
+        return { status: 201, data: { success: true, quotation } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
 
-      this.db.transaction(() => {
-        this.db.run(`
-          INSERT INTO quotations (
-            id, quotation_number, revision_number, project_id,
-            client_id, total_amount, status, notes, created_at
-          ) VALUES (?, ?, 1, ?, ?, ?, 'DRAFT', ?, datetime('now'));
-        `, [id, qNum, projectId, clientId, totalAmount || 0, notes || '']);
+    if (route.startsWith('/quotations/') && route.endsWith('/html') && method === 'GET') {
+      const qId = route.replace('/quotations/', '').replace('/html', '');
+      try {
+        const html = this.quotationService.generatePrintableHtml(qId);
+        return { status: 200, data: { success: true, html } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
+    }
 
-        let order = 1;
-        for (const itm of items) {
-          const itemId = `qitm_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-          this.db.run(`
-            INSERT INTO quotation_items (
-              id, quotation_id, item_order, description, quantity,
-              unit, unit_rate, total_amount
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-          `, [itemId, id, order++, itm.description, itm.quantity, itm.unit, itm.unitRate, itm.totalAmount]);
-        }
-      });
+    if (route.startsWith('/quotations/') && route.endsWith('/status') && (method === 'POST' || method === 'PATCH')) {
+      const qId = route.replace('/quotations/', '').replace('/status', '');
+      try {
+        const quotation = this.quotationService.updateStatus(qId, body.status, context?.user?.id);
+        return { status: 200, data: { success: true, quotation } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
 
-      const quote = this.db.queryOne('SELECT * FROM quotations WHERE id = ?;', [id]);
-      return { status: 201, data: { success: true, quotation: quote } };
+    if (route.startsWith('/quotations/') && route.endsWith('/revision') && method === 'POST') {
+      const qId = route.replace('/quotations/', '').replace('/revision', '');
+      try {
+        const quotation = this.quotationService.createRevision(qId, context?.user?.id);
+        return { status: 201, data: { success: true, quotation } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/quotations/') && method === 'GET') {
+      const qId = route.replace('/quotations/', '');
+      const quotation = this.quotationService.getQuotationById(qId);
+      if (!quotation) {
+        return { status: 404, data: { success: false, error: 'Quotation not found' } };
+      }
+      return { status: 200, data: { success: true, quotation } };
     }
 
     // 6. Income & Client Receipts
