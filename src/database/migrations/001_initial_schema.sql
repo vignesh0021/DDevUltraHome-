@@ -229,7 +229,8 @@ CREATE TABLE IF NOT EXISTS client_receipts (
     unallocated_balance REAL NOT NULL DEFAULT 0.00,
     notes TEXT,
     created_by TEXT REFERENCES users(id),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_client_receipts_project_id ON client_receipts(project_id);
@@ -257,7 +258,7 @@ CREATE TABLE IF NOT EXISTS supplier_invoices (
     total_amount REAL NOT NULL CHECK(total_amount >= 0),
     paid_amount REAL NOT NULL DEFAULT 0.00,
     balance_amount REAL NOT NULL DEFAULT 0.00,
-    payment_status TEXT NOT NULL DEFAULT 'UNPAID' CHECK(payment_status IN ('UNPAID', 'PARTIALLY_PAID', 'PAID', 'DISPUTED')),
+    payment_status TEXT NOT NULL DEFAULT 'UNPAID' CHECK(payment_status IN ('UNPAID', 'PARTIALLY_PAID', 'PAID', 'DISPUTED', 'VOIDED')),
     document_id TEXT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),

@@ -179,13 +179,16 @@ export const IncomeScreen = {
                   ${r.is_advance ? 'Advance Liability' : 'Earned Revenue'}
                 </span>
               </div>
-              <div style="display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 13px; flex-wrap: wrap; gap: 8px;">
                 <div>
                   <span style="color: var(--text-muted);">Deposited into:</span>
                   <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-left: 4px;">${r.account_name}</span>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                   <strong style="color: var(--color-success); font-size: 15px;">+₹${(r.amount || 0).toLocaleString('en-IN')}</strong>
+                  <button class="btn-void-receipt btn-outline" data-id="${r.id}" data-number="${r.receipt_number}" data-amount="${r.amount}" style="min-height: 28px; padding: 0 8px; font-size: 11px; font-weight: 600; color: #DC2626; border-color: #FCA5A5;">
+                    🚫 Void
+                  </button>
                 </div>
               </div>
               ${r.is_advance ? `
@@ -198,6 +201,26 @@ export const IncomeScreen = {
           `).join('')}
         </div>
       `;
+
+      // Wire Void Receipt buttons
+      listEl.querySelectorAll('.btn-void-receipt').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const rId = e.currentTarget.dataset.id;
+          const rNum = e.currentTarget.dataset.number;
+          const amount = e.currentTarget.dataset.amount;
+
+          const reason = prompt(`Reason for VOIDING receipt "${rNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Reversing debit entry will deduct this from bank balance)`);
+          if (!reason || !reason.trim()) return;
+
+          try {
+            await BusinessApi.request(`/income/receipts/${rId}/void`, 'POST', { reason: reason.trim() });
+            alert('✅ Receipt voided successfully. Reversing entry posted and bank balance adjusted.');
+            await this.loadReceipts(container);
+          } catch (err) {
+            alert('Voiding failed: ' + err.message);
+          }
+        });
+      });
     } catch (e) {
       listEl.innerHTML = `<div style="color: var(--color-danger); padding: 20px;">Failed to load receipts: ${e.message}</div>`;
     }

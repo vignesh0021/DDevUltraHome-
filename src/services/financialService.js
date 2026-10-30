@@ -369,6 +369,7 @@ export class FinancialService {
       ]);
 
       return {
+        id: expenseId,
         expenseId,
         expenseNumber,
         amount,
@@ -395,7 +396,7 @@ export class FinancialService {
         COALESCE(SUM(CASE WHEN is_advance = 1 THEN unallocated_balance ELSE 0.00 END), 0.00) as unearned_advance_liability,
         COALESCE(SUM(CASE WHEN is_advance = 0 THEN amount ELSE allocated_amount END), 0.00) as earned_revenue
       FROM client_receipts
-      WHERE project_id = ?;
+      WHERE project_id = ? AND deleted_at IS NULL;
     `, [projectId]);
 
     // 2. Direct Expenses
@@ -486,14 +487,15 @@ export class FinancialService {
       SELECT 
         COALESCE(SUM(unallocated_balance), 0.00) as total_unearned_advances
       FROM client_receipts
-      WHERE is_advance = 1;
+      WHERE is_advance = 1 AND deleted_at IS NULL;
     `);
 
     // 5. Total Earned Revenue & Expenses
     const revenue = this.db.queryOne(`
       SELECT 
         COALESCE(SUM(CASE WHEN is_advance = 0 THEN amount ELSE allocated_amount END), 0.00) as total_earned_revenue
-      FROM client_receipts;
+      FROM client_receipts
+      WHERE deleted_at IS NULL;
     `);
 
     const expenses = this.db.queryOne(`
@@ -519,5 +521,185 @@ export class FinancialService {
       unearnedAdvanceLiabilities: SafeMath.round(advances.total_unearned_advances, 2),
       netOperatingCashflow
     };
+  }
+
+  /**
+   * Void an Expense (Reverses ledger entry and refunds account balance)
+   */
+  voidExpense(expenseId, reason = 'Entry correction', voidedBy = null) {
+    if (!expenseId) throw new Error('Expense ID is required to void.');
+
+    return this.db.transaction(() => {
+      const expense = this.db.queryOne('SELECT * FROM expenses WHERE id = ? AND deleted_at IS NULL;', [expenseId]);
+      if (!expense) throw new Error(`Expense ${expenseId} not found or already voided.`);
+
+      const account = this.db.queryOne('SELECT id, current_balance FROM financial_accounts WHERE id = ?;', [expense.account_id]);
+      if (!account) throw new Error(`Financial account ${expense.account_id} not found.`);
+
+      // Refund account balance
+      const newAccountBalance = SafeMath.round(account.current_balance + expense.amount, 2);
+      this.db.run('UPDATE financial_accounts SET current_balance = ?, updated_at = datetime(\'now\') WHERE id = ?;', [newAccountBalance, account.id]);
+
+      // Soft delete / void expense
+      const voidNote = ` [VOIDED: ${reason}]`;
+      this.db.run(`
+        UPDATE expenses
+        SET deleted_at = datetime('now'),
+            notes = COALESCE(notes, '') || ?
+        WHERE id = ?;
+      `, [voidNote, expenseId]);
+
+      // Record reversing double-entry transaction
+      const txSeq = (this.db.queryOne('SELECT COUNT(*) as cnt FROM account_transactions;').cnt + 1).toString().padStart(5, '0');
+      const txNumber = `TXN-${new Date().getFullYear()}-${txSeq}`;
+      const txId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+      this.db.run(`
+        INSERT INTO account_transactions (
+          id, transaction_number, account_id, project_id,
+          transaction_type, amount, balance_after,
+          reference_type, reference_id, transaction_date, notes
+        ) VALUES (?, ?, ?, ?, 'CREDIT', ?, ?, 'EXPENSE', ?, datetime('now'), ?);
+      `, [
+        txId, txNumber, account.id, expense.project_id,
+        expense.amount, newAccountBalance, expenseId,
+        `Void expense / Expense Reversal: ${reason}`
+      ]);
+
+      return {
+        expenseId,
+        voided: true,
+        refundedAmount: expense.amount,
+        newAccountBalance
+      };
+    });
+  }
+
+  /**
+   * Update Expense details
+   */
+  updateExpense(expenseId, data) {
+    if (!expenseId) throw new Error('Expense ID is required to update.');
+
+    const expense = this.db.queryOne('SELECT * FROM expenses WHERE id = ? AND deleted_at IS NULL;', [expenseId]);
+    if (!expense) throw new Error(`Expense ${expenseId} not found or voided.`);
+
+    const category = data.category !== undefined ? data.category : expense.category;
+    const paidTo = data.paid_to !== undefined ? data.paid_to : (data.paidTo !== undefined ? data.paidTo : expense.paid_to);
+    const expenseDate = data.expense_date !== undefined ? data.expense_date : (data.expenseDate !== undefined ? data.expenseDate : expense.expense_date);
+    const notes = data.notes !== undefined ? data.notes : expense.notes;
+
+    this.db.run(`
+      UPDATE expenses
+      SET category = ?,
+          paid_to = ?,
+          expense_date = ?,
+          notes = ?
+      WHERE id = ?;
+    `, [category, paidTo, expenseDate, notes, expenseId]);
+
+    return this.db.queryOne('SELECT * FROM expenses WHERE id = ?;', [expenseId]);
+  }
+
+  /**
+   * Void a Client Receipt (Reverses ledger entry, unearned liability / revenue, and deducts account balance)
+   */
+  voidClientReceipt(receiptId, reason = 'Receipt cancelled', voidedBy = null) {
+    if (!receiptId) throw new Error('Receipt ID is required to void.');
+
+    return this.db.transaction(() => {
+      const receipt = this.db.queryOne('SELECT * FROM client_receipts WHERE id = ? AND deleted_at IS NULL;', [receiptId]);
+      if (!receipt) throw new Error(`Receipt ${receiptId} not found or already voided.`);
+
+      if (receipt.allocated_amount > 0) {
+        throw new Error(`Cannot void receipt with ₹${receipt.allocated_amount} allocated to milestones. Reverse allocations first.`);
+      }
+
+      const account = this.db.queryOne('SELECT id, current_balance FROM financial_accounts WHERE id = ?;', [receipt.account_id]);
+      if (!account) throw new Error(`Financial account ${receipt.account_id} not found.`);
+
+      if (account.current_balance < receipt.amount) {
+        throw new Error(`Cannot void receipt: Account balance ₹${account.current_balance} is insufficient to reverse deposit of ₹${receipt.amount}.`);
+      }
+
+      // Deduct account balance
+      const newAccountBalance = SafeMath.round(account.current_balance - receipt.amount, 2);
+      this.db.run('UPDATE financial_accounts SET current_balance = ?, updated_at = datetime(\'now\') WHERE id = ?;', [newAccountBalance, account.id]);
+
+      // Soft delete receipt
+      const voidNote = ` [VOIDED: ${reason}]`;
+      this.db.run(`
+        UPDATE client_receipts
+        SET deleted_at = datetime('now'),
+            unallocated_balance = 0.00,
+            notes = COALESCE(notes, '') || ?
+        WHERE id = ?;
+      `, [voidNote, receiptId]);
+
+      // Reversing transaction
+      const txSeq = (this.db.queryOne('SELECT COUNT(*) as cnt FROM account_transactions;').cnt + 1).toString().padStart(5, '0');
+      const txNumber = `TXN-${new Date().getFullYear()}-${txSeq}`;
+      const txId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+      this.db.run(`
+        INSERT INTO account_transactions (
+          id, transaction_number, account_id, project_id,
+          transaction_type, amount, balance_after,
+          reference_type, reference_id, transaction_date, notes
+        ) VALUES (?, ?, ?, ?, 'DEBIT', ?, ?, 'CLIENT_RECEIPT', ?, datetime('now'), ?);
+      `, [
+        txId, txNumber, account.id, receipt.project_id,
+        receipt.amount, newAccountBalance, receiptId,
+        `Void receipt / Client Receipt Reversal: ${reason}`
+      ]);
+
+      return {
+        receiptId,
+        voided: true,
+        reversedAmount: receipt.amount,
+        newAccountBalance
+      };
+    });
+  }
+
+  /**
+   * Void a Supplier Invoice (Reverses accounts payable and supplier dues)
+   */
+  voidSupplierInvoice(invoiceId, reason = 'Invoice cancelled', voidedBy = null) {
+    if (!invoiceId) throw new Error('Invoice ID is required to void.');
+
+    return this.db.transaction(() => {
+      const invoice = this.db.queryOne('SELECT * FROM supplier_invoices WHERE id = ? AND deleted_at IS NULL;', [invoiceId]);
+      if (!invoice) throw new Error(`Supplier invoice ${invoiceId} not found or already voided.`);
+
+      if (invoice.paid_amount > 0) {
+        throw new Error(`Cannot void supplier invoice with ₹${invoice.paid_amount} recorded payments.`);
+      }
+
+      const supplier = this.db.queryOne('SELECT id, current_dues FROM suppliers WHERE id = ?;', [invoice.supplier_id]);
+      if (!supplier) throw new Error(`Supplier ${invoice.supplier_id} not found.`);
+
+      // Reduce supplier outstanding dues
+      const newDues = SafeMath.round(Math.max(0, supplier.current_dues - invoice.balance_amount), 2);
+      this.db.run('UPDATE suppliers SET current_dues = ?, updated_at = datetime(\'now\') WHERE id = ?;', [newDues, supplier.id]);
+
+      // Soft delete invoice
+      const voidNote = ` [VOIDED: ${reason}]`;
+      this.db.run(`
+        UPDATE supplier_invoices
+        SET deleted_at = datetime('now'),
+            payment_status = 'VOIDED',
+            balance_amount = 0.00,
+            notes = COALESCE(notes, '') || ?
+        WHERE id = ?;
+      `, [voidNote, invoiceId]);
+
+      return {
+        invoiceId,
+        voided: true,
+        reversedPayable: invoice.total_amount,
+        supplierCurrentDues: newDues
+      };
+    });
   }
 }

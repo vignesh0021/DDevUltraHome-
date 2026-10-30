@@ -66,8 +66,8 @@ function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-User-Role',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'SAMEORIGIN',
     'Referrer-Policy': 'strict-origin-when-cross-origin'
@@ -104,8 +104,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id, X-User-Role'
     });
     return res.end();
   }
@@ -126,11 +126,20 @@ const server = http.createServer(async (req, res) => {
     // Business Management Platform Endpoints
     if (pathname.startsWith('/api/business')) {
       let body = {};
-      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE') {
         body = await parseJsonBody(req);
       }
       const query = Object.fromEntries(urlObj.searchParams.entries());
-      const result = await businessRouter.handle(pathname, req.method, body, query);
+      const authHeader = req.headers['authorization'] || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      const context = {
+        token,
+        user: businessRouter.authService.verifySession(token) || {
+          id: req.headers['x-user-id'] || 'usr-owner-1',
+          role: req.headers['x-user-role'] || 'OWNER'
+        }
+      };
+      const result = await businessRouter.handle(pathname, req.method, body, query, context);
       if (pathname.endsWith('/html') && result.data && result.data.html) {
         res.writeHead(result.status, {
           'Content-Type': 'text/html; charset=utf-8',

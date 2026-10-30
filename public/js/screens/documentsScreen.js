@@ -653,7 +653,7 @@ Total Amount: 159,300.00`;
                   <div style="font-size: 10px; color: var(--text-muted);">
                     🛡️ Watermark: <span style="color: var(--brand-navy-900); font-weight: 600;">D DEV ULTRA HOMES</span>
                   </div>
-                  <div style="display: flex; gap: 8px;">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button class="btn-doc-wm btn-outline" data-id="${d.id}" data-name="${d.file_name}" style="min-height: 28px; padding: 0 10px; font-size: 11px;">
                       👁️ Watermark
                     </button>
@@ -662,6 +662,9 @@ Total Amount: 159,300.00`;
                         ⚡ Verify Bill
                       </button>
                     ` : ''}
+                    <button class="btn-doc-delete btn-outline" data-id="${d.id}" data-name="${d.file_name}" style="min-height: 28px; padding: 0 8px; font-size: 11px; color: #DC2626; border-color: #FCA5A5;">
+                      🗑️ Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -694,6 +697,25 @@ Total Amount: 159,300.00`;
         btn.addEventListener('click', async (e) => {
           const docId = e.target.dataset.id;
           await this.openReviewByDocId(container, docId);
+        });
+      });
+
+      // Wire delete document buttons
+      listEl.querySelectorAll('.btn-doc-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const docId = e.target.dataset.id;
+          const docName = e.target.dataset.name;
+          const confirmed = confirm(`Delete document "${docName}" from the vault?\n(Document will be soft-deleted with audit tracking)`);
+          if (!confirmed) return;
+
+          try {
+            await BusinessApi.request(`/documents/${docId}`, 'DELETE');
+            alert('🗑️ Document deleted successfully.');
+            await this.loadVault(container);
+            await this.checkPendingOcr(container);
+          } catch (err) {
+            alert('Delete failed: ' + err.message);
+          }
         });
       });
 

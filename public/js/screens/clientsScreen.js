@@ -87,11 +87,62 @@ export const ClientsScreen = {
           </form>
         </div>
       </div>
+
+      <!-- Edit Client Modal -->
+      <div id="modal-edit-client" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 210; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Client Account</h3>
+            <button type="button" id="btn-close-edit-cli" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+          </div>
+          <form id="form-edit-client">
+            <input type="hidden" id="edit-cli-id">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="edit-cli-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Company / Entity Name</label>
+              <input type="text" id="edit-cli-company" class="form-control">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Mobile Phone *</label>
+                <input type="tel" id="edit-cli-phone" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="edit-cli-email" class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Billing Address</label>
+              <textarea id="edit-cli-address" class="form-control" rows="2"></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">GSTIN</label>
+                <input type="text" id="edit-cli-gstin" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">PAN</label>
+                <input type="text" id="edit-cli-pan" class="form-control">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+              <button type="button" id="btn-cancel-edit-cli" class="btn-outline">Cancel</button>
+              <button type="submit" class="btn-primary">Update Client</button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
 
     await this.loadClients(container);
 
     const modal = container.querySelector('#modal-new-client');
+    const editModal = container.querySelector('#modal-edit-client');
+
     container.querySelector('#btn-add-client')?.addEventListener('click', () => {
       modal.style.display = 'flex';
     });
@@ -100,6 +151,35 @@ export const ClientsScreen = {
     });
     container.querySelector('#btn-cancel-cli')?.addEventListener('click', () => {
       modal.style.display = 'none';
+    });
+    container.querySelector('#btn-close-edit-cli')?.addEventListener('click', () => {
+      editModal.style.display = 'none';
+    });
+    container.querySelector('#btn-cancel-edit-cli')?.addEventListener('click', () => {
+      editModal.style.display = 'none';
+    });
+
+    container.querySelector('#form-edit-client')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cliId = container.querySelector('#edit-cli-id').value;
+      const payload = {
+        name: container.querySelector('#edit-cli-name').value.trim(),
+        company_name: container.querySelector('#edit-cli-company').value.trim() || null,
+        phone: container.querySelector('#edit-cli-phone').value.trim(),
+        email: container.querySelector('#edit-cli-email').value.trim() || null,
+        billing_address: container.querySelector('#edit-cli-address').value.trim() || null,
+        gstin: container.querySelector('#edit-cli-gstin').value.trim() || null,
+        pan: container.querySelector('#edit-cli-pan').value.trim() || null
+      };
+
+      try {
+        await BusinessApi.request(`/clients/${cliId}`, 'PUT', payload);
+        alert('✅ Client updated successfully!');
+        editModal.style.display = 'none';
+        await this.loadClients(container);
+      } catch (err) {
+        alert('Failed to update client: ' + err.message);
+      }
     });
 
     container.querySelector('#form-create-client')?.addEventListener('submit', async (e) => {
@@ -356,6 +436,8 @@ export const ClientsScreen = {
         return;
       }
 
+      this.cachedClients = clients;
+
       listEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           ${clients.map(c => `
@@ -382,9 +464,17 @@ export const ClientsScreen = {
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-light); flex-wrap: wrap; gap: 8px;">
                 <span style="font-size: 12px; color: var(--text-secondary);">Projects: <strong>${c.project_count || 1}</strong></span>
-                <button class="btn-preview-portal btn-gold" data-id="${c.id}" style="min-height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700;">
-                  🔍 View Client Portal
-                </button>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button class="btn-preview-portal btn-gold" data-id="${c.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 700;">
+                    🔍 Portal
+                  </button>
+                  <button class="btn-edit-client btn-outline" data-id="${c.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 600;">
+                    ✏️ Edit
+                  </button>
+                  <button class="btn-archive-client btn-outline" data-id="${c.id}" data-name="${c.name}" style="min-height: 32px; padding: 0 8px; font-size: 11px; font-weight: 600; color: #DC2626; border-color: #FCA5A5;">
+                    📦 Archive
+                  </button>
+                </div>
               </div>
             </div>
           `).join('')}
@@ -396,6 +486,44 @@ export const ClientsScreen = {
         btn.addEventListener('click', (e) => {
           this.viewingPortalClientId = e.currentTarget.dataset.id;
           this.render(container);
+        });
+      });
+
+      // Wire Edit Client buttons
+      listEl.querySelectorAll('.btn-edit-client').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const cliId = e.currentTarget.dataset.id;
+          const client = (this.cachedClients || []).find(c => c.id === cliId);
+          if (!client) return;
+
+          container.querySelector('#edit-cli-id').value = client.id;
+          container.querySelector('#edit-cli-name').value = client.name || '';
+          container.querySelector('#edit-cli-company').value = client.company_name || '';
+          container.querySelector('#edit-cli-phone').value = client.phone || '';
+          container.querySelector('#edit-cli-email').value = client.email || '';
+          container.querySelector('#edit-cli-address').value = client.billing_address || '';
+          container.querySelector('#edit-cli-gstin').value = client.gstin || '';
+          container.querySelector('#edit-cli-pan').value = client.pan || '';
+
+          container.querySelector('#modal-edit-client').style.display = 'flex';
+        });
+      });
+
+      // Wire Archive Client buttons
+      listEl.querySelectorAll('.btn-archive-client').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const cliId = e.currentTarget.dataset.id;
+          const cliName = e.currentTarget.dataset.name;
+          const confirmed = confirm(`Archive client "${cliName}"?\nAll linked contracts, receipts, and historical data will remain intact.`);
+          if (!confirmed) return;
+
+          try {
+            await BusinessApi.request(`/clients/${cliId}`, 'DELETE');
+            alert('📦 Client archived successfully.');
+            await this.loadClients(container);
+          } catch (err) {
+            alert('Failed to archive client: ' + err.message);
+          }
         });
       });
 

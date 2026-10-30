@@ -180,6 +180,39 @@ export class BusinessApiRouter {
       };
     }
 
+    if (route.startsWith('/projects/') && method === 'PUT') {
+      const prjId = route.replace('/projects/', '');
+      const project = this.db.queryOne('SELECT * FROM projects WHERE id = ? AND deleted_at IS NULL;', [prjId]);
+      if (!project) return { status: 404, data: { success: false, error: 'Project not found' } };
+
+      const { name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status } = body;
+      this.db.run(`
+        UPDATE projects
+        SET name = COALESCE(?, name),
+            client_id = COALESCE(?, client_id),
+            site_address = COALESCE(?, site_address),
+            district = COALESCE(?, district),
+            contract_value = COALESCE(?, contract_value),
+            budgeted_cost = COALESCE(?, budgeted_cost),
+            current_stage = COALESCE(?, current_stage),
+            status = COALESCE(?, status),
+            updated_at = datetime('now')
+        WHERE id = ?;
+      `, [name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status, prjId]);
+
+      const updated = this.db.queryOne('SELECT * FROM projects WHERE id = ?;', [prjId]);
+      return { status: 200, data: { success: true, project: updated } };
+    }
+
+    if (route.startsWith('/projects/') && method === 'DELETE') {
+      const prjId = route.replace('/projects/', '');
+      const project = this.db.queryOne('SELECT * FROM projects WHERE id = ? AND deleted_at IS NULL;', [prjId]);
+      if (!project) return { status: 404, data: { success: false, error: 'Project not found' } };
+
+      this.db.run("UPDATE projects SET deleted_at = datetime('now'), status = 'ARCHIVED', updated_at = datetime('now') WHERE id = ?;", [prjId]);
+      return { status: 200, data: { success: true, archivedId: prjId } };
+    }
+
     // 4. Clients
     if (route === '/clients' && method === 'GET') {
       const clients = this.db.query(`
@@ -208,6 +241,39 @@ export class BusinessApiRouter {
 
       const client = this.db.queryOne('SELECT * FROM clients WHERE id = ?;', [id]);
       return { status: 201, data: { success: true, client } };
+    }
+
+    if (route.startsWith('/clients/') && method === 'PUT') {
+      const cliId = route.replace('/clients/', '');
+      const client = this.db.queryOne('SELECT * FROM clients WHERE id = ? AND deleted_at IS NULL;', [cliId]);
+      if (!client) return { status: 404, data: { success: false, error: 'Client not found' } };
+
+      const { name, company_name, phone, email, billing_address, gstin, pan, status } = body;
+      this.db.run(`
+        UPDATE clients
+        SET name = COALESCE(?, name),
+            company_name = COALESCE(?, company_name),
+            phone = COALESCE(?, phone),
+            email = COALESCE(?, email),
+            billing_address = COALESCE(?, billing_address),
+            gstin = COALESCE(?, gstin),
+            pan = COALESCE(?, pan),
+            status = COALESCE(?, status),
+            updated_at = datetime('now')
+        WHERE id = ?;
+      `, [name, company_name, phone, email, billing_address, gstin, pan, status, cliId]);
+
+      const updated = this.db.queryOne('SELECT * FROM clients WHERE id = ?;', [cliId]);
+      return { status: 200, data: { success: true, client: updated } };
+    }
+
+    if (route.startsWith('/clients/') && method === 'DELETE') {
+      const cliId = route.replace('/clients/', '');
+      const client = this.db.queryOne('SELECT * FROM clients WHERE id = ? AND deleted_at IS NULL;', [cliId]);
+      if (!client) return { status: 404, data: { success: false, error: 'Client not found' } };
+
+      this.db.run("UPDATE clients SET deleted_at = datetime('now'), status = 'INACTIVE', updated_at = datetime('now') WHERE id = ?;", [cliId]);
+      return { status: 200, data: { success: true, archivedId: cliId } };
     }
 
     // 5. Quotations & Revisions
@@ -264,6 +330,26 @@ export class BusinessApiRouter {
       return { status: 200, data: { success: true, quotation } };
     }
 
+    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && method === 'PUT') {
+      const qId = route.replace('/quotations/', '');
+      try {
+        const quotation = this.quotationService.updateQuotation(qId, body);
+        return { status: 200, data: { success: true, quotation } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && method === 'DELETE') {
+      const qId = route.replace('/quotations/', '');
+      try {
+        const result = this.quotationService.deleteQuotation(qId);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
     // 6. Income & Client Receipts
     if (route === '/income/receipts' && method === 'GET') {
       const { projectId } = query;
@@ -273,7 +359,7 @@ export class BusinessApiRouter {
         JOIN projects p ON r.project_id = p.id
         JOIN clients c ON r.client_id = c.id
         JOIN financial_accounts a ON r.account_id = a.id
-        WHERE 1=1
+        WHERE r.deleted_at IS NULL
       `;
       const params = [];
       if (projectId) {
@@ -293,6 +379,16 @@ export class BusinessApiRouter {
     if (route === '/income/allocate' && method === 'POST') {
       const allocation = this.financialService.allocateAdvanceToMilestone(body);
       return { status: 200, data: { success: true, allocation } };
+    }
+
+    if (route.startsWith('/income/receipts/') && route.endsWith('/void') && method === 'POST') {
+      const recId = route.replace('/income/receipts/', '').replace('/void', '');
+      try {
+        const result = this.financialService.voidClientReceipt(recId, body.reason, context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
     }
 
     // 7. Expenses
@@ -324,6 +420,26 @@ export class BusinessApiRouter {
       return { status: 201, data: { success: true, expense } };
     }
 
+    if (route.startsWith('/expenses/') && route.endsWith('/void') && method === 'POST') {
+      const expId = route.replace('/expenses/', '').replace('/void', '');
+      try {
+        const result = this.financialService.voidExpense(expId, body.reason, context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/expenses/') && !route.endsWith('/void') && method === 'PUT') {
+      const expId = route.replace('/expenses/', '');
+      try {
+        const updated = this.financialService.updateExpense(expId, body);
+        return { status: 200, data: { success: true, expense: updated } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
     // 8. Suppliers & Invoices
     if (route === '/suppliers' && method === 'GET') {
       const suppliers = this.db.query(`
@@ -334,7 +450,7 @@ export class BusinessApiRouter {
         LEFT JOIN supplier_invoices i ON i.supplier_id = s.id AND i.deleted_at IS NULL
         WHERE s.deleted_at IS NULL
         GROUP BY s.id
-        ORDER BY s.outstanding_dues DESC;
+        ORDER BY s.current_dues DESC;
       `);
       return { status: 200, data: { success: true, suppliers } };
     }
@@ -352,6 +468,49 @@ export class BusinessApiRouter {
 
       const supplier = this.db.queryOne('SELECT * FROM suppliers WHERE id = ?;', [id]);
       return { status: 201, data: { success: true, supplier } };
+    }
+
+    if (route.startsWith('/suppliers/') && !route.includes('invoices') && !route.includes('payments') && method === 'PUT') {
+      const supId = route.replace('/suppliers/', '');
+      const supplier = this.db.queryOne('SELECT * FROM suppliers WHERE id = ? AND deleted_at IS NULL;', [supId]);
+      if (!supplier) return { status: 404, data: { success: false, error: 'Supplier not found' } };
+
+      const { name, category, contact_person, phone, email, address, gstin, payment_terms_days } = body;
+      this.db.run(`
+        UPDATE suppliers
+        SET name = COALESCE(?, name),
+            category = COALESCE(?, category),
+            contact_person = COALESCE(?, contact_person),
+            phone = COALESCE(?, phone),
+            email = COALESCE(?, email),
+            address = COALESCE(?, address),
+            gstin = COALESCE(?, gstin),
+            payment_terms_days = COALESCE(?, payment_terms_days),
+            updated_at = datetime('now')
+        WHERE id = ?;
+      `, [name, category, contact_person, phone, email, address, gstin, payment_terms_days, supId]);
+
+      const updated = this.db.queryOne('SELECT * FROM suppliers WHERE id = ?;', [supId]);
+      return { status: 200, data: { success: true, supplier: updated } };
+    }
+
+    if (route.startsWith('/suppliers/') && !route.includes('invoices') && !route.includes('payments') && method === 'DELETE') {
+      const supId = route.replace('/suppliers/', '');
+      const supplier = this.db.queryOne('SELECT * FROM suppliers WHERE id = ? AND deleted_at IS NULL;', [supId]);
+      if (!supplier) return { status: 404, data: { success: false, error: 'Supplier not found' } };
+
+      this.db.run("UPDATE suppliers SET deleted_at = datetime('now'), status = 'INACTIVE', updated_at = datetime('now') WHERE id = ?;", [supId]);
+      return { status: 200, data: { success: true, archivedId: supId } };
+    }
+
+    if (route.startsWith('/suppliers/invoices/') && route.endsWith('/void') && method === 'POST') {
+      const invId = route.replace('/suppliers/invoices/', '').replace('/void', '');
+      try {
+        const result = this.financialService.voidSupplierInvoice(invId, body.reason, context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
     }
 
     if (route === '/suppliers/invoices' && method === 'GET') {
@@ -421,31 +580,104 @@ export class BusinessApiRouter {
       return { status: 201, data: { success: true, milestone } };
     }
 
+    if (route.startsWith('/milestones/') && (method === 'PATCH' || method === 'PUT')) {
+      const mId = route.replace('/milestones/', '');
+      const milestone = this.db.queryOne('SELECT * FROM milestones WHERE id = ?;', [mId]);
+      if (!milestone) return { status: 404, data: { success: false, error: 'Milestone not found' } };
+
+      const { status, target_percentage, invoice_percentage, invoice_amount, description, actual_end_date } = body;
+      this.db.run(`
+        UPDATE milestones
+        SET status = COALESCE(?, status),
+            target_percentage = COALESCE(?, target_percentage),
+            invoice_percentage = COALESCE(?, invoice_percentage),
+            invoice_amount = COALESCE(?, invoice_amount),
+            description = COALESCE(?, description),
+            actual_end_date = COALESCE(?, actual_end_date),
+            updated_at = datetime('now')
+        WHERE id = ?;
+      `, [status, target_percentage, invoice_percentage, invoice_amount, description, actual_end_date, mId]);
+
+      if (status === 'COMPLETED' && milestone.project_id) {
+        this.db.run("UPDATE projects SET updated_at = datetime('now') WHERE id = ?;", [milestone.project_id]);
+      }
+
+      const updated = this.db.queryOne('SELECT * FROM milestones WHERE id = ?;', [mId]);
+      return { status: 200, data: { success: true, milestone: updated } };
+    }
+
+    if (route.startsWith('/milestones/') && method === 'DELETE') {
+      const mId = route.replace('/milestones/', '');
+      const milestone = this.db.queryOne('SELECT * FROM milestones WHERE id = ?;', [mId]);
+      if (!milestone) return { status: 404, data: { success: false, error: 'Milestone not found' } };
+
+      if (milestone.status === 'BILLED') {
+        return { status: 400, data: { success: false, error: 'Cannot delete billed milestone.' } };
+      }
+
+      this.db.run('DELETE FROM milestones WHERE id = ?;', [mId]);
+      return { status: 200, data: { success: true, deletedId: mId } };
+    }
+
     if (route === '/progress' && method === 'GET') {
       const { projectId } = query;
       const updates = this.db.query(`
-        SELECT u.*, m.name as milestone_name, p.name as project_name
+        SELECT u.*, m.title as milestone_title, p.name as project_name
         FROM progress_updates u
         JOIN projects p ON u.project_id = p.id
         LEFT JOIN milestones m ON u.milestone_id = m.id
         WHERE u.project_id = ?
         ORDER BY u.report_date DESC;
       `, [projectId]);
-      return { status: 200, data: { success: true, updates } };
+      return { status: 200, data: { success: true, updates, progress: updates } };
     }
 
     if (route === '/progress' && method === 'POST') {
-      const { projectId, milestoneId, reportDate, completionPercentage, siteNotes, weatherCondition, workforceCount, delayReason, recordedBy } = body;
+      const {
+        projectId,
+        milestoneId,
+        reportDate,
+        completionPercentage,
+        stageCompletionPercentage,
+        siteNotes,
+        workNotes,
+        weatherCondition,
+        workforceCount,
+        delayReason,
+        recordedBy
+      } = body;
       const id = `prog_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const activeUser = this.db.queryOne('SELECT id FROM users WHERE is_active = 1 LIMIT 1;');
+      const effectiveRecordedBy = recordedBy || context?.user?.id || (activeUser ? activeUser.id : null);
+      const effCompPct = completionPercentage !== undefined ? completionPercentage : (stageCompletionPercentage || 0);
+      const effNotes = siteNotes !== undefined ? siteNotes : (workNotes || '');
 
       this.db.run(`
         INSERT INTO progress_updates (
           id, project_id, milestone_id, report_date, completion_percentage,
           site_notes, weather_condition, workforce_count, delay_reason, recorded_by
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      `, [id, projectId, milestoneId, reportDate || new Date().toISOString().split('T')[0], completionPercentage, siteNotes, weatherCondition, workforceCount || 0, delayReason, recordedBy]);
+      `, [
+        id,
+        projectId,
+        milestoneId || null,
+        reportDate || new Date().toISOString().split('T')[0],
+        effCompPct,
+        effNotes,
+        weatherCondition || 'Clear',
+        workforceCount || 0,
+        delayReason || null,
+        effectiveRecordedBy
+      ]);
 
-      return { status: 201, data: { success: true, id } };
+      const progress = this.db.queryOne('SELECT * FROM progress_updates WHERE id = ?;', [id]);
+      return { status: 201, data: { success: true, id, progress } };
+    }
+
+    if (route.startsWith('/progress/') && method === 'DELETE') {
+      const progId = route.replace('/progress/', '');
+      this.db.run('DELETE FROM progress_updates WHERE id = ?;', [progId]);
+      return { status: 200, data: { success: true, deletedId: progId } };
     }
 
     // 10. Documents & OCR
@@ -457,6 +689,16 @@ export class BusinessApiRouter {
     if (route === '/documents' && method === 'POST') {
       const doc = this.documentService.registerDocument(body);
       return { status: 201, data: { success: true, document: doc } };
+    }
+
+    if (route.startsWith('/documents/') && method === 'DELETE') {
+      const docId = route.replace('/documents/', '');
+      try {
+        const result = this.documentService.deleteDocument(docId, context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
     }
 
     if (route === '/documents/watermark-svg' && method === 'GET') {

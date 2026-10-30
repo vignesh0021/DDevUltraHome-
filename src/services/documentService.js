@@ -394,6 +394,20 @@ export class DocumentService {
   }
 
   /**
+   * Soft-delete a document
+   */
+  deleteDocument(id, userId = null) {
+    const doc = this.getDocumentById(id);
+    if (!doc) {
+      throw new Error(`Document ${id} not found.`);
+    }
+
+    this.db.run('UPDATE documents SET deleted_at = datetime(\'now\') WHERE id = ?;', [id]);
+    this._logAudit('DOCUMENT', id, 'DELETE', userId, { fileName: doc.file_name });
+    return { success: true, deletedId: id };
+  }
+
+  /**
    * Internal audit logger
    */
   _logAudit(entityType, entityId, action, userId, changes) {

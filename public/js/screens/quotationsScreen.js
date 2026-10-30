@@ -134,9 +134,12 @@ export const QuotationsScreen = {
               <span style="font-size: 16px;">📑</span>
               <strong style="font-size: 14px;">Quotation Document Viewer</strong>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-share-quote" class="btn-primary" style="min-height: 32px; padding: 0 12px; font-size: 12px; font-weight: 700;">
+                📤 Share
+              </button>
               <button type="button" id="btn-print-frame" class="btn-gold" style="min-height: 32px; padding: 0 12px; font-size: 12px;">
-                🖨️ Print / Save PDF
+                🖨️ Print / PDF
               </button>
               <button type="button" id="btn-close-print" class="btn-outline" style="min-height: 32px; width: 32px; padding: 0; color: white; border-color: #64748B;">
                 ✕
@@ -169,6 +172,8 @@ export const QuotationsScreen = {
         return;
       }
 
+      this.cachedQuotations = quotations;
+
       listEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           ${quotations.map(q => `
@@ -198,13 +203,18 @@ export const QuotationsScreen = {
 
               <!-- Action Bar -->
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-light); gap: 8px; flex-wrap: wrap;">
-                <div style="display: flex; gap: 6px;">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button type="button" class="btn-print-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
                     🖨️ Print / PDF
                   </button>
                   <button type="button" class="btn-revise-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
                     📋 Revise
                   </button>
+                  ${q.status === 'DRAFT' ? `
+                    <button type="button" class="btn-delete-quote btn-outline" data-id="${q.id}" data-number="${q.quotation_number}" style="min-height: 32px; font-size: 11px; padding: 0 8px; color: #DC2626; border-color: #FCA5A5;">
+                      🗑️ Delete Draft
+                    </button>
+                  ` : ''}
                 </div>
                 <div>
                   ${q.status === 'DRAFT' ? `
@@ -225,6 +235,23 @@ export const QuotationsScreen = {
           e.stopPropagation();
           const qId = btn.getAttribute('data-id');
           this.openPrintPreview(container, qId);
+        });
+      });
+
+      listEl.querySelectorAll('.btn-delete-quote').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const qId = btn.getAttribute('data-id');
+          const qNum = btn.getAttribute('data-number');
+          if (confirm(`Delete draft quotation ${qNum}?`)) {
+            try {
+              await BusinessApi.request(`/quotations/${qId}`, 'DELETE');
+              alert('🗑️ Draft quotation deleted.');
+              await this.loadQuotations(container);
+            } catch (err) {
+              alert('Delete failed: ' + err.message);
+            }
+          }
         });
       });
 
@@ -291,6 +318,27 @@ export const QuotationsScreen = {
       const iframe = container.querySelector('#iframe-quotation-print');
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.print();
+      }
+    });
+
+    container.querySelector('#btn-share-quote')?.addEventListener('click', async () => {
+      const quote = this.activeQuotation;
+      const title = quote?.title || 'D DEV ULTRA HOMES Construction Proposal';
+      const total = quote ? `₹${(quote.total_amount || 0).toLocaleString('en-IN')}` : '';
+      const shareText = `*${title}*\nQuotation & Civil Engineering Estimate from *D DEV ULTRA HOMES* ("Building your dreams").\nTotal Value: ${total}\n\nIncludes Schedule A materials specification & Schedule B milestone stages. Contact us for contract booking!`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title,
+            text: shareText
+          });
+        } catch (err) {
+          // User cancelled share
+        }
+      } else {
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, '_blank');
       }
     });
 
@@ -496,6 +544,7 @@ export const QuotationsScreen = {
   async openPrintPreview(container, qId) {
     const printModal = container.querySelector('#modal-quotation-print');
     const iframe = container.querySelector('#iframe-quotation-print');
+    this.activeQuotation = (this.cachedQuotations || []).find(q => q.id === qId);
 
     try {
       const res = await BusinessApi.request(`/quotations/${qId}/html`);

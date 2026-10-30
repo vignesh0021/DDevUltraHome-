@@ -33,12 +33,17 @@ export const BusinessApi = {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': this.activeUser.id,
-          'X-User-Role': this.activeUser.role
+          'X-User-Id': this.activeUser?.id || 'usr-owner-1',
+          'X-User-Role': this.activeUser?.role || 'OWNER'
         }
       };
 
-      if (data && (method === 'POST' || method === 'PUT')) {
+      const token = this.activeToken || (typeof localStorage !== 'undefined' && localStorage.getItem('ddev_auth_token'));
+      if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
         options.body = JSON.stringify(data);
       }
 
@@ -59,6 +64,11 @@ export const BusinessApi = {
   // Fallback offline responses for APK when backend server is detached
   _offlineFallback(endpoint, method, data) {
     if (endpoint === '/dashboard/summary') {
+      const projects = this._getOfflineProjects();
+      const clients = this._getOfflineClients();
+      const suppliers = this._getOfflineSuppliers();
+      const dues = suppliers.reduce((sum, s) => sum + (parseFloat(s.outstanding_dues) || 0), 0);
+
       return {
         success: true,
         dashboard: {
@@ -66,94 +76,121 @@ export const BusinessApi = {
           tagline: 'Building your dreams',
           liquidCash: 5250000.00,
           totalLiquidFunds: 5250000.00,
-          accountsPayable: 185000.00,
+          accountsPayable: dues,
           unearnedAdvanceLiabilities: 450000.00,
           netOperatingCashflow: 4615000.00,
-          activeProjects: 3,
-          totalClients: 4,
+          activeProjects: projects.filter(p => p.status === 'ACTIVE').length,
+          totalClients: clients.length,
           pendingOcrCount: 1
         }
       };
     }
 
-    if (endpoint === '/projects') {
-      return {
-        success: true,
-        projects: [
-          {
-            id: 'prj-kun-01',
-            project_code: 'PRJ-KUN-2026',
-            name: 'Kundrathur Residence (G+1 Villa)',
-            client_name: 'Mr. Thiumani P.',
-            client_phone: '+91 98400 99887',
-            site_address: 'Kundrathur, Chennai - 600069',
-            district: 'Chennai',
-            contract_value: 4227400.00,
-            current_stage: 'STRUCTURE',
-            status: 'ACTIVE'
-          },
-          {
-            id: 'prj-gnd-01',
-            project_code: 'PRJ-GND-01',
-            name: 'Guindy Residence (G+1 Villa)',
-            client_name: 'Mr. JAS Guindy',
-            client_phone: '+91 98400 12345',
-            site_address: 'Guindy, Chennai',
-            district: 'Chennai',
-            contract_value: 8500000.00,
-            current_stage: 'FOUNDATION',
-            status: 'ACTIVE'
-          }
-        ]
-      };
+    // Projects CRUD
+    if (endpoint === '/projects' && method === 'GET') {
+      return { success: true, projects: this._getOfflineProjects() };
     }
 
-    if (endpoint.startsWith('/projects/')) {
+    if (endpoint === '/projects' && method === 'POST' && data) {
+      const projects = this._getOfflineProjects();
+      const newPrj = {
+        id: `prj_${Date.now()}`,
+        project_code: data.project_code || `PRJ-${Date.now().toString().slice(-4)}`,
+        name: data.name,
+        client_name: data.client_name || 'Assigned Client',
+        client_phone: data.client_phone || '+91 98400 99887',
+        site_address: data.site_address || '',
+        district: data.district || 'Chennai',
+        contract_value: parseFloat(data.contract_value) || 0,
+        budgeted_cost: parseFloat(data.budgeted_cost) || 0,
+        current_stage: 'FOUNDATION',
+        status: 'ACTIVE'
+      };
+      projects.unshift(newPrj);
+      localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      return { status: 201, success: true, project: newPrj };
+    }
+
+    if (endpoint.startsWith('/projects/') && method === 'PUT' && data) {
       const prjId = endpoint.replace('/projects/', '');
+      const projects = this._getOfflineProjects();
+      const prj = projects.find(p => p.id === prjId);
+      if (prj) {
+        Object.assign(prj, data);
+        localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+        return { success: true, project: prj };
+      }
+      return { success: false, error: 'Project not found' };
+    }
+
+    if (endpoint.startsWith('/projects/') && method === 'DELETE') {
+      const prjId = endpoint.replace('/projects/', '');
+      const projects = this._getOfflineProjects().filter(p => p.id !== prjId);
+      localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      return { success: true, archivedId: prjId };
+    }
+
+    if (endpoint.startsWith('/projects/') && method === 'GET') {
+      const prjId = endpoint.replace('/projects/', '');
+      const projects = this._getOfflineProjects();
+      const prj = projects.find(p => p.id === prjId) || projects[0] || { id: prjId, name: 'Project' };
       return {
         success: true,
-        project: {
-          id: prjId,
-          project_code: prjId === 'prj-kun-01' ? 'PRJ-KUN-2026' : 'PRJ-GND-01',
-          name: prjId === 'prj-kun-01' ? 'Kundrathur Residence (G+1 Villa)' : 'Guindy Residence (G+1 Villa)',
-          client_name: prjId === 'prj-kun-01' ? 'Mr. Thiumani P.' : 'Mr. JAS Guindy',
-          client_phone: prjId === 'prj-kun-01' ? '+91 98400 99887' : '+91 98400 12345',
-          site_address: prjId === 'prj-kun-01' ? 'Kundrathur, Chennai - 600069' : 'Guindy, Chennai',
-          district: 'Chennai',
-          contract_value: prjId === 'prj-kun-01' ? 4227400.00 : 8500000.00,
-          current_stage: prjId === 'prj-kun-01' ? 'STRUCTURE' : 'FOUNDATION',
-          status: 'ACTIVE'
-        },
+        project: prj,
         financials: {
-          totalCashReceived: prjId === 'prj-kun-01' ? 800000.00 : 850000.00,
-          earnedRevenue: prjId === 'prj-kun-01' ? 600000.00 : 0.00,
-          unearnedAdvanceLiability: prjId === 'prj-kun-01' ? 200000.00 : 850000.00,
-          totalIncurredCost: prjId === 'prj-kun-01' ? 515000.00 : 250000.00,
-          operatingProfit: prjId === 'prj-kun-01' ? 85000.00 : 0.00,
-          profitMarginPercentage: prjId === 'prj-kun-01' ? 14.17 : 0.00
+          totalCashReceived: 800000.00,
+          earnedRevenue: 600000.00,
+          unearnedAdvanceLiability: 200000.00,
+          totalIncurredCost: 515000.00,
+          operatingProfit: 85000.00,
+          profitMarginPercentage: 14.17
         },
-        milestones: [
-          { id: 'ms-1', milestone_code: 'MS-01', title: 'Mobilization Advance', description: 'Advance cash deposit as per agreement clause 2', target_percentage: 18.92, invoice_amount: 800000.00, status: 'BILLED' },
-          { id: 'ms-2', milestone_code: 'MS-02', title: 'Ground Floor Roof Level Brickwork', description: '9" flyash bricks in CM 1:5 & 4.5" partitions', target_percentage: 14.19, invoice_amount: 600000.00, status: 'COMPLETED' },
-          { id: 'ms-3', milestone_code: 'MS-03', title: 'Ground Floor Roof Slab Concrete', description: '5" RCC framed slab, beams & columns', target_percentage: 16.56, invoice_amount: 700000.00, status: 'IN_PROGRESS' },
-          { id: 'ms-4', milestone_code: 'MS-04', title: 'First Floor Roof Level Brickwork', description: 'First floor 9" & 4.5" brickwork up to roof beam', target_percentage: 14.19, invoice_amount: 600000.00, status: 'NOT_STARTED' },
-          { id: 'ms-5', milestone_code: 'MS-05', title: 'First Floor Roof Slab Concrete', description: 'First floor 5" RCC roof slab & sunshades', target_percentage: 16.56, invoice_amount: 700000.00, status: 'NOT_STARTED' },
-          { id: 'ms-6', milestone_code: 'MS-06', title: 'Outer & Inner Plastering', description: 'Internal CM 1:4 and external CM 1:5 plastering', target_percentage: 11.83, invoice_amount: 500000.00, status: 'NOT_STARTED' },
-          { id: 'ms-7', milestone_code: 'MS-07', title: 'Plumbing, Painting & Electrical Fittings', description: 'Orbit 3-phase wiring, Parryware & Asian Paints', target_percentage: 7.10, invoice_amount: 300000.00, status: 'NOT_STARTED' },
-          { id: 'ms-8', milestone_code: 'MS-08', title: 'Handover & Final Settlement', description: 'Pre-handover final snag clearance & delivery', target_percentage: 0.65, invoice_amount: 27400.00, status: 'NOT_STARTED' }
-        ]
+        milestones: this._getOfflineMilestones(prjId),
+        recentProgress: this._getOfflineProgress(prjId)
       };
     }
 
-    if (endpoint === '/clients') {
-      return {
-        success: true,
-        clients: [
-          { id: 'cli-thiumani-01', name: 'Mr. Thiumani P.', phone: '+91 98400 99887', email: 'thiumani.p@gmail.com', project_count: 1 },
-          { id: 'cli-1', name: 'Mr. JAS Guindy', phone: '+91 98400 12345', email: 'client.guindy@gmail.com', project_count: 1 },
-          { id: 'cli-2', name: 'Arunachalam & Co', phone: '+91 98401 22334', email: 'arun@example.com', project_count: 1 }
-        ]
+    // Clients CRUD
+    if (endpoint === '/clients' && method === 'GET') {
+      return { success: true, clients: this._getOfflineClients() };
+    }
+
+    if (endpoint === '/clients' && method === 'POST' && data) {
+      const clients = this._getOfflineClients();
+      const newCli = {
+        id: `cli_${Date.now()}`,
+        name: data.name,
+        company_name: data.company_name || null,
+        phone: data.phone,
+        email: data.email || null,
+        billing_address: data.billing_address || null,
+        gstin: data.gstin || null,
+        pan: data.pan || null,
+        project_count: 0,
+        total_contract_value: 0
       };
+      clients.unshift(newCli);
+      localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      return { status: 201, success: true, client: newCli };
+    }
+
+    if (endpoint.startsWith('/clients/') && method === 'PUT' && data) {
+      const cliId = endpoint.replace('/clients/', '');
+      const clients = this._getOfflineClients();
+      const cli = clients.find(c => c.id === cliId);
+      if (cli) {
+        Object.assign(cli, data);
+        localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+        return { success: true, client: cli };
+      }
+      return { success: false, error: 'Client not found' };
+    }
+
+    if (endpoint.startsWith('/clients/') && method === 'DELETE') {
+      const cliId = endpoint.replace('/clients/', '');
+      const clients = this._getOfflineClients().filter(c => c.id !== cliId);
+      localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      return { success: true, archivedId: cliId };
     }
 
     if (endpoint === '/suppliers') {
@@ -305,6 +342,189 @@ export const BusinessApi = {
       };
 
       return { success: true, payment };
+    }
+
+    // Suppliers CRUD
+    if (endpoint.startsWith('/suppliers/') && !endpoint.includes('invoices') && !endpoint.includes('payments') && method === 'PUT' && data) {
+      const supId = endpoint.replace('/suppliers/', '');
+      const suppliers = this._getOfflineSuppliers();
+      const sup = suppliers.find(s => s.id === supId);
+      if (sup) {
+        Object.assign(sup, data);
+        localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        return { success: true, supplier: sup };
+      }
+      return { success: false, error: 'Supplier not found' };
+    }
+
+    if (endpoint.startsWith('/suppliers/') && !endpoint.includes('invoices') && !endpoint.includes('payments') && method === 'DELETE') {
+      const supId = endpoint.replace('/suppliers/', '');
+      const suppliers = this._getOfflineSuppliers().filter(s => s.id !== supId);
+      localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+      return { success: true, archivedId: supId };
+    }
+
+    if (endpoint.startsWith('/suppliers/invoices/') && endpoint.endsWith('/void') && method === 'POST') {
+      const invId = endpoint.replace('/suppliers/invoices/', '').replace('/void', '');
+      const stored = localStorage.getItem('ddev_offline_supplier_invoices');
+      let invoices = stored ? JSON.parse(stored) : [];
+      const inv = invoices.find(i => i.id === invId);
+      if (inv) {
+        inv.payment_status = 'VOIDED';
+        inv.balance_amount = 0;
+        localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invoices));
+        const suppliers = this._getOfflineSuppliers();
+        const sup = suppliers.find(s => s.id === inv.supplier_id);
+        if (sup) {
+          sup.outstanding_dues = Math.max(0, (sup.outstanding_dues || 0) - (inv.total_amount || 0));
+          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        }
+      }
+      return { success: true, voided: true };
+    }
+
+    // Expenses CRUD
+    if (endpoint === '/expenses' && method === 'GET') {
+      return { success: true, expenses: this._getOfflineExpenses() };
+    }
+
+    if (endpoint === '/expenses' && method === 'POST' && data) {
+      const expenses = this._getOfflineExpenses();
+      const newExp = {
+        id: `exp_${Date.now()}`,
+        expense_number: `EXP-2026-${(expenses.length + 1).toString().padStart(4, '0')}`,
+        project_id: data.projectId,
+        project_name: 'Kundrathur Residence',
+        category: data.category,
+        amount: parseFloat(data.amount) || 0,
+        paid_to: data.paidTo,
+        expense_date: data.expenseDate || new Date().toISOString().split('T')[0],
+        payment_mode: data.paymentMode || 'BANK_TRANSFER',
+        account_name: 'HDFC Current A/C',
+        notes: data.notes || ''
+      };
+      expenses.unshift(newExp);
+      localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      return { status: 201, success: true, expense: newExp };
+    }
+
+    if (endpoint.startsWith('/expenses/') && endpoint.endsWith('/void') && method === 'POST') {
+      const expId = endpoint.replace('/expenses/', '').replace('/void', '');
+      let expenses = this._getOfflineExpenses().filter(e => e.id !== expId);
+      localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      return { success: true, voided: true };
+    }
+
+    if (endpoint.startsWith('/expenses/') && !endpoint.endsWith('/void') && method === 'PUT' && data) {
+      const expId = endpoint.replace('/expenses/', '');
+      const expenses = this._getOfflineExpenses();
+      const exp = expenses.find(e => e.id === expId);
+      if (exp) {
+        Object.assign(exp, data);
+        localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+        return { success: true, expense: exp };
+      }
+      return { success: false, error: 'Expense not found' };
+    }
+
+    // Income / Receipts CRUD
+    if (endpoint === '/income/receipts' && method === 'GET') {
+      return { success: true, receipts: this._getOfflineReceipts() };
+    }
+
+    if (endpoint === '/income/receipts' && method === 'POST' && data) {
+      const receipts = this._getOfflineReceipts();
+      const newRec = {
+        id: `rec_${Date.now()}`,
+        receipt_number: `REC-2026-${(receipts.length + 1).toString().padStart(4, '0')}`,
+        project_id: data.projectId,
+        project_name: 'Kundrathur Residence',
+        client_id: data.clientId,
+        client_name: 'Mr. Thiumani P.',
+        amount: parseFloat(data.amount) || 0,
+        receipt_date: data.receiptDate || new Date().toISOString().split('T')[0],
+        account_name: 'HDFC Current A/C',
+        is_advance: data.isAdvance ? 1 : 0,
+        allocated_amount: 0,
+        unallocated_balance: data.isAdvance ? (parseFloat(data.amount) || 0) : 0,
+        notes: data.notes || ''
+      };
+      receipts.unshift(newRec);
+      localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      return { status: 201, success: true, receipt: newRec };
+    }
+
+    if (endpoint.startsWith('/income/receipts/') && endpoint.endsWith('/void') && method === 'POST') {
+      const recId = endpoint.replace('/income/receipts/', '').replace('/void', '');
+      let receipts = this._getOfflineReceipts().filter(r => r.id !== recId);
+      localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      return { success: true, voided: true };
+    }
+
+    // Milestones CRUD
+    if (endpoint === '/milestones' && method === 'GET') {
+      return { success: true, milestones: this._getOfflineMilestones('prj-kun-01') };
+    }
+
+    if (endpoint.startsWith('/milestones/') && (method === 'PATCH' || method === 'PUT') && data) {
+      const mId = endpoint.replace('/milestones/', '');
+      const milestones = this._getOfflineMilestones('prj-kun-01');
+      const m = milestones.find(item => item.id === mId);
+      if (m) {
+        Object.assign(m, data);
+        localStorage.setItem('ddev_offline_milestones_prj-kun-01', JSON.stringify(milestones));
+        return { success: true, milestone: m };
+      }
+      return { success: false, error: 'Milestone not found' };
+    }
+
+    if (endpoint.startsWith('/milestones/') && method === 'DELETE') {
+      const mId = endpoint.replace('/milestones/', '');
+      const milestones = this._getOfflineMilestones('prj-kun-01').filter(item => item.id !== mId);
+      localStorage.setItem('ddev_offline_milestones_prj-kun-01', JSON.stringify(milestones));
+      return { success: true, deletedId: mId };
+    }
+
+    // Progress Reports (DPR) CRUD
+    if (endpoint === '/progress' && method === 'GET') {
+      return { success: true, updates: this._getOfflineProgress('prj-kun-01') };
+    }
+
+    if (endpoint === '/progress' && method === 'POST' && data) {
+      const prjId = data.projectId || 'prj-kun-01';
+      const progress = this._getOfflineProgress(prjId);
+      const newEntry = {
+        id: `prog_${Date.now()}`,
+        project_id: prjId,
+        milestone_id: data.milestoneId || null,
+        report_date: data.reportDate || new Date().toISOString().split('T')[0],
+        completion_percentage: parseFloat(data.completionPercentage) || 0,
+        site_notes: data.siteNotes || '',
+        weather_condition: data.weatherCondition || 'Clear',
+        workforce_count: parseInt(data.workforceCount, 10) || 0,
+        delay_reason: data.delayReason || null,
+        recorded_by: this.activeUser?.id || 'usr-owner-1'
+      };
+      progress.unshift(newEntry);
+      localStorage.setItem(`ddev_offline_progress_${prjId}`, JSON.stringify(progress));
+      return { status: 201, success: true, id: newEntry.id };
+    }
+
+    if (endpoint.startsWith('/progress/') && method === 'DELETE') {
+      const progId = endpoint.replace('/progress/', '');
+      const progress = this._getOfflineProgress('prj-kun-01').filter(p => p.id !== progId);
+      localStorage.setItem('ddev_offline_progress_prj-kun-01', JSON.stringify(progress));
+      return { success: true, deletedId: progId };
+    }
+
+    // Documents delete
+    if (endpoint.startsWith('/documents/') && method === 'DELETE') {
+      const docId = endpoint.replace('/documents/', '');
+      const stored = localStorage.getItem('ddev_offline_documents');
+      let docs = stored ? JSON.parse(stored) : [];
+      docs = docs.filter(d => d.id !== docId);
+      localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+      return { success: true, deletedId: docId };
     }
 
     if (endpoint === '/documents') {
@@ -548,6 +768,41 @@ export const BusinessApi = {
       return { success: true, quotations };
     }
 
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'PUT' && data) {
+      const qId = endpoint.replace('/quotations/', '');
+      const stored = localStorage.getItem('ddev_offline_quotations');
+      let quotes = stored ? JSON.parse(stored) : [];
+      const q = quotes.find(item => item.id === qId);
+      if (q) {
+        Object.assign(q, data);
+        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        return { success: true, quotation: q };
+      }
+      return { success: false, error: 'Quotation not found' };
+    }
+
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'DELETE') {
+      const qId = endpoint.replace('/quotations/', '');
+      const stored = localStorage.getItem('ddev_offline_quotations');
+      let quotes = stored ? JSON.parse(stored) : [];
+      quotes = quotes.filter(item => item.id !== qId);
+      localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+      return { success: true, deletedId: qId };
+    }
+
+    if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/status') && (method === 'POST' || method === 'PATCH') && data) {
+      const qId = endpoint.replace('/quotations/', '').replace('/status', '');
+      const stored = localStorage.getItem('ddev_offline_quotations');
+      let quotes = stored ? JSON.parse(stored) : [];
+      const q = quotes.find(item => item.id === qId);
+      if (q) {
+        q.status = data.status;
+        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        return { success: true, quotation: q };
+      }
+      return { success: false, error: 'Quotation not found' };
+    }
+
     if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/html')) {
       return {
         success: true,
@@ -556,5 +811,95 @@ export const BusinessApi = {
     }
 
     return { success: true, offline: true, endpoint, data };
+  },
+
+  _getOfflineProjects() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_projects') : null;
+    return stored ? JSON.parse(stored) : [
+      {
+        id: 'prj-kun-01',
+        project_code: 'PRJ-KUN-2026',
+        name: 'Kundrathur Residence (G+1 Villa)',
+        client_name: 'Mr. Thiumani P.',
+        client_phone: '+91 98400 99887',
+        site_address: 'Kundrathur, Chennai - 600069',
+        district: 'Chennai',
+        contract_value: 4227400.00,
+        budgeted_cost: 3400000.00,
+        current_stage: 'STRUCTURE',
+        status: 'ACTIVE'
+      },
+      {
+        id: 'prj-gnd-01',
+        project_code: 'PRJ-GND-01',
+        name: 'Guindy Residence (G+1 Villa)',
+        client_name: 'Mr. JAS Guindy',
+        client_phone: '+91 98400 12345',
+        site_address: 'Guindy, Chennai',
+        district: 'Chennai',
+        contract_value: 8500000.00,
+        budgeted_cost: 6800000.00,
+        current_stage: 'FOUNDATION',
+        status: 'ACTIVE'
+      }
+    ];
+  },
+
+  _getOfflineClients() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_clients') : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'cli-thiumani-01', name: 'Mr. Thiumani P.', phone: '+91 98400 99887', email: 'thiumani.p@gmail.com', project_count: 1, total_contract_value: 4227400.00, billing_address: 'Anakaputhur, Chennai - 600070' },
+      { id: 'cli-1', name: 'Mr. JAS Guindy', phone: '+91 98400 12345', email: 'client.guindy@gmail.com', project_count: 1, total_contract_value: 8500000.00, billing_address: 'Guindy, Chennai' },
+      { id: 'cli-2', name: 'Arunachalam & Co', phone: '+91 98401 22334', email: 'arun@example.com', project_count: 1, total_contract_value: 3000000.00, billing_address: 'Velachery, Chennai' }
+    ];
+  },
+
+  _getOfflineSuppliers() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_suppliers') : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'sup-1', name: 'Chennai TMT Traders (Fe550D Steel)', category: 'STEEL', contact_person: 'Mr. Balan', phone: '+91 94440 99887', outstanding_dues: 150000.00, gstin: '33AABCT9920A1Z1' },
+      { id: 'sup-2', name: 'Dalmia & UltraTech Depot Velachery', category: 'CEMENT', contact_person: 'Mr. Senthil', phone: '+91 98402 11223', outstanding_dues: 35000.00, gstin: '33AABCD4401B1Z2' },
+      { id: 'sup-3', name: 'Kag & Anuj Tiles Gallery', category: 'TILES_SANITARY', contact_person: 'Mr. Murugan', phone: '+91 94450 33445', outstanding_dues: 45000.00, gstin: '33AAECK1120C1Z3' }
+    ];
+  },
+
+  _getOfflineExpenses() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_expenses') : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'exp-1', expense_number: 'EXP-2026-0001', category: 'LABOUR', amount: 45000.00, expense_date: '2026-10-20', paid_to: 'Masons Guild Chennai', payment_mode: 'BANK_TRANSFER', account_name: 'HDFC Current A/C', project_name: 'Kundrathur Residence', notes: 'Ground floor brickwork labour payment week 42' },
+      { id: 'exp-2', expense_number: 'EXP-2026-0002', category: 'SITE_PURCHASES', amount: 8500.00, expense_date: '2026-10-22', paid_to: 'Velachery Hardware', payment_mode: 'PETTY_CASH', account_name: 'Site Petty Cash', project_name: 'Kundrathur Residence', notes: 'Binding wire, nails & shuttering grease' },
+      { id: 'exp-3', expense_number: 'EXP-2026-0003', category: 'EQUIPMENT_RENTAL', amount: 18000.00, expense_date: '2026-10-24', paid_to: 'Sri Murugan Mixer Hire', payment_mode: 'UPI', account_name: 'HDFC Current A/C', project_name: 'Kundrathur Residence', notes: 'Diesel concrete mixer & vibrator hire 3 days' }
+    ];
+  },
+
+  _getOfflineReceipts() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_receipts') : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'rec-1', receipt_number: 'REC-2026-0001', project_name: 'Kundrathur Residence (G+1 Villa)', client_name: 'Mr. Thiumani P.', amount: 800000.00, receipt_date: '2026-04-05', account_name: 'HDFC Current A/C', is_advance: 1, allocated_amount: 600000.00, unallocated_balance: 200000.00, notes: 'Initial mobilization advance cheque' }
+    ];
+  },
+
+  _getOfflineMilestones(prjId) {
+    const key = `ddev_offline_milestones_${prjId || 'prj-kun-01'}`;
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'ms-1', milestone_code: 'MS-01', title: 'Mobilization Advance', description: 'Advance cash deposit as per agreement clause 2', target_percentage: 18.92, invoice_percentage: 18.92, invoice_amount: 800000.00, status: 'BILLED' },
+      { id: 'ms-2', milestone_code: 'MS-02', title: 'Ground Floor Roof Level Brickwork', description: '9" flyash bricks in CM 1:5 & 4.5" partitions', target_percentage: 14.19, invoice_percentage: 14.19, invoice_amount: 600000.00, status: 'COMPLETED' },
+      { id: 'ms-3', milestone_code: 'MS-03', title: 'Ground Floor Roof Slab Concrete', description: '5" RCC framed slab, beams & columns', target_percentage: 16.56, invoice_percentage: 16.56, invoice_amount: 700000.00, status: 'IN_PROGRESS' },
+      { id: 'ms-4', milestone_code: 'MS-04', title: 'First Floor Roof Level Brickwork', description: 'First floor 9" & 4.5" brickwork up to roof beam', target_percentage: 14.19, invoice_percentage: 14.19, invoice_amount: 600000.00, status: 'NOT_STARTED' },
+      { id: 'ms-5', milestone_code: 'MS-05', title: 'First Floor Roof Slab Concrete', description: 'First floor 5" RCC roof slab & sunshades', target_percentage: 16.56, invoice_percentage: 16.56, invoice_amount: 700000.00, status: 'NOT_STARTED' },
+      { id: 'ms-6', milestone_code: 'MS-06', title: 'Outer & Inner Plastering', description: 'Internal CM 1:4 and external CM 1:5 plastering', target_percentage: 11.83, invoice_percentage: 11.83, invoice_amount: 500000.00, status: 'NOT_STARTED' },
+      { id: 'ms-7', milestone_code: 'MS-07', title: 'Plumbing, Painting & Electrical Fittings', description: 'Orbit 3-phase wiring, Parryware & Asian Paints', target_percentage: 7.10, invoice_percentage: 7.10, invoice_amount: 300000.00, status: 'NOT_STARTED' },
+      { id: 'ms-8', milestone_code: 'MS-08', title: 'Handover & Final Settlement', description: 'Pre-handover final snag clearance & delivery', target_percentage: 0.65, invoice_percentage: 0.65, invoice_amount: 27400.00, status: 'NOT_STARTED' }
+    ];
+  },
+
+  _getOfflineProgress(prjId) {
+    const key = `ddev_offline_progress_${prjId || 'prj-kun-01'}`;
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    return stored ? JSON.parse(stored) : [
+      { id: 'prog-1', report_date: '2026-10-24', completion_percentage: 33.11, site_notes: 'GF Roof slab centering shuttering completed. 16mm & 12mm TMT steel binding 80% done.', weather_condition: 'Sunny (34°C)', workforce_count: 14, delay_reason: null },
+      { id: 'prog-2', report_date: '2026-10-18', completion_percentage: 28.50, site_notes: 'GF Brickwork lintel concrete cast and cured. Outer curing ongoing twice daily.', weather_condition: 'Clear', workforce_count: 12, delay_reason: null }
+    ];
   }
 };

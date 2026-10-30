@@ -106,6 +106,56 @@ export const SuppliersScreen = {
         </div>
       </div>
 
+      <!-- Edit Supplier Modal -->
+      <div id="modal-edit-supplier" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 215; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Vendor Details</h3>
+            <button type="button" id="btn-close-edit-sup" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+          </div>
+          <form id="form-edit-supplier">
+            <input type="hidden" id="edit-sup-id">
+            <div class="form-group">
+              <label class="form-label">Vendor / Firm Name *</label>
+              <input type="text" id="edit-sup-name" class="form-control" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Category *</label>
+                <select id="edit-sup-category" class="form-control" required>
+                  <option value="STEEL">Steel / TMT Rebars</option>
+                  <option value="CEMENT">Cement</option>
+                  <option value="RMC_CONCRETE">Ready-Mix Concrete (RMC)</option>
+                  <option value="AGGREGATES">Sand &amp; Blue Metal</option>
+                  <option value="BRICKS_BLOCKS">Red Bricks / AAC Blocks</option>
+                  <option value="ELECTRICAL_PLUMBING">Electrical &amp; Plumbing</option>
+                  <option value="TILES_SANITARY">Tiles &amp; Sanitaryware</option>
+                  <option value="GENERAL">General Hardware</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contact Person</label>
+                <input type="text" id="edit-sup-contact" class="form-control">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Phone *</label>
+                <input type="tel" id="edit-sup-phone" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">GSTIN</label>
+                <input type="text" id="edit-sup-gstin" class="form-control">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+              <button type="button" id="btn-cancel-edit-sup" class="btn-outline">Cancel</button>
+              <button type="submit" class="btn-primary">Update Vendor</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- Log Bill / Supplier Invoice Modal -->
       <div id="modal-log-invoice" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 220; align-items: center; justify-content: center; padding: 16px;">
         <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px;">
@@ -265,6 +315,7 @@ export const SuppliersScreen = {
 
   async initModals(container) {
     const supModal = container.querySelector('#modal-new-supplier');
+    const editSupModal = container.querySelector('#modal-edit-supplier');
     const invModal = container.querySelector('#modal-log-invoice');
     const settleModal = container.querySelector('#modal-settle-dues');
 
@@ -277,6 +328,34 @@ export const SuppliersScreen = {
     });
     container.querySelector('#btn-cancel-sup')?.addEventListener('click', () => {
       supModal.style.display = 'none';
+    });
+
+    // Edit Supplier Modal Handlers
+    container.querySelector('#btn-close-edit-sup')?.addEventListener('click', () => {
+      editSupModal.style.display = 'none';
+    });
+    container.querySelector('#btn-cancel-edit-sup')?.addEventListener('click', () => {
+      editSupModal.style.display = 'none';
+    });
+    container.querySelector('#form-edit-supplier')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const supId = container.querySelector('#edit-sup-id').value;
+      const payload = {
+        name: container.querySelector('#edit-sup-name').value.trim(),
+        category: container.querySelector('#edit-sup-category').value,
+        contact_person: container.querySelector('#edit-sup-contact').value.trim() || null,
+        phone: container.querySelector('#edit-sup-phone').value.trim(),
+        gstin: container.querySelector('#edit-sup-gstin').value.trim() || null
+      };
+
+      try {
+        await BusinessApi.request(`/suppliers/${supId}`, 'PUT', payload);
+        alert('✅ Vendor updated successfully!');
+        editSupModal.style.display = 'none';
+        await this.loadSuppliers(container);
+      } catch (err) {
+        alert('Failed to update vendor: ' + err.message);
+      }
     });
 
     // Open Log Bill
@@ -508,6 +587,8 @@ export const SuppliersScreen = {
         return;
       }
 
+      this.cachedSuppliers = suppliers;
+
       listEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           ${suppliers.map(s => {
@@ -541,7 +622,13 @@ export const SuppliersScreen = {
                   <button class="btn-toggle-invoices btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 600;">
                     📄 View Invoices
                   </button>
-                  <div style="display: flex; gap: 8px;">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn-card-edit-sup btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 8px; font-size: 11px;">
+                      ✏️ Edit
+                    </button>
+                    <button class="btn-card-archive-sup btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 8px; font-size: 11px; color: #DC2626; border-color: #FCA5A5;">
+                      📦 Archive
+                    </button>
                     <button class="btn-card-log-bill btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 10px; font-size: 11px;">
                       + Bill
                     </button>
@@ -563,6 +650,42 @@ export const SuppliersScreen = {
           }).join('')}
         </div>
       `;
+
+      // Wire Edit Vendor buttons
+      listEl.querySelectorAll('.btn-card-edit-sup').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const supId = e.currentTarget.dataset.id;
+          const sup = (this.cachedSuppliers || []).find(x => x.id === supId);
+          if (!sup) return;
+
+          container.querySelector('#edit-sup-id').value = sup.id;
+          container.querySelector('#edit-sup-name').value = sup.name || '';
+          container.querySelector('#edit-sup-category').value = sup.category || 'GENERAL';
+          container.querySelector('#edit-sup-contact').value = sup.contact_person || '';
+          container.querySelector('#edit-sup-phone').value = sup.phone || '';
+          container.querySelector('#edit-sup-gstin').value = sup.gstin || '';
+
+          container.querySelector('#modal-edit-supplier').style.display = 'flex';
+        });
+      });
+
+      // Wire Archive Vendor buttons
+      listEl.querySelectorAll('.btn-card-archive-sup').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const supId = e.currentTarget.dataset.id;
+          const supName = e.currentTarget.dataset.name;
+          const confirmed = confirm(`Archive vendor "${supName}"?\nHistorical invoices and settlement records will remain intact.`);
+          if (!confirmed) return;
+
+          try {
+            await BusinessApi.request(`/suppliers/${supId}`, 'DELETE');
+            alert('📦 Vendor archived successfully.');
+            await this.loadSuppliers(container);
+          } catch (err) {
+            alert('Failed to archive vendor: ' + err.message);
+          }
+        });
+      });
 
       // Wire Settle Buttons on cards
       listEl.querySelectorAll('.btn-card-settle').forEach(btn => {
@@ -595,7 +718,7 @@ export const SuppliersScreen = {
           } else {
             box.style.display = 'block';
             e.currentTarget.textContent = '▲ Hide Invoices';
-            await this.loadSupplierInvoices(supId, content);
+            await this.loadSupplierInvoices(container, supId, content);
           }
         });
       });
@@ -605,7 +728,7 @@ export const SuppliersScreen = {
     }
   },
 
-  async loadSupplierInvoices(supplierId, targetElement) {
+  async loadSupplierInvoices(container, supplierId, targetElement) {
     try {
       const res = await BusinessApi.request(`/suppliers/invoices?supplierId=${supplierId}`);
       const invoices = res.invoices || [];
@@ -619,6 +742,8 @@ export const SuppliersScreen = {
         <div style="display: flex; flex-direction: column; gap: 6px;">
           ${invoices.map(inv => {
             const statusClass = inv.payment_status === 'PAID' ? 'badge-verified' : (inv.payment_status === 'PARTIALLY_PAID' ? 'badge-pending' : 'badge-danger');
+            const canVoid = inv.payment_status === 'UNPAID' || (inv.paid_amount || 0) === 0;
+
             return `
               <div style="background: var(--bg-card-subtle); padding: 8px 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                 <div>
@@ -636,12 +761,40 @@ export const SuppliersScreen = {
                   <span class="badge-status ${statusClass}" style="font-size: 10px; padding: 2px 6px;">
                     ${inv.payment_status}
                   </span>
+                  ${canVoid ? `
+                    <button class="btn-void-invoice btn-outline" data-id="${inv.id}" data-supid="${supplierId}" data-number="${inv.invoice_number}" data-amount="${inv.total_amount}" style="min-height: 24px; padding: 0 6px; font-size: 10px; font-weight: 600; color: #DC2626; border-color: #FCA5A5;">
+                      🚫 Void
+                    </button>
+                  ` : ''}
                 </div>
               </div>
             `;
           }).join('')}
         </div>
       `;
+
+      // Wire Void Invoice buttons
+      targetElement.querySelectorAll('.btn-void-invoice').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const invId = e.currentTarget.dataset.id;
+          const invNum = e.currentTarget.dataset.number;
+          const amount = e.currentTarget.dataset.amount;
+          const supId = e.currentTarget.dataset.supid;
+
+          const reason = prompt(`Reason for VOIDING bill "${invNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Accounts Payable dues will be reversed)`);
+          if (!reason || !reason.trim()) return;
+
+          try {
+            await BusinessApi.request(`/suppliers/invoices/${invId}/void`, 'POST', { reason: reason.trim() });
+            alert('✅ Invoice voided. Accounts Payable reversed.');
+            await this.loadSupplierInvoices(container, supId, targetElement);
+            await this.loadSuppliers(container);
+          } catch (err) {
+            alert('Voiding failed: ' + err.message);
+          }
+        });
+      });
+
     } catch (e) {
       targetElement.innerHTML = `<div style="color: var(--color-danger);">Failed to load invoices: ${e.message}</div>`;
     }

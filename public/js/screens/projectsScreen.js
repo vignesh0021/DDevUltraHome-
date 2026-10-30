@@ -132,6 +132,14 @@ export const ProjectsScreen = {
           </div>
 
           <!-- Quick Action Buttons -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+            <button id="btn-dtl-edit-project" class="btn-outline" style="flex: 1; min-height: 38px; font-size: 12px; font-weight: 700;">
+              ✏️ Edit Project
+            </button>
+            <button id="btn-dtl-archive-project" class="btn-outline" style="min-height: 38px; font-size: 12px; font-weight: 700; color: #DC2626; border-color: #FCA5A5;">
+              📦 Archive Project
+            </button>
+          </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button id="btn-dtl-record-receipt" class="btn-primary" style="flex: 1; min-height: 42px; font-size: 13px;">
               💰 Record Receipt / Advance
@@ -140,6 +148,65 @@ export const ProjectsScreen = {
               💳 Record Expense
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Edit Project Modal -->
+      <div id="modal-edit-project" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 350; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 20px;">
+          <h3 style="margin-top: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Project Details</h3>
+          <form id="form-edit-project">
+            <input type="hidden" id="edit-prj-id">
+            <div class="form-group">
+              <label class="form-label">Project Name *</label>
+              <input type="text" id="edit-prj-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Site Address *</label>
+              <textarea id="edit-prj-address" class="form-control" rows="2" required></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">District</label>
+                <input type="text" id="edit-prj-district" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Current Stage</label>
+                <select id="edit-prj-stage" class="form-control">
+                  <option value="FOUNDATION">Foundation</option>
+                  <option value="PLINTH">Plinth</option>
+                  <option value="RCC_FRAMING">RCC Framing / Slabs</option>
+                  <option value="BRICKWORK">Brickwork & Masonry</option>
+                  <option value="PLASTERING">Plastering</option>
+                  <option value="FLOORING_TILING">Flooring & Tiling</option>
+                  <option value="PAINTING_FINISHING">Painting & Finishing</option>
+                  <option value="COMPLETED">Completed / Handed Over</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Status</label>
+                <select id="edit-prj-status" class="form-control">
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="ON_HOLD">ON_HOLD</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Contract Value (₹)</label>
+                <input type="number" id="edit-prj-contract" class="form-control" step="1000">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Budgeted Cost (₹)</label>
+              <input type="number" id="edit-prj-budget" class="form-control" step="1000">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+              <button type="button" id="btn-cancel-edit-prj" class="btn-outline">Cancel</button>
+              <button type="submit" class="btn-primary">Update Project</button>
+            </div>
+          </form>
         </div>
       </div>
     `;
@@ -182,6 +249,66 @@ export const ProjectsScreen = {
         await this.loadProjects(container);
       } catch (err) {
         alert('Failed to save project: ' + err.message);
+      }
+    });
+
+    // Edit & Archive Project controls
+    const editModal = container.querySelector('#modal-edit-project');
+
+    container.querySelector('#btn-dtl-edit-project')?.addEventListener('click', () => {
+      if (!this.currentProject) return;
+      const p = this.currentProject;
+      container.querySelector('#edit-prj-id').value = p.id;
+      container.querySelector('#edit-prj-name').value = p.name || '';
+      container.querySelector('#edit-prj-address').value = p.site_address || '';
+      container.querySelector('#edit-prj-district').value = p.district || 'Chennai';
+      container.querySelector('#edit-prj-stage').value = p.current_stage || 'FOUNDATION';
+      container.querySelector('#edit-prj-status').value = p.status || 'ACTIVE';
+      container.querySelector('#edit-prj-contract').value = p.contract_value || 0;
+      container.querySelector('#edit-prj-budget').value = p.budgeted_cost || 0;
+      editModal.style.display = 'flex';
+    });
+
+    container.querySelector('#btn-cancel-edit-prj')?.addEventListener('click', () => {
+      editModal.style.display = 'none';
+    });
+
+    container.querySelector('#form-edit-project')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prjId = container.querySelector('#edit-prj-id').value;
+      const payload = {
+        name: container.querySelector('#edit-prj-name').value.trim(),
+        site_address: container.querySelector('#edit-prj-address').value.trim(),
+        district: container.querySelector('#edit-prj-district').value.trim(),
+        current_stage: container.querySelector('#edit-prj-stage').value,
+        status: container.querySelector('#edit-prj-status').value,
+        contract_value: parseFloat(container.querySelector('#edit-prj-contract').value) || 0,
+        budgeted_cost: parseFloat(container.querySelector('#edit-prj-budget').value) || 0
+      };
+
+      try {
+        await BusinessApi.request(`/projects/${prjId}`, 'PUT', payload);
+        alert('✅ Project updated successfully!');
+        editModal.style.display = 'none';
+        detailsModal.style.display = 'none';
+        await this.loadProjects(container);
+      } catch (err) {
+        alert('Failed to update project: ' + err.message);
+      }
+    });
+
+    container.querySelector('#btn-dtl-archive-project')?.addEventListener('click', async () => {
+      if (!this.currentProject) return;
+      const confirmArchive = confirm(`Archive project "${this.currentProject.name}"?\nAll financial audit ledgers and progress history will remain preserved.`);
+      if (!confirmArchive) return;
+
+      try {
+        await BusinessApi.request(`/projects/${this.currentProject.id}`, 'DELETE');
+        alert('📦 Project archived successfully.');
+        detailsModal.style.display = 'none';
+        await this.loadProjects(container);
+      } catch (err) {
+        alert('Failed to archive project: ' + err.message);
       }
     });
 
@@ -283,6 +410,7 @@ export const ProjectsScreen = {
     try {
       const res = await BusinessApi.request(`/projects/${prjId}`);
       const { project, financials = {}, milestones = [] } = res;
+      this.currentProject = project;
 
       container.querySelector('#dtl-prj-code').textContent = project.project_code || 'PRJ';
       container.querySelector('#dtl-prj-stage').textContent = project.current_stage || 'ACTIVE';

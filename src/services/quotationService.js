@@ -251,6 +251,110 @@ export class QuotationService {
   }
 
   /**
+   * Update an existing draft quotation
+   */
+  updateQuotation(id, data) {
+    const existing = this.getQuotationById(id);
+    if (!existing) {
+      throw new Error(`Quotation with ID ${id} not found.`);
+    }
+
+    if (existing.status !== 'DRAFT') {
+      throw new Error(`Cannot modify quotation ${id} with status "${existing.status}". Create a new revision instead.`);
+    }
+
+    const {
+      title = existing.title,
+      taxRate = existing.tax_rate,
+      termsConditions = existing.terms_conditions,
+      validUntil = existing.valid_until,
+      items = null
+    } = data;
+
+    return this.db.transaction(() => {
+      let subtotal = existing.subtotal;
+      let taxAmount = existing.tax_amount;
+      let totalAmount = existing.total_amount;
+
+      if (items && Array.isArray(items)) {
+        // Delete existing items
+        this.db.run('DELETE FROM quotation_items WHERE quotation_id = ?;', [id]);
+
+        let computedSubtotal = 0.00;
+        const normalizedItems = items.map((itm, idx) => {
+          const qty = parseFloat(itm.quantity) || 1;
+          const rate = parseFloat(itm.unitRate) || 0;
+          const lineTotal = itm.totalPrice ? parseFloat(itm.totalPrice) : SafeMath.round(qty * rate, 2);
+          computedSubtotal = SafeMath.round(computedSubtotal + lineTotal, 2);
+
+          return {
+            id: `qitm_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+            itemCode: itm.itemCode || `ITM-${(idx + 1).toString().padStart(2, '0')}`,
+            description: itm.description || 'Civil Works Item',
+            category: itm.category || 'CIVIL',
+            unit: itm.unit || 'sqft',
+            quantity: qty,
+            unitRate: rate,
+            totalPrice: lineTotal,
+            notes: itm.notes || ''
+          };
+        });
+
+        subtotal = computedSubtotal;
+        taxAmount = SafeMath.round((subtotal * (parseFloat(taxRate) || 0)) / 100, 2);
+        totalAmount = SafeMath.round(subtotal + taxAmount, 2);
+
+        for (const itm of normalizedItems) {
+          this.db.run(`
+            INSERT INTO quotation_items (
+              id, quotation_id, item_code, description, category,
+              unit, quantity, unit_rate, total_price, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+          `, [
+            itm.id, id, itm.itemCode, itm.description, itm.category,
+            itm.unit, itm.quantity, itm.unitRate, itm.totalPrice, itm.notes
+          ]);
+        }
+      } else if (taxRate !== undefined && taxRate !== existing.tax_rate) {
+        taxAmount = SafeMath.round((subtotal * (parseFloat(taxRate) || 0)) / 100, 2);
+        totalAmount = SafeMath.round(subtotal + taxAmount, 2);
+      }
+
+      this.db.run(`
+        UPDATE quotations
+        SET title = ?, tax_rate = ?, tax_amount = ?, subtotal = ?, total_amount = ?,
+            terms_conditions = ?, valid_until = ?, updated_at = datetime('now')
+        WHERE id = ?;
+      `, [
+        title.trim(), taxRate, taxAmount, subtotal, totalAmount,
+        termsConditions, validUntil, id
+      ]);
+
+      return this.getQuotationById(id);
+    });
+  }
+
+  /**
+   * Delete a draft quotation
+   */
+  deleteQuotation(id) {
+    const existing = this.getQuotationById(id);
+    if (!existing) {
+      throw new Error(`Quotation with ID ${id} not found.`);
+    }
+
+    if (existing.status !== 'DRAFT') {
+      throw new Error(`Cannot delete quotation ${id} with status "${existing.status}". Only DRAFT quotations can be deleted.`);
+    }
+
+    return this.db.transaction(() => {
+      this.db.run('DELETE FROM quotation_items WHERE quotation_id = ?;', [id]);
+      this.db.run('DELETE FROM quotations WHERE id = ?;', [id]);
+      return { success: true, deletedId: id };
+    });
+  }
+
+  /**
    * Generate official client-ready printable HTML document with corporate letterhead,
    * Schedule A specifications, Schedule B items, payment milestones, and dynamic watermark.
    */
