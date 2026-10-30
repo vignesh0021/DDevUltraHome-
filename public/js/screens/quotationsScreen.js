@@ -6,6 +6,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { printHtml, handoffFile, textToPdf } from '../printDoc.js';
 
 export const QuotationsScreen = {
   async render(container) {
@@ -298,12 +299,12 @@ export const QuotationsScreen = {
       await this.populateDropdowns(container);
       itemsTbody.innerHTML = '';
       this.addLineItem(itemsTbody, {
-        description: 'Ground Floor Built-up Area (723 sqft @ ₹2300/sqft)',
+        description: '',
         category: 'CIVIL',
         unit: 'sqft',
-        quantity: 723,
-        unitRate: 2300,
-        totalPrice: 1662900
+        quantity: 0,
+        unitRate: 0,
+        totalPrice: 0
       });
       this.recalculateTotals(container);
       modal.style.display = 'flex';
@@ -312,33 +313,69 @@ export const QuotationsScreen = {
     container.querySelector('#btn-cancel-quote')?.addEventListener('click', () => { modal.style.display = 'none'; });
     container.querySelector('#btn-cancel-quote-2')?.addEventListener('click', () => { modal.style.display = 'none'; });
 
-    // Print Modal Controls
+    // Print Modal Controls (Do not call print inside hidden iframe in Android WebView)
     container.querySelector('#btn-close-print')?.addEventListener('click', () => { printModal.style.display = 'none'; });
     container.querySelector('#btn-print-frame')?.addEventListener('click', () => {
-      const iframe = container.querySelector('#iframe-quotation-print');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.print();
+      if (this.currentPrintHtml) {
+        printHtml(this.currentPrintHtml);
+      } else {
+        const iframe = container.querySelector('#iframe-quotation-print');
+        if (iframe && iframe.contentDocument && iframe.contentDocument.body) {
+          printHtml(iframe.contentDocument.body.innerHTML);
+        }
       }
     });
 
     container.querySelector('#btn-share-quote')?.addEventListener('click', async () => {
       const quote = this.activeQuotation;
       const title = quote?.title || 'D DEV ULTRA HOMES Construction Proposal';
-      const total = quote ? `₹${(quote.total_amount || 0).toLocaleString('en-IN')}` : '';
-      const shareText = `*${title}*\nQuotation & Civil Engineering Estimate from *D DEV ULTRA HOMES* ("Building your dreams").\nTotal Value: ${total}\n\nIncludes Schedule A materials specification & Schedule B milestone stages. Contact us for contract booking!`;
+      const total = quote ? `₹${(parseFloat(quote.total_amount) || 0).toLocaleString('en-IN')}` : '₹0.00';
 
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title,
-            text: shareText
-          });
-        } catch (err) {
-          // User cancelled share
-        }
-      } else {
-        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-        window.open(waUrl, '_blank');
+      const items = quote?.items || [];
+      const lines = [
+        '================================================================',
+        '                      D DEV ULTRA HOMES                         ',
+        '                    Building your dreams                        ',
+        '      6a MGR Nagar, 2nd Cross Street, Velachery, Chennai        ',
+        '================================================================',
+        '',
+        `OFFICIAL ESTIMATE & PROPOSAL: ${quote?.quotation_number || 'QUO'} (Rev ${quote?.revision_number || 0})`,
+        `Date: ${new Date().toISOString().split('T')[0]}`,
+        `Client: ${quote?.client_name || 'Direct Client'}`,
+        `Project: ${quote?.project_name || quote?.title || 'Construction Estimate'}`,
+        `Proposal: ${title}`,
+        `Total Value: ${total}`,
+        '',
+        '----------------------------------------------------------------',
+        'ITEMIZED SCOPE OF WORK & SPECIFICATIONS (SCHEDULE A & B)',
+        '----------------------------------------------------------------',
+        ...(items.length > 0 ? items.map((itm, idx) => 
+          `${(idx + 1).toString().padStart(2, '0')}. ${itm.description || 'Civil Works'} [${itm.category || 'CIVIL'}] - ${itm.quantity || 0} ${itm.unit || 'sqft'} @ Rs.${itm.unitRate || 0} = Rs.${itm.totalPrice || 0}`
+        ) : ['1. Standard civil specifications and built-up area as per architectural drawings']),
+        '',
+        '----------------------------------------------------------------',
+        `Subtotal: Rs.${(parseFloat(quote?.subtotal || quote?.total_amount) || 0).toLocaleString('en-IN')}`,
+        `Tax / GST: Rs.${(parseFloat(quote?.tax_amount) || 0).toLocaleString('en-IN')}`,
+        `GRAND TOTAL: ${total}`,
+        '----------------------------------------------------------------',
+        '',
+        'TERMS & CONDITIONS:',
+        '1. 8-Stage milestone payment schedule as per Schedule B terms.',
+        '2. Advance amount is an unearned liability deposit until stage certification.',
+        '3. Electricity connection & water charges to be borne by client.',
+        '4. Quotation valid for 30 days from date of issue.',
+        '',
+        '',
+        'Authorized Builder Signatory            Client / Owner Signature',
+        '----------------------------            ------------------------'
+      ];
+
+      try {
+        const pdfBlob = textToPdf(lines);
+        const filename = `${quote?.quotation_number || 'Quotation'}.pdf`;
+        await handoffFile(filename, pdfBlob);
+      } catch (err) {
+        alert('Failed to generate or share PDF: ' + err.message);
       }
     });
 
@@ -530,12 +567,8 @@ export const QuotationsScreen = {
       prjSel.innerHTML = '<option value="">-- No Linked Project (Draft Estimate) --</option>' + 
         projects.map(p => `<option value="${p.id}">${p.name} (${p.project_code || 'PRJ'})</option>`).join('');
 
-      // Auto-select Kundrathur if present
-      const kunClient = clients.find(c => c.name.includes('Thiumani'));
-      if (kunClient) cliSel.value = kunClient.id;
-
-      const kunProject = projects.find(p => p.name.includes('Kundrathur'));
-      if (kunProject) prjSel.value = kunProject.id;
+      if (clients.length > 0) cliSel.value = clients[0].id;
+      if (projects.length > 0) prjSel.value = projects[0].id;
     } catch (e) {
       console.warn('Dropdown populate error:', e.message);
     }
@@ -549,6 +582,7 @@ export const QuotationsScreen = {
     try {
       const res = await BusinessApi.request(`/quotations/${qId}/html`);
       const html = res.html || '';
+      this.currentPrintHtml = html;
 
       iframe.srcdoc = html;
       printModal.style.display = 'flex';

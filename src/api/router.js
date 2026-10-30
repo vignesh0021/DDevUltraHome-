@@ -780,6 +780,62 @@ export class BusinessApiRouter {
       return { status: 200, data: { success: true, company } };
     }
 
+    if (route.startsWith('/settings/accounts/') && method === 'PUT') {
+      const id = route.replace('/settings/accounts/', '').trim();
+      if (!id) {
+        return { status: 404, data: { success: false, error: 'Account ID is required' } };
+      }
+
+      const existing = this.db.queryOne('SELECT * FROM financial_accounts WHERE id = ?;', [id]);
+      if (!existing) {
+        return { status: 404, data: { success: false, error: `Account ${id} not found` } };
+      }
+
+      const { account_name, account_type, bank_name, account_number, branch_ifsc, current_balance, is_active } = body || {};
+
+      if (!account_name || !account_name.trim()) {
+        return { status: 400, data: { success: false, error: 'Account name cannot be blank' } };
+      }
+
+      let bal = existing.current_balance;
+      if (current_balance !== undefined) {
+        bal = parseFloat(current_balance);
+        if (isNaN(bal) || bal < 0) {
+          return { status: 400, data: { success: false, error: 'Current balance must be a non-negative number' } };
+        }
+      }
+
+      const ifsc = branch_ifsc ? branch_ifsc.trim().toUpperCase() : null;
+      if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+        return { status: 400, data: { success: false, error: 'Invalid IFSC code format (must match ^[A-Z]{4}0[A-Z0-9]{6}$)' } };
+      }
+
+      this.db.run(`
+        UPDATE financial_accounts
+        SET account_name = ?,
+            account_type = ?,
+            bank_name = ?,
+            account_number = ?,
+            branch_ifsc = ?,
+            current_balance = ?,
+            is_active = ?,
+            updated_at = datetime('now')
+        WHERE id = ?;
+      `, [
+        account_name.trim(),
+        account_type || existing.account_type,
+        bank_name ? bank_name.trim() : null,
+        account_number ? account_number.trim() : null,
+        ifsc,
+        bal,
+        is_active !== undefined ? (is_active ? 1 : 0) : existing.is_active,
+        id
+      ]);
+
+      const updated = this.db.queryOne('SELECT * FROM financial_accounts WHERE id = ?;', [id]);
+      return { status: 200, data: { success: true, account: updated } };
+    }
+
     return { status: 404, data: { success: false, error: `Route not found: ${method} ${pathname}` } };
   }
 }

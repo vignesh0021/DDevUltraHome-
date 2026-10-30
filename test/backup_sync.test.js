@@ -137,4 +137,27 @@ describe('DDevUltraHome Backup & Cloud Synchronization Service', () => {
     assert.equal(gdriveState.sync_status, 'SUCCESS');
     assert.ok(gdriveState.last_synced_at);
   });
+
+  test('rule: restoreFromSnapshot rejects tampered dataHash and accepts valid/legacy snapshots', () => {
+    const snapshot = syncService.generateBackupSnapshot();
+    assert.ok(snapshot.payload.dataHash, 'Payload includes dataHash');
+
+    // 1. Tampered payload with corrupted hash must throw Error
+    const tamperedPayload = JSON.parse(JSON.stringify(snapshot.payload));
+    tamperedPayload.dataHash = '0000000000000000000000000000000000000000000000000000000000000000';
+
+    assert.throws(() => {
+      syncService.restoreFromSnapshot(tamperedPayload);
+    }, /Integrity check failed: Data hash mismatch/);
+
+    // 2. Untampered payload with correct hash succeeds
+    const validRestore = syncService.restoreFromSnapshot(snapshot.payload);
+    assert.ok(validRestore.success);
+
+    // 3. Legacy snapshot with no dataHash succeeds (backward compatibility)
+    const legacyPayload = JSON.parse(JSON.stringify(snapshot.payload));
+    delete legacyPayload.dataHash;
+    const legacyRestore = syncService.restoreFromSnapshot(legacyPayload);
+    assert.ok(legacyRestore.success);
+  });
 });

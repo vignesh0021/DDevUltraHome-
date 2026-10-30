@@ -114,4 +114,52 @@ describe('DDevUltraHome Business API Router Endpoints', () => {
     assert.ok(res.data.dataHash.length === 64);
     assert.equal(res.data.summary.tableCounts.company_settings, 1);
   });
+
+  test('PUT /api/business/settings/accounts/:id updates bank account details and validates inputs', async () => {
+    // 1. Successful update with valid IFSC
+    const updateRes = await router.handle('/api/business/settings/accounts/acc-hdfc-current', 'PUT', {
+      account_name: 'HDFC Corporate Current A/C',
+      account_type: 'BANK',
+      bank_name: 'HDFC Bank Ltd',
+      account_number: '50200012345678',
+      branch_ifsc: 'HDFC0001234',
+      current_balance: 75000.50
+    });
+
+    assert.equal(updateRes.status, 200);
+    assert.equal(updateRes.data.success, true);
+    assert.equal(updateRes.data.account.account_name, 'HDFC Corporate Current A/C');
+    assert.equal(updateRes.data.account.branch_ifsc, 'HDFC0001234');
+    assert.equal(updateRes.data.account.current_balance, 75000.50);
+
+    // 2. Reject empty account name
+    const emptyNameRes = await router.handle('/api/business/settings/accounts/acc-hdfc-current', 'PUT', {
+      account_name: '',
+      current_balance: 1000
+    });
+    assert.equal(emptyNameRes.status, 400);
+    assert.ok(emptyNameRes.data.error.includes('Account name cannot be blank'));
+
+    // 3. Reject negative balance
+    const negBalRes = await router.handle('/api/business/settings/accounts/acc-hdfc-current', 'PUT', {
+      account_name: 'Valid Name',
+      current_balance: -500
+    });
+    assert.equal(negBalRes.status, 400);
+    assert.ok(negBalRes.data.error.includes('non-negative'));
+
+    // 4. Reject invalid IFSC
+    const badIfscRes = await router.handle('/api/business/settings/accounts/acc-hdfc-current', 'PUT', {
+      account_name: 'Valid Name',
+      branch_ifsc: 'INVALID123'
+    });
+    assert.equal(badIfscRes.status, 400);
+    assert.ok(badIfscRes.data.error.includes('Invalid IFSC'));
+
+    // 5. 404 for unknown account
+    const notFoundRes = await router.handle('/api/business/settings/accounts/nonexistent-id', 'PUT', {
+      account_name: 'Test Account'
+    });
+    assert.equal(notFoundRes.status, 404);
+  });
 });

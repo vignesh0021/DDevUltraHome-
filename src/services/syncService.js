@@ -80,6 +80,7 @@ export class SyncService {
 
     const serialized = JSON.stringify(payload);
     const dataHash = createHash('sha256').update(serialized).digest('hex');
+    payload.dataHash = dataHash;
 
     // Update local snapshot state in sync_state table
     this._recordSyncState({
@@ -153,6 +154,14 @@ export class SyncService {
 
     if (payload.meta.app !== 'DDevUltraHome') {
       throw new Error(`Incompatible backup source app: "${payload.meta.app}". Expected "DDevUltraHome".`);
+    }
+
+    if (payload.dataHash) {
+      const stableBody = JSON.stringify({ meta: payload.meta, data: payload.data });
+      const computedHash = createHash('sha256').update(stableBody).digest('hex');
+      if (computedHash !== payload.dataHash) {
+        throw new Error('Integrity check failed: Data hash mismatch! Snapshot may be corrupted or modified.');
+      }
     }
 
     if (dryRun) {

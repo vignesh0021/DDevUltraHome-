@@ -15,8 +15,14 @@ export const DashboardScreen = {
     `;
 
     try {
-      const res = await BusinessApi.request('/dashboard/summary');
-      const d = res.dashboard || {};
+      const [summaryRes, receiptsRes, expensesRes] = await Promise.all([
+        BusinessApi.request('/dashboard/summary'),
+        BusinessApi.request('/income/receipts'),
+        BusinessApi.request('/expenses')
+      ]);
+      const d = summaryRes.dashboard || {};
+      const receipts = receiptsRes.receipts || [];
+      const expenses = expensesRes.expenses || [];
 
       const formatInr = (amt) => {
         return '₹' + (amt || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -69,6 +75,63 @@ export const DashboardScreen = {
               </span>
               <span class="kpi-amount" style="color: var(--brand-navy-900);">${formatInr(d.netOperatingCashflow)}</span>
               <span class="kpi-subtext">Earned Revenue - Expenses</span>
+            </div>
+          </div>
+
+          <!-- Interactive Cash Flow Ring Breakdown (Under KPI Grid) -->
+          <div id="dashboard-cash-ring-card" style="margin: 0 16px 14px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 16px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <div style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900);">
+                  💫 Cash Flow Ring
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  Real receipts vs. expenses &amp; category breakdown
+                </div>
+              </div>
+              
+              <!-- Timeframe switchers: Day, Month, Year -->
+              <div style="display: flex; gap: 4px; background: var(--bg-card-subtle); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+                <button type="button" class="btn-timeframe" data-period="DAY" style="border: none; background: transparent; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; color: var(--text-secondary);">Day</button>
+                <button type="button" class="btn-timeframe active" data-period="MONTH" style="border: none; background: var(--brand-navy-900); color: white; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer;">Month</button>
+                <button type="button" class="btn-timeframe" data-period="YEAR" style="border: none; background: transparent; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; color: var(--text-secondary);">Year</button>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-around; gap: 16px; flex-wrap: wrap;">
+              <!-- SVG Donut Cash Ring -->
+              <div style="position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center;">
+                <svg id="svg-cash-ring" width="140" height="140" viewBox="0 0 140 140">
+                  <circle cx="70" cy="70" r="50" fill="none" stroke="var(--border-light)" stroke-width="14" />
+                </svg>
+                <div style="position: absolute; text-align: center; pointer-events: none;">
+                  <div style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Net Cash</div>
+                  <div id="ring-center-val" style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900);">₹0</div>
+                </div>
+              </div>
+
+              <!-- Metrics & Category Breakdown -->
+              <div style="flex: 1; min-width: 170px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border-light);">
+                  <span style="font-size: 12px; font-weight: 700; color: #10B981; display: flex; align-items: center; gap: 5px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Received
+                  </span>
+                  <strong id="ring-total-received" style="font-size: 13px; color: var(--brand-navy-900);">₹0.00</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border-light);">
+                  <span style="font-size: 12px; font-weight: 700; color: #EF4444; display: flex; align-items: center; gap: 5px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span> Spent
+                  </span>
+                  <strong id="ring-total-spent" style="font-size: 13px; color: var(--brand-navy-900);">₹0.00</strong>
+                </div>
+
+                <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">
+                  Expense Category Share:
+                </div>
+                <div id="ring-category-list" style="display: flex; flex-direction: column; gap: 4px; font-size: 11px;">
+                  <div style="color: var(--text-muted); padding: 4px 0;">Loading transactions...</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -275,8 +338,166 @@ export const DashboardScreen = {
         window.appNavigate?.('documents');
       });
 
+      // 6. Initialize Interactive Cash Flow Ring
+      this.initCashRing(container, receipts, expenses);
+
     } catch (e) {
       container.innerHTML = `<div style="padding: 20px; color: var(--color-danger);">Failed to load dashboard: ${e.message}</div>`;
     }
+  },
+
+  initCashRing(container, receipts = [], expenses = []) {
+    let currentPeriod = 'MONTH';
+
+    const getPeriodDates = () => {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      return {
+        today: `${yyyy}-${mm}-${dd}`,
+        monthPrefix: `${yyyy}-${mm}`,
+        yearPrefix: `${yyyy}`
+      };
+    };
+
+    const updateRing = (period) => {
+      currentPeriod = period;
+      const { today, monthPrefix, yearPrefix } = getPeriodDates();
+
+      // Filter transactions by period
+      const periodReceipts = receipts.filter(r => {
+        const d = r.receipt_date || '';
+        if (period === 'DAY') return d === today;
+        if (period === 'MONTH') return d.startsWith(monthPrefix);
+        if (period === 'YEAR') return d.startsWith(yearPrefix);
+        return true;
+      });
+
+      const periodExpenses = expenses.filter(e => {
+        const d = e.expense_date || '';
+        if (period === 'DAY') return d === today;
+        if (period === 'MONTH') return d.startsWith(monthPrefix);
+        if (period === 'YEAR') return d.startsWith(yearPrefix);
+        return true;
+      });
+
+      const totalReceived = periodReceipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      const totalSpent = periodExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      const netCash = totalReceived - totalSpent;
+
+      // Group expenses by category
+      const catTotals = {};
+      for (const e of periodExpenses) {
+        const cat = e.category || 'OTHER';
+        catTotals[cat] = (catTotals[cat] || 0) + (parseFloat(e.amount) || 0);
+      }
+
+      // Update Center text and numbers
+      const centerVal = container.querySelector('#ring-center-val');
+      const recVal = container.querySelector('#ring-total-received');
+      const spentVal = container.querySelector('#ring-total-spent');
+      const svg = container.querySelector('#svg-cash-ring');
+      const catList = container.querySelector('#ring-category-list');
+
+      if (centerVal) {
+        const sign = netCash < 0 ? '-' : '';
+        centerVal.textContent = `${sign}₹${Math.abs(Math.round(netCash)).toLocaleString('en-IN')}`;
+        centerVal.style.color = netCash >= 0 ? 'var(--brand-navy-900)' : '#EF4444';
+      }
+      if (recVal) recVal.textContent = '₹' + totalReceived.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (spentVal) spentVal.textContent = '₹' + totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // Draw SVG Ring
+      const r = 50;
+      const C = 2 * Math.PI * r;
+      const totalFlow = totalReceived + totalSpent;
+
+      const categoryColors = {
+        LABOUR: '#3B82F6',
+        SITE_PURCHASES: '#F59E0B',
+        EQUIPMENT_RENTAL: '#8B5CF6',
+        SUB_CONTRACT: '#EC4899',
+        OTHER: '#64748B'
+      };
+
+      if (totalFlow === 0) {
+        // Empty Ring
+        svg.innerHTML = `
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--border-light)" stroke-width="14" />
+        `;
+        if (catList) catList.innerHTML = '<div style="color: var(--text-muted); font-size: 11px; padding: 4px 0;">No cash flow in this period (₹0).</div>';
+      } else {
+        // Multi-segment donut
+        let currentOffset = 0;
+        let pathsHtml = `
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--border-light)" stroke-width="14" opacity="0.3" />
+        `;
+
+        // 1. Received Arc (Green)
+        if (totalReceived > 0) {
+          const recDash = (totalReceived / totalFlow) * C;
+          pathsHtml += `
+            <circle cx="70" cy="70" r="${r}" fill="none" stroke="#10B981" stroke-width="14"
+              stroke-dasharray="${recDash} ${C}" stroke-dashoffset="${-currentOffset}"
+              transform="rotate(-90 70 70)" stroke-linecap="butt" />
+          `;
+          currentOffset += recDash;
+        }
+
+        // 2. Expense Category Arcs
+        const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+        for (const [cat, amt] of sortedCats) {
+          const catDash = (amt / totalFlow) * C;
+          const color = categoryColors[cat] || '#64748B';
+          pathsHtml += `
+            <circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="14"
+              stroke-dasharray="${catDash} ${C}" stroke-dashoffset="${-currentOffset}"
+              transform="rotate(-90 70 70)" stroke-linecap="butt" />
+          `;
+          currentOffset += catDash;
+        }
+
+        svg.innerHTML = pathsHtml;
+
+        // Render Category breakdown list
+        if (sortedCats.length === 0) {
+          if (catList) catList.innerHTML = '<div style="color: var(--text-muted); font-size: 11px;">Zero expenses recorded.</div>';
+        } else {
+          if (catList) {
+            catList.innerHTML = sortedCats.map(([cat, amt]) => {
+              const share = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
+              const col = categoryColors[cat] || '#64748B';
+              return `
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                  <span style="display: flex; align-items: center; gap: 4px; color: var(--text-secondary);">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: ${col}; display: inline-block;"></span>
+                    ${cat}
+                  </span>
+                  <span style="font-weight: 700; color: var(--brand-navy-900);">
+                    ₹${amt.toLocaleString('en-IN')} <span style="font-size: 10px; color: var(--text-muted);">(${share}%)</span>
+                  </span>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+      }
+
+      // Update button active states
+      container.querySelectorAll('.btn-timeframe').forEach(b => {
+        const isCurrent = b.dataset.period === period;
+        b.style.background = isCurrent ? 'var(--brand-navy-900)' : 'transparent';
+        b.style.color = isCurrent ? '#FFFFFF' : 'var(--text-secondary)';
+      });
+    };
+
+    container.querySelectorAll('.btn-timeframe').forEach(b => {
+      b.addEventListener('click', () => {
+        updateRing(b.dataset.period);
+      });
+    });
+
+    updateRing(currentPeriod);
   }
 };

@@ -155,14 +155,73 @@ export const SettingsScreen = {
           </form>
         </div>
       </div>
+
+      <!-- Edit Financial Account Details Modal -->
+      <div id="modal-edit-account" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 350; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: var(--bg-card); border-radius: var(--radius-lg); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px; box-shadow: var(--shadow-lg);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Financial Account</h3>
+            <button type="button" id="btn-close-edit-account" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
+          </div>
+
+          <form id="form-edit-account">
+            <input type="hidden" id="inp-edit-acc-id">
+
+            <div class="form-group">
+              <label class="form-label">Account Name *</label>
+              <input type="text" id="inp-edit-acc-name" class="form-control" required placeholder="e.g. HDFC Construction Main Current A/C">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Account Type *</label>
+                <select id="sel-edit-acc-type" class="form-control">
+                  <option value="BANK">BANK</option>
+                  <option value="CASH">CASH</option>
+                  <option value="PETTY_CASH">PETTY_CASH</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bank Name</label>
+                <input type="text" id="inp-edit-acc-bank" class="form-control" placeholder="e.g. HDFC Bank">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group">
+                <label class="form-label">Account Number</label>
+                <input type="text" id="inp-edit-acc-number" class="form-control" placeholder="e.g. 50200012345678">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Branch IFSC</label>
+                <input type="text" id="inp-edit-acc-ifsc" class="form-control" placeholder="e.g. HDFC0001234" maxlength="11" style="text-transform: uppercase;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Current Balance (₹) *</label>
+              <input type="number" id="inp-edit-acc-balance" class="form-control" required step="0.01" min="0" placeholder="0.00">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+              <button type="button" id="btn-cancel-edit-account" class="btn-outline">Cancel</button>
+              <button type="submit" class="btn-primary" style="font-weight: 700;">
+                Save Account
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
 
     // Load dynamic company data and accounts
     let companyData = {};
+    let accountsData = [];
     try {
       const res = await BusinessApi.request('/settings/company');
       companyData = res.company || {};
       const accounts = res.accounts || [];
+      accountsData = accounts;
 
       if (companyData.company_name) {
         container.querySelector('#disp-company-name').textContent = companyData.company_name;
@@ -186,14 +245,44 @@ export const SettingsScreen = {
         accList.innerHTML = '<div style="color: var(--text-muted); padding: 8px 0;">No active financial accounts found.</div>';
       } else {
         accList.innerHTML = accounts.map(a => `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-card-subtle); border-radius: var(--radius-md);">
-            <div>
-              <strong style="color: var(--brand-navy-900);">${a.account_name}</strong>
-              <div style="font-size: 11px; color: var(--text-muted);">${a.bank_name || a.account_type} • Balance: ₹${(a.current_balance || 0).toLocaleString('en-IN')}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-card-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-light); margin-bottom: 6px;">
+            <div style="flex: 1; padding-right: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <strong style="color: var(--brand-navy-900); font-size: 13px;">${a.account_name}</strong>
+                <span class="badge-status badge-active" style="font-size: 10px;">${a.account_type}</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
+                ${a.bank_name ? `${a.bank_name} • ` : ''}Acc: ${a.account_number || 'N/A'} • IFSC: ${a.branch_ifsc || 'N/A'}
+              </div>
+              <div style="font-size: 12px; font-weight: 800; color: #10B981; margin-top: 3px;">
+                Balance: ₹${(parseFloat(a.current_balance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
             </div>
-            <span class="badge-status badge-active">${a.account_type}</span>
+            <button type="button" class="btn-edit-account btn-outline" data-id="${a.id}" style="min-height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700; white-space: nowrap;">
+              ✏️ Edit
+            </button>
           </div>
         `).join('');
+
+        // Wire account edit buttons
+        accList.querySelectorAll('.btn-edit-account').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const accId = btn.getAttribute('data-id');
+            const acc = accountsData.find(a => a.id === accId);
+            if (!acc) return;
+
+            container.querySelector('#inp-edit-acc-id').value = acc.id;
+            container.querySelector('#inp-edit-acc-name').value = acc.account_name || '';
+            container.querySelector('#sel-edit-acc-type').value = acc.account_type || 'BANK';
+            container.querySelector('#inp-edit-acc-bank').value = acc.bank_name || '';
+            container.querySelector('#inp-edit-acc-number').value = acc.account_number || '';
+            container.querySelector('#inp-edit-acc-ifsc').value = acc.branch_ifsc || '';
+            container.querySelector('#inp-edit-acc-balance').value = acc.current_balance !== undefined ? acc.current_balance : 0;
+
+            const accModal = container.querySelector('#modal-edit-account');
+            accModal.style.display = 'flex';
+          });
+        });
       }
     } catch (e) {
       console.warn('Failed to load company settings from API:', e);
@@ -238,6 +327,58 @@ export const SettingsScreen = {
         this.render(container);
       } catch (err) {
         alert('Failed to update company profile: ' + err.message);
+      }
+    });
+
+    // Account Modal Controls
+    const accModal = container.querySelector('#modal-edit-account');
+    container.querySelector('#btn-close-edit-account')?.addEventListener('click', () => {
+      accModal.style.display = 'none';
+    });
+    container.querySelector('#btn-cancel-edit-account')?.addEventListener('click', () => {
+      accModal.style.display = 'none';
+    });
+
+    container.querySelector('#form-edit-account')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const accId = container.querySelector('#inp-edit-acc-id').value;
+      const name = container.querySelector('#inp-edit-acc-name').value.trim();
+      const type = container.querySelector('#sel-edit-acc-type').value;
+      const bank = container.querySelector('#inp-edit-acc-bank').value.trim();
+      const number = container.querySelector('#inp-edit-acc-number').value.trim();
+      const ifsc = container.querySelector('#inp-edit-acc-ifsc').value.trim().toUpperCase();
+      const balanceStr = container.querySelector('#inp-edit-acc-balance').value;
+      const balance = parseFloat(balanceStr);
+
+      if (!name) {
+        alert('Account name cannot be blank.');
+        return;
+      }
+      if (isNaN(balance) || balance < 0) {
+        alert('Current balance must be a non-negative number.');
+        return;
+      }
+      if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+        alert('Invalid IFSC code format! Must match ^[A-Z]{4}0[A-Z0-9]{6}$ (e.g. HDFC0001234)');
+        return;
+      }
+
+      const payload = {
+        account_name: name,
+        account_type: type,
+        bank_name: bank,
+        account_number: number,
+        branch_ifsc: ifsc,
+        current_balance: balance
+      };
+
+      try {
+        await BusinessApi.request(`/settings/accounts/${accId}`, 'PUT', payload);
+        alert('✅ Account updated successfully!');
+        accModal.style.display = 'none';
+        this.render(container);
+      } catch (err) {
+        alert('Failed to update account: ' + err.message);
       }
     });
 

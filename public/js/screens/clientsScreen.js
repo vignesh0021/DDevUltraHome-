@@ -207,6 +207,61 @@ export const ClientsScreen = {
   },
 
   async renderClientPortal(container, isRealClientRole) {
+    let client = null;
+    let clientProjects = [];
+    let milestones = [];
+
+    try {
+      const [cliRes, prjRes] = await Promise.all([
+        BusinessApi.request('/clients').catch(() => ({ clients: [] })),
+        BusinessApi.request('/projects').catch(() => ({ projects: [] }))
+      ]);
+      const clients = cliRes.clients || [];
+      const projects = prjRes.projects || [];
+
+      if (this.viewingPortalClientId) {
+        client = clients.find(c => c.id === this.viewingPortalClientId) || null;
+      } else {
+        const activeUser = BusinessApi.getActiveUser();
+        client = clients.find(c => c.id === activeUser?.client_id) || clients[0] || null;
+      }
+
+      if (client) {
+        clientProjects = projects.filter(p => p.client_id === client.id);
+        const primaryProjectId = clientProjects[0]?.id;
+        if (primaryProjectId) {
+          const mRes = await BusinessApi.request(`/milestones?project_id=${primaryProjectId}`).catch(() => ({ milestones: [] }));
+          milestones = mRes.milestones || [];
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load client portal data', err);
+    }
+
+    if (!client) {
+      container.innerHTML = `
+        <div style="padding: 24px; text-align: center;">
+          <h3 style="color: var(--brand-navy-900); margin-bottom: 8px;">No Client Selected</h3>
+          <p style="color: var(--text-muted); font-size: 13px;">There are no active client accounts to display.</p>
+          ${!isRealClientRole ? `
+            <button id="btn-exit-portal-preview" class="btn-primary" style="margin-top: 12px; padding: 6px 14px; font-size: 12px;">
+              ← Back to Client Directory
+            </button>
+          ` : ''}
+        </div>
+      `;
+      container.querySelector('#btn-exit-portal-preview')?.addEventListener('click', () => {
+        this.viewingPortalClientId = null;
+        this.render(container);
+      });
+      return;
+    }
+
+    const primaryPrj = clientProjects[0] || null;
+    const totalContract = clientProjects.reduce((sum, p) => sum + (parseFloat(p.contract_value) || 0), 0) || (parseFloat(client.total_contract_value) || 0);
+    const completedMilestones = milestones.filter(m => m.status === 'COMPLETED' || m.status === 'PAID');
+    const progressPct = milestones.length > 0 ? Math.round((completedMilestones.length / milestones.length) * 100) : 0;
+
     container.innerHTML = `
       <div style="padding: 16px;">
         <!-- Client Portal Navigation Bar -->
@@ -217,7 +272,7 @@ export const ClientsScreen = {
               <span style="font-size: 12px; color: var(--text-muted);">Confidential Access</span>
             </div>
             <h2 style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900); margin: 4px 0 0;">
-              Kundrathur Residence (G+1 Villa)
+              ${primaryPrj ? primaryPrj.name : client.name}
             </h2>
           </div>
           ${!isRealClientRole ? `
@@ -235,18 +290,18 @@ export const ClientsScreen = {
                 Owner / Client Account
               </div>
               <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">
-                Mr. Thiumani P.
+                ${client.name}
               </div>
               <div style="font-size: 12px; opacity: 0.85; margin-top: 4px;">
-                📍 Anakaputhur, Chennai - 600070 • Site: Kundrathur (G+1 Villa)
+                ${client.billing_address ? `📍 ${client.billing_address}` : ''} ${primaryPrj ? `• Site: ${primaryPrj.location || primaryPrj.name}` : ''}
               </div>
             </div>
             <div style="text-align: right;">
               <div style="font-size: 11px; opacity: 0.75; text-transform: uppercase;">Total Contract Value</div>
               <div style="font-size: 22px; font-weight: 800; color: #F59E0B; margin-top: 2px;">
-                ₹42,27,400
+                ₹${totalContract.toLocaleString('en-IN')}
               </div>
-              <div style="font-size: 10px; opacity: 0.85; margin-top: 2px;">CTR-KUN-2026-001 (04/04/2026)</div>
+              <div style="font-size: 10px; opacity: 0.85; margin-top: 2px;">${primaryPrj?.code || client.id || '-'}</div>
             </div>
           </div>
 
@@ -261,114 +316,45 @@ export const ClientsScreen = {
           </div>
         </div>
 
-        <!-- 8-Stage Milestone Progress Tracker -->
+        <!-- Milestone Progress Tracker -->
         <div style="background: white; border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div>
               <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--brand-navy-900);">
-                8-Stage Construction Milestone Schedule
+                Construction Milestone Schedule
               </h3>
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Official contract payment stages (Schedule B)
+                Official contract payment stages
               </div>
             </div>
-            <span class="badge-status badge-active">Stage 3 of 8 In Progress</span>
+            <span class="badge-status badge-active">${completedMilestones.length} of ${milestones.length} Stages Completed (${progressPct}%)</span>
           </div>
 
           <!-- Milestone Progress Bar -->
           <div style="background: #E2E8F0; border-radius: 6px; height: 10px; overflow: hidden; margin-bottom: 14px;">
-            <div style="background: var(--brand-gold-600); width: 33.11%; height: 100%; border-radius: 6px;"></div>
+            <div style="background: var(--brand-gold-600); width: ${progressPct}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
           </div>
 
           <!-- Milestones Items List -->
           <div id="client-milestones-list" style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-01: Mobilization Advance</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Agreement signing &amp; site preparation (18.92%)</div>
+            ${milestones.length === 0 ? `
+              <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
+                No milestone schedule created for this project yet.
               </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹8,00,000</div>
-                <span class="badge-status badge-verified" style="font-size: 10px;">Billed / Certified</span>
+            ` : milestones.map((m, idx) => `
+              <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-${String(idx + 1).padStart(2, '0')}: ${m.title || m.name || 'Stage'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">${m.description || ''}</div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹${(parseFloat(m.amount || m.target_amount) || 0).toLocaleString('en-IN')}</div>
+                  <span class="badge-status ${m.status === 'COMPLETED' || m.status === 'PAID' ? 'badge-verified' : m.status === 'IN_PROGRESS' ? 'badge-pending' : 'badge-neutral'}" style="font-size: 10px;">
+                    ${m.status || 'Scheduled'}
+                  </span>
+                </div>
               </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-02: GF Roof Level Brickwork</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">9" flyash chamber brick masonry &amp; lintels (14.19%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹6,00,000</div>
-                <span class="badge-status badge-verified" style="font-size: 10px;">Completed</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="color: #92400E; font-size: 12px;">MS-03: GF Roof Slab Concrete</strong>
-                <div style="font-size: 11px; color: #78350F;">5" RCC slab M20 concrete casting &amp; curing (16.56%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: #92400E;">₹7,00,000</div>
-                <span class="badge-status badge-pending" style="font-size: 10px;">In Progress</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-04: FF Roof Level Brickwork</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">First floor brick masonry up to roof level (14.19%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹6,00,000</div>
-                <span class="badge-status badge-neutral" style="font-size: 10px;">Not Started</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-05: FF Roof Slab Concrete</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">First floor roof slab &amp; staircase headroom (16.56%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹7,00,000</div>
-                <span class="badge-status badge-neutral" style="font-size: 10px;">Not Started</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-06: Outer &amp; Inner Plastering</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Internal CM 1:4 and external CM 1:5 plastering (11.83%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹5,00,000</div>
-                <span class="badge-status badge-neutral" style="font-size: 10px;">Not Started</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-07: Plumbing, Painting &amp; Electrical</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Orbit 3-phase wiring, Parryware &amp; Asian Paints (7.10%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹3,00,000</div>
-                <span class="badge-status badge-neutral" style="font-size: 10px;">Not Started</span>
-              </div>
-            </div>
-
-            <div style="padding: 10px; background: #F8FAFC; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; opacity: 0.7;">
-              <div>
-                <strong style="color: var(--brand-navy-900); font-size: 12px;">MS-08: Handover &amp; Final Settlement</strong>
-                <div style="font-size: 11px; color: var(--text-muted);">Final snag clearance &amp; keys handover (0.65%)</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--brand-navy-900);">₹27,400</div>
-                <span class="badge-status badge-neutral" style="font-size: 10px;">Not Started</span>
-              </div>
-            </div>
+            `).join('')}
           </div>
         </div>
 
@@ -457,13 +443,13 @@ export const ClientsScreen = {
                   <span class="badge-status badge-active">Active</span>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Total Contract</div>
                   <div style="font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">
-                    ₹${(c.total_contract_value || 4227400.00).toLocaleString('en-IN')}
+                    ₹${(parseFloat(c.total_contract_value) || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-light); flex-wrap: wrap; gap: 8px;">
-                <span style="font-size: 12px; color: var(--text-secondary);">Projects: <strong>${c.project_count || 1}</strong></span>
+                <span style="font-size: 12px; color: var(--text-secondary);">Projects: <strong>${c.project_count !== undefined ? c.project_count : 0}</strong></span>
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button class="btn-preview-portal btn-gold" data-id="${c.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 700;">
                     🔍 Portal

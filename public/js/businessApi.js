@@ -3,6 +3,79 @@
  * Dual-Mode: Communicates with backend HTTP REST server or executes in-process offline
  */
 
+export function sha256Hex(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  const lengthProperty = 'length';
+  let i, j;
+  let result = '';
+  const words = [];
+  let hash = [];
+  const k = [];
+  let primeCounter = 0;
+  const isComposite = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = candidate * candidate; i < 312; i += candidate) {
+        isComposite[i] = true;
+      }
+      if (primeCounter < 8) {
+        hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+      }
+      k[primeCounter] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+      primeCounter++;
+    }
+  }
+
+  let utf8 = unescape(encodeURIComponent(ascii));
+  const utf8BitLength = utf8[lengthProperty] * 8;
+  for (i = 0; i < utf8[lengthProperty]; i++) {
+    words[i >> 2] |= (utf8.charCodeAt(i) & 0xff) << (24 - (i % 4) * 8);
+  }
+  words[utf8BitLength >> 5] |= 0x80 << (24 - (utf8BitLength % 32));
+  words[(((utf8BitLength + 64) >> 9) << 4) + 14] = Math.floor(utf8BitLength / maxWord);
+  words[(((utf8BitLength + 64) >> 9) << 4) + 15] = utf8BitLength & 0xffffffff;
+
+  for (j = 0; j < words[lengthProperty]; j += 16) {
+    const w = words.slice(j, j + 16);
+    const oldHash = hash.slice(0);
+    for (i = 0; i < 64; i++) {
+      const i2 = i + j;
+      const w15 = w[i - 15], w2 = w[i - 2];
+      const a = hash[0], e = hash[4];
+      const temp1 = hash[7]
+        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+        + ((e & hash[5]) ^ (~e & hash[6]))
+        + k[i]
+        + (w[i] = (i < 16) ? (w[i] | 0) : (
+            w[i - 16]
+            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+            + w[i - 7]
+            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+          ) | 0
+        );
+      const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+
+      hash = [(temp1 + temp2) | 0, a, hash[1], hash[2], (hash[3] + temp1) | 0, hash[4], hash[5], hash[6]];
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j >= 0; j--) {
+      const b = (hash[i] >> (8 * j)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
 export const BusinessApi = {
   activeUser: {
     id: 'usr-owner-1',
@@ -13,15 +86,19 @@ export const BusinessApi = {
 
   setActiveUser(user) {
     this.activeUser = user;
-    localStorage.setItem('ddev_active_user', JSON.stringify(user));
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ddev_active_user', JSON.stringify(user));
+    }
   },
 
   getActiveUser() {
-    const saved = localStorage.getItem('ddev_active_user');
-    if (saved) {
-      try {
-        this.activeUser = JSON.parse(saved);
-      } catch (e) {}
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('ddev_active_user');
+      if (saved) {
+        try {
+          this.activeUser = JSON.parse(saved);
+        } catch (e) {}
+      }
     }
     return this.activeUser;
   },
@@ -61,29 +138,65 @@ export const BusinessApi = {
     }
   },
 
+  /**
+   * Compute live dashboard figures strictly from stored accounts, receipts, and expenses.
+   * When data is empty, figures are strictly 0.
+   */
+  _dashboardFromBooks() {
+    const accounts = this._getOfflineAccounts();
+    const liquidCash = accounts
+      .filter(a => a.is_active !== 0)
+      .reduce((sum, a) => sum + (parseFloat(a.current_balance) || 0), 0);
+
+    const storedInvoices = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_supplier_invoices') : null;
+    const invoices = storedInvoices ? JSON.parse(storedInvoices) : [];
+    const accountsPayable = invoices
+      .filter(inv => inv.payment_status !== 'PAID' && inv.payment_status !== 'VOIDED')
+      .reduce((sum, inv) => sum + (parseFloat(inv.balance_amount) || 0), 0);
+
+    const receipts = this._getOfflineReceipts();
+    const unearnedAdvanceLiabilities = receipts
+      .filter(r => r.is_advance)
+      .reduce((sum, r) => sum + (parseFloat(r.unallocated_balance) || 0), 0);
+
+    const earnedRevenue = receipts
+      .reduce((sum, r) => sum + (r.is_advance ? (parseFloat(r.allocated_amount) || 0) : (parseFloat(r.amount) || 0)), 0);
+
+    const expenses = this._getOfflineExpenses();
+    const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+    const netOperatingCashflow = earnedRevenue - totalExpenses;
+
+    const projects = this._getOfflineProjects();
+    const clients = this._getOfflineClients();
+
+    const storedReviews = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_ocr_reviews') : null;
+    const reviews = storedReviews ? JSON.parse(storedReviews) : [];
+    const pendingOcrCount = reviews.filter(r => r.verification_status === 'UNVERIFIED').length;
+
+    const company = this._getOfflineCompany();
+
+    return {
+      success: true,
+      dashboard: {
+        companyName: company.company_name || 'D DEV ULTRA HOMES',
+        tagline: company.tagline || 'Building your dreams',
+        liquidCash: Math.round(liquidCash * 100) / 100,
+        totalLiquidFunds: Math.round(liquidCash * 100) / 100,
+        accountsPayable: Math.round(accountsPayable * 100) / 100,
+        unearnedAdvanceLiabilities: Math.round(unearnedAdvanceLiabilities * 100) / 100,
+        netOperatingCashflow: Math.round(netOperatingCashflow * 100) / 100,
+        activeProjects: projects.filter(p => p.status === 'ACTIVE').length,
+        totalClients: clients.length,
+        pendingOcrCount
+      }
+    };
+  },
+
   // Fallback offline responses for APK when backend server is detached
   _offlineFallback(endpoint, method, data) {
     if (endpoint === '/dashboard/summary') {
-      const projects = this._getOfflineProjects();
-      const clients = this._getOfflineClients();
-      const suppliers = this._getOfflineSuppliers();
-      const dues = suppliers.reduce((sum, s) => sum + (parseFloat(s.outstanding_dues) || 0), 0);
-
-      return {
-        success: true,
-        dashboard: {
-          companyName: 'D DEV ULTRA HOMES',
-          tagline: 'Building your dreams',
-          liquidCash: 5250000.00,
-          totalLiquidFunds: 5250000.00,
-          accountsPayable: dues,
-          unearnedAdvanceLiabilities: 450000.00,
-          netOperatingCashflow: 4615000.00,
-          activeProjects: projects.filter(p => p.status === 'ACTIVE').length,
-          totalClients: clients.length,
-          pendingOcrCount: 1
-        }
-      };
+      return this._dashboardFromBooks();
     }
 
     // Projects CRUD
@@ -98,7 +211,7 @@ export const BusinessApi = {
         project_code: data.project_code || `PRJ-${Date.now().toString().slice(-4)}`,
         name: data.name,
         client_name: data.client_name || 'Assigned Client',
-        client_phone: data.client_phone || '+91 98400 99887',
+        client_phone: data.client_phone || '',
         site_address: data.site_address || '',
         district: data.district || 'Chennai',
         contract_value: parseFloat(data.contract_value) || 0,
@@ -107,7 +220,9 @@ export const BusinessApi = {
         status: 'ACTIVE'
       };
       projects.unshift(newPrj);
-      localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      }
       return { status: 201, success: true, project: newPrj };
     }
 
@@ -117,7 +232,9 @@ export const BusinessApi = {
       const prj = projects.find(p => p.id === prjId);
       if (prj) {
         Object.assign(prj, data);
-        localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+        }
         return { success: true, project: prj };
       }
       return { success: false, error: 'Project not found' };
@@ -126,24 +243,36 @@ export const BusinessApi = {
     if (endpoint.startsWith('/projects/') && method === 'DELETE') {
       const prjId = endpoint.replace('/projects/', '');
       const projects = this._getOfflineProjects().filter(p => p.id !== prjId);
-      localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+      }
       return { success: true, archivedId: prjId };
     }
 
     if (endpoint.startsWith('/projects/') && method === 'GET') {
       const prjId = endpoint.replace('/projects/', '');
       const projects = this._getOfflineProjects();
-      const prj = projects.find(p => p.id === prjId) || projects[0] || { id: prjId, name: 'Project' };
+      const prj = projects.find(p => p.id === prjId) || { id: prjId, name: 'Project' };
+
+      const receipts = this._getOfflineReceipts().filter(r => r.project_id === prjId);
+      const expenses = this._getOfflineExpenses().filter(e => e.project_id === prjId);
+      const totalCashReceived = receipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      const earnedRevenue = receipts.reduce((sum, r) => sum + (r.is_advance ? (parseFloat(r.allocated_amount) || 0) : (parseFloat(r.amount) || 0)), 0);
+      const unearnedAdvanceLiability = receipts.filter(r => r.is_advance).reduce((sum, r) => sum + (parseFloat(r.unallocated_balance) || 0), 0);
+      const totalIncurredCost = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      const operatingProfit = earnedRevenue - totalIncurredCost;
+      const profitMarginPercentage = earnedRevenue > 0 ? Math.round((operatingProfit / earnedRevenue) * 10000) / 100 : 0;
+
       return {
         success: true,
         project: prj,
         financials: {
-          totalCashReceived: 800000.00,
-          earnedRevenue: 600000.00,
-          unearnedAdvanceLiability: 200000.00,
-          totalIncurredCost: 515000.00,
-          operatingProfit: 85000.00,
-          profitMarginPercentage: 14.17
+          totalCashReceived,
+          earnedRevenue,
+          unearnedAdvanceLiability,
+          totalIncurredCost,
+          operatingProfit,
+          profitMarginPercentage
         },
         milestones: this._getOfflineMilestones(prjId),
         recentProgress: this._getOfflineProgress(prjId)
@@ -170,7 +299,9 @@ export const BusinessApi = {
         total_contract_value: 0
       };
       clients.unshift(newCli);
-      localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      }
       return { status: 201, success: true, client: newCli };
     }
 
@@ -180,7 +311,9 @@ export const BusinessApi = {
       const cli = clients.find(c => c.id === cliId);
       if (cli) {
         Object.assign(cli, data);
-        localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+        }
         return { success: true, client: cli };
       }
       return { success: false, error: 'Client not found' };
@@ -189,17 +322,16 @@ export const BusinessApi = {
     if (endpoint.startsWith('/clients/') && method === 'DELETE') {
       const cliId = endpoint.replace('/clients/', '');
       const clients = this._getOfflineClients().filter(c => c.id !== cliId);
-      localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_clients', JSON.stringify(clients));
+      }
       return { success: true, archivedId: cliId };
     }
 
+    // Suppliers CRUD
     if (endpoint === '/suppliers') {
-      const stored = localStorage.getItem('ddev_offline_suppliers');
-      let suppliers = stored ? JSON.parse(stored) : [
-        { id: 'sup-1', name: 'Chennai TMT Traders (Fe550D Steel)', category: 'STEEL', contact_person: 'Mr. Balan', phone: '+91 94440 99887', outstanding_dues: 150000.00 },
-        { id: 'sup-2', name: 'Dalmia & UltraTech Depot Velachery', category: 'CEMENT', contact_person: 'Mr. Senthil', phone: '+91 98402 11223', outstanding_dues: 35000.00 },
-        { id: 'sup-3', name: 'Kag & Anuj Tiles Gallery', category: 'TILES_SANITARY', contact_person: 'Mr. Murugan', phone: '+91 94450 33445', outstanding_dues: 45000.00 }
-      ];
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_suppliers') : null;
+      let suppliers = stored ? JSON.parse(stored) : [];
 
       if (method === 'POST' && data) {
         const newSup = {
@@ -212,7 +344,9 @@ export const BusinessApi = {
           outstanding_dues: 0.00
         };
         suppliers.push(newSup);
-        localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        }
         return { success: true, supplier: newSup };
       }
 
@@ -220,51 +354,8 @@ export const BusinessApi = {
     }
 
     if (endpoint === '/suppliers/invoices') {
-      const stored = localStorage.getItem('ddev_offline_supplier_invoices');
-      let invoices = stored ? JSON.parse(stored) : [
-        {
-          id: 'sinv-01',
-          invoice_number: 'INV-TMT-9920',
-          supplier_id: 'sup-1',
-          supplier_name: 'Chennai TMT Traders (Fe550D Steel)',
-          project_id: 'prj-kun-01',
-          project_name: 'Kundrathur Residence (G+1 Villa)',
-          invoice_date: '2026-10-10',
-          total_amount: 150000.00,
-          paid_amount: 0.00,
-          balance_amount: 150000.00,
-          payment_status: 'UNPAID',
-          notes: 'Schedule A Fe550D TMT Steel 16mm & 12mm delivery'
-        },
-        {
-          id: 'sinv-02',
-          invoice_number: 'INV-DLM-401',
-          supplier_id: 'sup-2',
-          supplier_name: 'Dalmia & UltraTech Depot Velachery',
-          project_id: 'prj-kun-01',
-          project_name: 'Kundrathur Residence (G+1 Villa)',
-          invoice_date: '2026-10-15',
-          total_amount: 35000.00,
-          paid_amount: 0.00,
-          balance_amount: 35000.00,
-          payment_status: 'UNPAID',
-          notes: 'UltraTech OPC 53 Grade Cement 70 bags'
-        },
-        {
-          id: 'sinv-03',
-          invoice_number: 'INV-KAG-112',
-          supplier_id: 'sup-3',
-          supplier_name: 'Kag & Anuj Tiles Gallery',
-          project_id: 'prj-kun-01',
-          project_name: 'Kundrathur Residence (G+1 Villa)',
-          invoice_date: '2026-10-18',
-          total_amount: 45000.00,
-          paid_amount: 0.00,
-          balance_amount: 45000.00,
-          payment_status: 'UNPAID',
-          notes: '4x2 Double Charged Vitrified Tiles advance delivery'
-        }
-      ];
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_supplier_invoices') : null;
+      let invoices = stored ? JSON.parse(stored) : [];
 
       if (method === 'POST' && data) {
         const total = parseFloat(data.totalAmount) || 0;
@@ -274,7 +365,7 @@ export const BusinessApi = {
           supplier_id: data.supplierId,
           supplier_name: data.supplierName || 'Material Vendor',
           project_id: data.projectId,
-          project_name: data.projectName || 'Kundrathur Residence',
+          project_name: data.projectName || 'Site Project',
           invoice_date: data.invoiceDate || new Date().toISOString().split('T')[0],
           due_date: data.dueDate || data.invoiceDate,
           subtotal: data.subtotal || total,
@@ -286,15 +377,18 @@ export const BusinessApi = {
           notes: data.notes || ''
         };
         invoices.unshift(newInv);
-        localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invoices));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invoices));
+        }
 
         // Update supplier dues
-        const supRes = this._offlineFallback('/suppliers', 'GET', null);
-        const sups = supRes.suppliers || [];
+        const sups = this._getOfflineSuppliers();
         const sup = sups.find(s => s.id === data.supplierId);
         if (sup) {
-          sup.outstanding_dues = (sup.outstanding_dues || 0) + total;
-          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(sups));
+          sup.outstanding_dues = (parseFloat(sup.outstanding_dues) || 0) + total;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_suppliers', JSON.stringify(sups));
+          }
         }
 
         return { success: true, invoice: newInv };
@@ -304,28 +398,43 @@ export const BusinessApi = {
     }
 
     if (endpoint === '/suppliers/payments' && method === 'POST') {
-      const { supplierId, invoiceId, amount, paymentMode, referenceNumber, paymentDate, notes } = data || {};
+      const { supplierId, invoiceId, amount, paymentMode, referenceNumber, paymentDate, notes, accountId } = data || {};
       const amt = parseFloat(amount) || 0;
 
       // Update supplier dues
-      const supRes = this._offlineFallback('/suppliers', 'GET', null);
-      const sups = supRes.suppliers || [];
+      const sups = this._getOfflineSuppliers();
       const sup = sups.find(s => s.id === supplierId);
       if (sup) {
-        sup.outstanding_dues = Math.max(0, (sup.outstanding_dues || 0) - amt);
-        localStorage.setItem('ddev_offline_suppliers', JSON.stringify(sups));
+        sup.outstanding_dues = Math.max(0, (parseFloat(sup.outstanding_dues) || 0) - amt);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(sups));
+        }
       }
 
       // Update invoice if targeted
       if (invoiceId) {
-        const invRes = this._offlineFallback('/suppliers/invoices', 'GET', null);
-        const invs = invRes.invoices || [];
+        const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_supplier_invoices') : null;
+        let invs = stored ? JSON.parse(stored) : [];
         const inv = invs.find(i => i.id === invoiceId);
         if (inv) {
-          inv.paid_amount = (inv.paid_amount || 0) + amt;
-          inv.balance_amount = Math.max(0, inv.total_amount - inv.paid_amount);
+          inv.paid_amount = (parseFloat(inv.paid_amount) || 0) + amt;
+          inv.balance_amount = Math.max(0, (parseFloat(inv.total_amount) || 0) - inv.paid_amount);
           inv.payment_status = inv.balance_amount <= 0 ? 'PAID' : 'PARTIALLY_PAID';
-          localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invs));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invs));
+          }
+        }
+      }
+
+      // Deduct from bank/account balance if accountId specified
+      if (accountId) {
+        const accounts = this._getOfflineAccounts();
+        const acc = accounts.find(a => a.id === accountId);
+        if (acc) {
+          acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amt);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_accounts', JSON.stringify(accounts));
+          }
         }
       }
 
@@ -344,14 +453,15 @@ export const BusinessApi = {
       return { success: true, payment };
     }
 
-    // Suppliers CRUD
     if (endpoint.startsWith('/suppliers/') && !endpoint.includes('invoices') && !endpoint.includes('payments') && method === 'PUT' && data) {
       const supId = endpoint.replace('/suppliers/', '');
       const suppliers = this._getOfflineSuppliers();
       const sup = suppliers.find(s => s.id === supId);
       if (sup) {
         Object.assign(sup, data);
-        localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+        }
         return { success: true, supplier: sup };
       }
       return { success: false, error: 'Supplier not found' };
@@ -360,24 +470,30 @@ export const BusinessApi = {
     if (endpoint.startsWith('/suppliers/') && !endpoint.includes('invoices') && !endpoint.includes('payments') && method === 'DELETE') {
       const supId = endpoint.replace('/suppliers/', '');
       const suppliers = this._getOfflineSuppliers().filter(s => s.id !== supId);
-      localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+      }
       return { success: true, archivedId: supId };
     }
 
     if (endpoint.startsWith('/suppliers/invoices/') && endpoint.endsWith('/void') && method === 'POST') {
       const invId = endpoint.replace('/suppliers/invoices/', '').replace('/void', '');
-      const stored = localStorage.getItem('ddev_offline_supplier_invoices');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_supplier_invoices') : null;
       let invoices = stored ? JSON.parse(stored) : [];
       const inv = invoices.find(i => i.id === invId);
       if (inv) {
         inv.payment_status = 'VOIDED';
         inv.balance_amount = 0;
-        localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invoices));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(invoices));
+        }
         const suppliers = this._getOfflineSuppliers();
         const sup = suppliers.find(s => s.id === inv.supplier_id);
         if (sup) {
-          sup.outstanding_dues = Math.max(0, (sup.outstanding_dues || 0) - (inv.total_amount || 0));
-          localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+          sup.outstanding_dues = Math.max(0, (parseFloat(sup.outstanding_dues) || 0) - (parseFloat(inv.total_amount) || 0));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_suppliers', JSON.stringify(suppliers));
+          }
         }
       }
       return { success: true, voided: true };
@@ -392,26 +508,30 @@ export const BusinessApi = {
       const expenses = this._getOfflineExpenses();
       const newExp = {
         id: `exp_${Date.now()}`,
-        expense_number: `EXP-2026-${(expenses.length + 1).toString().padStart(4, '0')}`,
+        expense_number: `EXP-${new Date().getFullYear()}-${(expenses.length + 1).toString().padStart(4, '0')}`,
         project_id: data.projectId,
-        project_name: 'Kundrathur Residence',
+        project_name: data.projectName || 'Site Project',
         category: data.category,
         amount: parseFloat(data.amount) || 0,
         paid_to: data.paidTo,
         expense_date: data.expenseDate || new Date().toISOString().split('T')[0],
         payment_mode: data.paymentMode || 'BANK_TRANSFER',
-        account_name: 'HDFC Current A/C',
+        account_name: data.accountName || 'Primary Account',
         notes: data.notes || ''
       };
       expenses.unshift(newExp);
-      localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      }
       return { status: 201, success: true, expense: newExp };
     }
 
     if (endpoint.startsWith('/expenses/') && endpoint.endsWith('/void') && method === 'POST') {
       const expId = endpoint.replace('/expenses/', '').replace('/void', '');
       let expenses = this._getOfflineExpenses().filter(e => e.id !== expId);
-      localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      }
       return { success: true, voided: true };
     }
 
@@ -421,7 +541,9 @@ export const BusinessApi = {
       const exp = expenses.find(e => e.id === expId);
       if (exp) {
         Object.assign(exp, data);
-        localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+        }
         return { success: true, expense: exp };
       }
       return { success: false, error: 'Expense not found' };
@@ -434,159 +556,145 @@ export const BusinessApi = {
 
     if (endpoint === '/income/receipts' && method === 'POST' && data) {
       const receipts = this._getOfflineReceipts();
+      const amt = parseFloat(data.amount) || 0;
       const newRec = {
         id: `rec_${Date.now()}`,
-        receipt_number: `REC-2026-${(receipts.length + 1).toString().padStart(4, '0')}`,
+        receipt_number: `REC-${new Date().getFullYear()}-${(receipts.length + 1).toString().padStart(4, '0')}`,
         project_id: data.projectId,
-        project_name: 'Kundrathur Residence',
+        project_name: data.projectName || 'Site Project',
         client_id: data.clientId,
-        client_name: 'Mr. Thiumani P.',
-        amount: parseFloat(data.amount) || 0,
+        client_name: data.clientName || 'Direct Client',
+        amount: amt,
         receipt_date: data.receiptDate || new Date().toISOString().split('T')[0],
-        account_name: 'HDFC Current A/C',
+        account_name: data.accountName || 'Primary Account',
         is_advance: data.isAdvance ? 1 : 0,
         allocated_amount: 0,
-        unallocated_balance: data.isAdvance ? (parseFloat(data.amount) || 0) : 0,
+        unallocated_balance: data.isAdvance ? amt : 0,
         notes: data.notes || ''
       };
       receipts.unshift(newRec);
-      localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      }
       return { status: 201, success: true, receipt: newRec };
     }
 
     if (endpoint.startsWith('/income/receipts/') && endpoint.endsWith('/void') && method === 'POST') {
       const recId = endpoint.replace('/income/receipts/', '').replace('/void', '');
       let receipts = this._getOfflineReceipts().filter(r => r.id !== recId);
-      localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      }
       return { success: true, voided: true };
     }
 
     // Milestones CRUD
-    if (endpoint === '/milestones' && method === 'GET') {
-      return { success: true, milestones: this._getOfflineMilestones('prj-kun-01') };
-    }
+    if (endpoint.startsWith('/milestones')) {
+      const prjId = data?.projectId || 'default';
+      const key = `ddev_offline_milestones_${prjId}`;
+      const milestones = this._getOfflineMilestones(prjId);
 
-    if (endpoint.startsWith('/milestones/') && (method === 'PATCH' || method === 'PUT') && data) {
-      const mId = endpoint.replace('/milestones/', '');
-      const milestones = this._getOfflineMilestones('prj-kun-01');
-      const m = milestones.find(item => item.id === mId);
-      if (m) {
-        Object.assign(m, data);
-        localStorage.setItem('ddev_offline_milestones_prj-kun-01', JSON.stringify(milestones));
-        return { success: true, milestone: m };
+      if (method === 'GET') {
+        return { success: true, milestones };
       }
-      return { success: false, error: 'Milestone not found' };
-    }
 
-    if (endpoint.startsWith('/milestones/') && method === 'DELETE') {
-      const mId = endpoint.replace('/milestones/', '');
-      const milestones = this._getOfflineMilestones('prj-kun-01').filter(item => item.id !== mId);
-      localStorage.setItem('ddev_offline_milestones_prj-kun-01', JSON.stringify(milestones));
-      return { success: true, deletedId: mId };
+      if ((method === 'PATCH' || method === 'PUT') && data) {
+        const mId = endpoint.replace('/milestones/', '');
+        const m = milestones.find(item => item.id === mId);
+        if (m) {
+          Object.assign(m, data);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(key, JSON.stringify(milestones));
+          }
+          return { success: true, milestone: m };
+        }
+        return { success: false, error: 'Milestone not found' };
+      }
+
+      if (method === 'DELETE') {
+        const mId = endpoint.replace('/milestones/', '');
+        const filtered = milestones.filter(item => item.id !== mId);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+        return { success: true, deletedId: mId };
+      }
     }
 
     // Progress Reports (DPR) CRUD
-    if (endpoint === '/progress' && method === 'GET') {
-      return { success: true, updates: this._getOfflineProgress('prj-kun-01') };
-    }
-
-    if (endpoint === '/progress' && method === 'POST' && data) {
-      const prjId = data.projectId || 'prj-kun-01';
+    if (endpoint.startsWith('/progress')) {
+      const prjId = data?.projectId || 'default';
+      const key = `ddev_offline_progress_${prjId}`;
       const progress = this._getOfflineProgress(prjId);
-      const newEntry = {
-        id: `prog_${Date.now()}`,
-        project_id: prjId,
-        milestone_id: data.milestoneId || null,
-        report_date: data.reportDate || new Date().toISOString().split('T')[0],
-        completion_percentage: parseFloat(data.completionPercentage) || 0,
-        site_notes: data.siteNotes || '',
-        weather_condition: data.weatherCondition || 'Clear',
-        workforce_count: parseInt(data.workforceCount, 10) || 0,
-        delay_reason: data.delayReason || null,
-        recorded_by: this.activeUser?.id || 'usr-owner-1'
-      };
-      progress.unshift(newEntry);
-      localStorage.setItem(`ddev_offline_progress_${prjId}`, JSON.stringify(progress));
-      return { status: 201, success: true, id: newEntry.id };
+
+      if (method === 'GET') {
+        return { success: true, updates: progress };
+      }
+
+      if (method === 'POST' && data) {
+        const newEntry = {
+          id: `prog_${Date.now()}`,
+          project_id: prjId,
+          milestone_id: data.milestoneId || null,
+          report_date: data.reportDate || new Date().toISOString().split('T')[0],
+          completion_percentage: parseFloat(data.completionPercentage) || 0,
+          site_notes: data.siteNotes || '',
+          weather_condition: data.weatherCondition || 'Clear',
+          workforce_count: parseInt(data.workforceCount, 10) || 0,
+          delay_reason: data.delayReason || null,
+          recorded_by: this.activeUser?.id || 'usr-owner-1'
+        };
+        progress.unshift(newEntry);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, JSON.stringify(progress));
+        }
+        return { status: 201, success: true, id: newEntry.id };
+      }
+
+      if (method === 'DELETE') {
+        const progId = endpoint.replace('/progress/', '');
+        const filtered = progress.filter(p => p.id !== progId);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+        return { success: true, deletedId: progId };
+      }
     }
 
-    if (endpoint.startsWith('/progress/') && method === 'DELETE') {
-      const progId = endpoint.replace('/progress/', '');
-      const progress = this._getOfflineProgress('prj-kun-01').filter(p => p.id !== progId);
-      localStorage.setItem('ddev_offline_progress_prj-kun-01', JSON.stringify(progress));
-      return { success: true, deletedId: progId };
-    }
-
-    // Documents delete
+    // Documents CRUD
     if (endpoint.startsWith('/documents/') && method === 'DELETE') {
       const docId = endpoint.replace('/documents/', '');
-      const stored = localStorage.getItem('ddev_offline_documents');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_documents') : null;
       let docs = stored ? JSON.parse(stored) : [];
       docs = docs.filter(d => d.id !== docId);
-      localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+      }
       return { success: true, deletedId: docId };
     }
 
     if (endpoint === '/documents') {
-      const stored = localStorage.getItem('ddev_offline_documents');
-      let documents = stored ? JSON.parse(stored) : [
-        {
-          id: 'doc-kun-contract',
-          file_name: 'Kundrathur_Construction_Deed_Signed.pdf',
-          file_path: '/storage/documents/Kundrathur_Construction_Deed_Signed.pdf',
-          document_type: 'CONTRACT',
-          file_size: 2450000,
-          mime_type: 'application/pdf',
-          sha256_hash: 'c8f1e095a4325cbb4631bbde1566cf2c009c9535d8df28e21bc0473215266cb2',
-          watermark_text: 'D DEV ULTRA HOMES — CONFIDENTIAL — 2026-04-04',
-          ocr_status: 'HUMAN_VERIFIED',
-          project_id: 'prj-kun-01',
-          created_at: '2026-04-04 10:30:00'
-        },
-        {
-          id: 'doc-kun-drawing',
-          file_name: 'Kundrathur_Architectural_Floor_Plan_R0.pdf',
-          file_path: '/storage/documents/Kundrathur_Architectural_Floor_Plan_R0.pdf',
-          document_type: 'DRAWING',
-          file_size: 4210000,
-          mime_type: 'application/pdf',
-          sha256_hash: '9a3d42bc7190d65b128562fe9f8b417efda531065ba23069138615d86ca4b967',
-          watermark_text: 'D DEV ULTRA HOMES — CONFIDENTIAL — 2026-04-04',
-          ocr_status: 'HUMAN_VERIFIED',
-          project_id: 'prj-kun-01',
-          created_at: '2026-04-04 11:15:00'
-        },
-        {
-          id: 'doc-tmt-01',
-          file_name: 'Chennai_TMT_Rebars_Tax_Invoice_9921.pdf',
-          file_path: '/storage/uploads/Chennai_TMT_Rebars_Tax_Invoice_9921.pdf',
-          document_type: 'INVOICE',
-          file_size: 852000,
-          mime_type: 'application/pdf',
-          sha256_hash: '7b2e11893320f9c2d1b54a3e21c32a76f2d4e7a835b62b083e9b1f7d2358cb91',
-          watermark_text: 'D DEV ULTRA HOMES — CONFIDENTIAL — 2026-10-25',
-          ocr_status: 'PENDING',
-          project_id: 'prj-kun-01',
-          created_at: '2026-10-25 15:45:00'
-        }
-      ];
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_documents') : null;
+      let documents = stored ? JSON.parse(stored) : [];
 
       if (method === 'POST' && data) {
         const newDoc = {
           id: `doc_${Date.now()}`,
           file_name: data.fileName || 'Uploaded_Document.pdf',
-          file_path: data.filePath || `/storage/documents/${data.fileName}`,
+          file_path: data.filePath || `/storage/documents/${data.fileName || 'doc.pdf'}`,
           document_type: data.documentType || 'OTHER',
           file_size: data.fileSize || 102400,
           mime_type: data.mimeType || 'application/pdf',
           sha256_hash: data.sha256Hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
           watermark_text: data.watermarkText || `D DEV ULTRA HOMES — CONFIDENTIAL — ${new Date().toISOString().split('T')[0]}`,
           ocr_status: data.documentType === 'INVOICE' || data.documentType === 'RECEIPT' ? 'PENDING' : 'NOT_APPLICABLE',
-          project_id: data.projectId || 'prj-kun-01',
+          project_id: data.projectId || null,
           created_at: new Date().toISOString()
         };
         documents.unshift(newDoc);
-        localStorage.setItem('ddev_offline_documents', JSON.stringify(documents));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_documents', JSON.stringify(documents));
+        }
         return { success: true, document: newDoc };
       }
 
@@ -601,32 +709,15 @@ export const BusinessApi = {
       };
     }
 
+    // OCR Reviews
     if (endpoint === '/ocr/reviews') {
-      const stored = localStorage.getItem('ddev_offline_ocr_reviews');
-      let reviews = stored ? JSON.parse(stored) : [
-        {
-          id: 'ocr-rev-01',
-          document_id: 'doc-tmt-01',
-          file_name: 'Chennai_TMT_Rebars_Tax_Invoice_9921.pdf',
-          document_type: 'INVOICE',
-          project_id: 'prj-kun-01',
-          verification_status: 'UNVERIFIED',
-          raw_extracted_text: 'CHENNAI TMT TRADERS\nTax Invoice No: INV-TMT-9921\nDate: 2026-10-25\nTotal: 159,300.00',
-          extractedFields: {
-            invoiceNumber: 'INV-TMT-9921',
-            totalAmount: 159300.00,
-            date: '2026-10-25',
-            vendor: 'Chennai TMT Traders (Fe550D Steel)'
-          },
-          verifiedFields: null,
-          created_at: '2026-10-25 15:45:00'
-        }
-      ];
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_ocr_reviews') : null;
+      let reviews = stored ? JSON.parse(stored) : [];
       return { success: true, reviews };
     }
 
     if (endpoint === '/ocr/extract' && method === 'POST') {
-      const stored = localStorage.getItem('ddev_offline_ocr_reviews');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_ocr_reviews') : null;
       let reviews = stored ? JSON.parse(stored) : [];
       const newRev = {
         id: `ocr_${Date.now()}`,
@@ -642,7 +733,9 @@ export const BusinessApi = {
         created_at: new Date().toISOString()
       };
       reviews.unshift(newRev);
-      localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(reviews));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(reviews));
+      }
 
       // Update doc ocr_status to EXTRACTED
       const docRes = this._offlineFallback('/documents', 'GET', null);
@@ -650,7 +743,9 @@ export const BusinessApi = {
       const doc = docs.find(d => d.id === data.documentId);
       if (doc) {
         doc.ocr_status = 'EXTRACTED';
-        localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+        }
       }
 
       return { success: true, review: newRev };
@@ -658,7 +753,7 @@ export const BusinessApi = {
 
     if (endpoint === '/ocr/verify' && method === 'POST') {
       const { reviewId, action, verifiedFields, notes, financialAction } = data || {};
-      const stored = localStorage.getItem('ddev_offline_ocr_reviews');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_ocr_reviews') : null;
       let reviews = stored ? JSON.parse(stored) : [];
       const rev = reviews.find(r => r.id === reviewId);
 
@@ -668,7 +763,9 @@ export const BusinessApi = {
         rev.verifiedFields = verifiedFields;
         rev.verification_notes = notes;
         rev.verified_at = new Date().toISOString();
-        localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(reviews));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(reviews));
+        }
 
         // Update doc
         const docRes = this._offlineFallback('/documents', 'GET', null);
@@ -676,7 +773,9 @@ export const BusinessApi = {
         const doc = docs.find(d => d.id === rev.document_id);
         if (doc) {
           doc.ocr_status = action === 'REJECTED' ? 'REJECTED' : 'HUMAN_VERIFIED';
-          localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_documents', JSON.stringify(docs));
+          }
         }
 
         // If financial action requested, record invoice
@@ -684,7 +783,7 @@ export const BusinessApi = {
           this._offlineFallback('/suppliers/invoices', 'POST', {
             invoiceNumber: verifiedFields.invoiceNumber,
             supplierId: verifiedFields.supplierId || 'sup-1',
-            projectId: verifiedFields.projectId || 'prj-kun-01',
+            projectId: verifiedFields.projectId,
             invoiceDate: verifiedFields.date,
             totalAmount: verifiedFields.totalAmount,
             notes: `[OCR-Verified] ${notes || ''}`
@@ -695,24 +794,173 @@ export const BusinessApi = {
       return { success: true, review: rev };
     }
 
+    // Company Settings
     if (endpoint === '/settings/company') {
+      if (method === 'PUT' && data) {
+        const company = this._getOfflineCompany();
+        Object.assign(company, data);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_company', JSON.stringify(company));
+        }
+        return { success: true, company };
+      }
+
       return {
         success: true,
-        company: {
-          id: 'company-main',
-          company_name: 'D DEV ULTRA HOMES',
-          tagline: 'Building your dreams',
-          phone: '+91 98414 24271',
-          email: 'info@ddevultrahomes.com',
-          address: '6a MGR Nagar, 2nd Cross Street, Velachery, Chennai - 600042',
-          gstin: '33AABCD1234E1Z5',
-          pan: 'AABCD1234E'
-        },
-        accounts: [
-          { id: 'acc-hdfc-current', account_name: 'HDFC Construction Main Current A/C', account_type: 'BANK', current_balance: 5250000.00, is_active: 1 },
-          { id: 'acc-icici-escrow', account_name: 'ICICI Project Escrow A/C', account_type: 'BANK', current_balance: 1500000.00, is_active: 1 },
-          { id: 'acc-petty-cash', account_name: 'Site Petty Cash Box', account_type: 'CASH', current_balance: 50000.00, is_active: 1 }
-        ]
+        company: this._getOfflineCompany(),
+        accounts: this._getOfflineAccounts()
+      };
+    }
+
+    // Financial Account update
+    if (endpoint.startsWith('/settings/accounts/') && method === 'PUT' && data) {
+      const accId = endpoint.replace('/settings/accounts/', '');
+      const accounts = this._getOfflineAccounts();
+      const acc = accounts.find(a => a.id === accId);
+      if (!acc) {
+        return { success: false, error: 'Account not found' };
+      }
+      if (!data.account_name || !data.account_name.trim()) {
+        return { success: false, error: 'Account name cannot be blank' };
+      }
+      const bal = parseFloat(data.current_balance);
+      if (isNaN(bal) || bal < 0) {
+        return { success: false, error: 'Current balance must be a non-negative number' };
+      }
+      if (data.branch_ifsc && data.branch_ifsc.trim() && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(data.branch_ifsc.trim())) {
+        return { success: false, error: 'Invalid IFSC code format (must match ^[A-Z]{4}0[A-Z0-9]{6}$)' };
+      }
+
+      acc.account_name = data.account_name.trim();
+      if (data.account_type) acc.account_type = data.account_type;
+      acc.bank_name = data.bank_name !== undefined ? data.bank_name.trim() : acc.bank_name;
+      acc.account_number = data.account_number !== undefined ? data.account_number.trim() : acc.account_number;
+      acc.branch_ifsc = data.branch_ifsc ? data.branch_ifsc.trim().toUpperCase() : '';
+      acc.current_balance = bal;
+      if (data.is_active !== undefined) acc.is_active = data.is_active;
+      acc.updated_at = new Date().toISOString();
+
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_accounts', JSON.stringify(accounts));
+      }
+      return { success: true, account: acc };
+    }
+
+    // Backup & Restore
+    if (endpoint === '/backup/snapshot' && method === 'GET') {
+      const exportedAt = new Date().toISOString();
+      const tablesData = {
+        company_settings: [this._getOfflineCompany()],
+        financial_accounts: this._getOfflineAccounts(),
+        projects: this._getOfflineProjects(),
+        clients: this._getOfflineClients(),
+        suppliers: this._getOfflineSuppliers(),
+        supplier_invoices: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_supplier_invoices') ? JSON.parse(localStorage.getItem('ddev_offline_supplier_invoices')) : [],
+        client_receipts: this._getOfflineReceipts(),
+        expenses: this._getOfflineExpenses(),
+        documents: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_documents') ? JSON.parse(localStorage.getItem('ddev_offline_documents')) : [],
+        ocr_reviews: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_ocr_reviews') ? JSON.parse(localStorage.getItem('ddev_offline_ocr_reviews')) : [],
+        quotations: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_quotations') ? JSON.parse(localStorage.getItem('ddev_offline_quotations')) : []
+      };
+
+      let totalRecords = 0;
+      const tableCounts = {};
+      for (const [tbl, rows] of Object.entries(tablesData)) {
+        const count = Array.isArray(rows) ? rows.length : 0;
+        tableCounts[tbl] = count;
+        totalRecords += count;
+      }
+
+      const meta = {
+        app: 'DDevUltraHome',
+        version: '1.0.0',
+        company: 'D DEV ULTRA HOMES',
+        tagline: 'Building your dreams',
+        exportedAt,
+        totalRecords,
+        tableCounts
+      };
+
+      const stableBody = JSON.stringify({ meta, data: tablesData });
+      const dataHash = sha256Hex(stableBody);
+      const payload = {
+        meta,
+        data: tablesData,
+        dataHash
+      };
+
+      return {
+        success: true,
+        payload,
+        serialized: JSON.stringify(payload, null, 2),
+        dataHash,
+        summary: {
+          exportedAt,
+          totalRecords,
+          tableCounts,
+          dataHash
+        }
+      };
+    }
+
+    if (endpoint === '/backup/restore' && method === 'POST') {
+      const snapshot = data?.snapshot;
+      let payload = snapshot;
+      if (typeof snapshot === 'string') {
+        try {
+          payload = JSON.parse(snapshot);
+        } catch (e) {
+          return { success: false, error: `Invalid JSON format: ${e.message}` };
+        }
+      }
+
+      if (!payload || !payload.meta || !payload.data) {
+        return { success: false, error: 'Invalid snapshot structure. Expected "meta" and "data".' };
+      }
+
+      if (payload.dataHash) {
+        const stableBody = JSON.stringify({ meta: payload.meta, data: payload.data });
+        const computedHash = sha256Hex(stableBody);
+        if (computedHash !== payload.dataHash) {
+          return {
+            success: false,
+            error: `Integrity check failed: Data hash mismatch! (Expected: ${payload.dataHash.slice(0, 10)}..., Computed: ${computedHash.slice(0, 10)}...)`
+          };
+        }
+      }
+
+      if (typeof localStorage !== 'undefined') {
+        if (payload.data.projects) localStorage.setItem('ddev_offline_projects', JSON.stringify(payload.data.projects));
+        if (payload.data.clients) localStorage.setItem('ddev_offline_clients', JSON.stringify(payload.data.clients));
+        if (payload.data.suppliers) localStorage.setItem('ddev_offline_suppliers', JSON.stringify(payload.data.suppliers));
+        if (payload.data.supplier_invoices) localStorage.setItem('ddev_offline_supplier_invoices', JSON.stringify(payload.data.supplier_invoices));
+        if (payload.data.client_receipts) localStorage.setItem('ddev_offline_receipts', JSON.stringify(payload.data.client_receipts));
+        if (payload.data.expenses) localStorage.setItem('ddev_offline_expenses', JSON.stringify(payload.data.expenses));
+        if (payload.data.financial_accounts) localStorage.setItem('ddev_offline_accounts', JSON.stringify(payload.data.financial_accounts));
+        if (payload.data.documents) localStorage.setItem('ddev_offline_documents', JSON.stringify(payload.data.documents));
+        if (payload.data.ocr_reviews) localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(payload.data.ocr_reviews));
+        if (payload.data.quotations) localStorage.setItem('ddev_offline_quotations', JSON.stringify(payload.data.quotations));
+        if (payload.data.company_settings && payload.data.company_settings[0]) {
+          localStorage.setItem('ddev_offline_company', JSON.stringify(payload.data.company_settings[0]));
+        }
+      }
+
+      let totalRestored = 0;
+      const tableCounts = {};
+      for (const [tbl, rows] of Object.entries(payload.data)) {
+        const count = Array.isArray(rows) ? rows.length : 0;
+        tableCounts[tbl] = count;
+        totalRestored += count;
+      }
+
+      return {
+        success: true,
+        result: {
+          success: true,
+          restoredAt: new Date().toISOString(),
+          totalRestored,
+          tableCounts
+        }
       };
     }
 
@@ -723,45 +971,32 @@ export const BusinessApi = {
           cloudProviders: [
             { cloud_provider: 'LOCAL_SNAPSHOT', sync_status: 'SUCCESS', last_synced_at: new Date().toISOString() }
           ],
-          totalDocuments: 3
+          totalDocuments: this._getOfflineProjects().length
         }
       };
     }
 
+    // Quotations CRUD
     if (endpoint === '/quotations') {
-      const stored = localStorage.getItem('ddev_offline_quotations');
-      let quotations = stored ? JSON.parse(stored) : [
-        {
-          id: 'quo-kun-01',
-          quotation_number: 'QUO-2026-001',
-          revision_number: 0,
-          project_id: 'prj-kun-01',
-          client_id: 'cli-thiumani-01',
-          title: 'Residential Villa Construction — Kundrathur (G+1 Villa + Headroom)',
-          project_name: 'Kundrathur Residence (G+1 Villa)',
-          client_name: 'Mr. Thiumani P.',
-          subtotal: 4227400.00,
-          tax_rate: 0.00,
-          total_amount: 4227400.00,
-          status: 'DRAFT',
-          created_at: '2026-04-04'
-        }
-      ];
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
+      let quotations = stored ? JSON.parse(stored) : [];
 
       if (method === 'POST' && data) {
         const newQ = {
           id: `quo_off_${Date.now()}`,
-          quotation_number: `QUO-2026-${(quotations.length + 1).toString().padStart(3, '0')}`,
+          quotation_number: `QUO-${new Date().getFullYear()}-${(quotations.length + 1).toString().padStart(3, '0')}`,
           revision_number: 0,
           title: data.title || 'Construction Estimate',
           total_amount: data.items ? data.items.reduce((s, itm) => s + (parseFloat(itm.totalPrice) || 0), 0) : 0,
           status: 'DRAFT',
           created_at: new Date().toISOString(),
-          client_name: 'Assigned Client',
+          client_name: data.client_name || 'Direct Client',
           ...data
         };
         quotations.unshift(newQ);
-        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotations));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotations));
+        }
         return { success: true, quotation: newQ };
       }
 
@@ -770,12 +1005,14 @@ export const BusinessApi = {
 
     if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'PUT' && data) {
       const qId = endpoint.replace('/quotations/', '');
-      const stored = localStorage.getItem('ddev_offline_quotations');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
       const q = quotes.find(item => item.id === qId);
       if (q) {
         Object.assign(q, data);
-        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        }
         return { success: true, quotation: q };
       }
       return { success: false, error: 'Quotation not found' };
@@ -783,123 +1020,114 @@ export const BusinessApi = {
 
     if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'DELETE') {
       const qId = endpoint.replace('/quotations/', '');
-      const stored = localStorage.getItem('ddev_offline_quotations');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
       quotes = quotes.filter(item => item.id !== qId);
-      localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+      }
       return { success: true, deletedId: qId };
     }
 
     if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/status') && (method === 'POST' || method === 'PATCH') && data) {
       const qId = endpoint.replace('/quotations/', '').replace('/status', '');
-      const stored = localStorage.getItem('ddev_offline_quotations');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
       const q = quotes.find(item => item.id === qId);
       if (q) {
         q.status = data.status;
-        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+        }
         return { success: true, quotation: q };
       }
       return { success: false, error: 'Quotation not found' };
     }
 
     if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/html')) {
+      const qId = endpoint.replace('/quotations/', '').replace('/html', '');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
+      const quotes = stored ? JSON.parse(stored) : [];
+      const q = quotes.find(item => item.id === qId) || {
+        quotation_number: 'QUO-DRAFT',
+        revision_number: 0,
+        title: 'Construction Estimate',
+        client_name: 'Direct Client',
+        total_amount: 0
+      };
+
+      const company = this._getOfflineCompany();
       return {
         success: true,
-        html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:30px;"><div style="border-bottom:2px solid #0B192C;padding-bottom:10px;"><h2 style="color:#0B192C;margin:0;">D DEV ULTRA HOMES</h2><p style="color:#D97706;font-weight:bold;margin:2px 0;">Building your dreams</p><p style="color:#64748B;font-size:12px;margin:2px 0;">6a MGR Nagar, 2nd Cross Street, Velachery, Chennai - 600042</p></div><h3 style="margin-top:20px;">OFFICIAL ESTIMATE &amp; PROPOSAL: QUO-2026-001 (Rev 0)</h3><p>Client: <strong>Mr. Thiumani P.</strong> (Anakaputhur, Chennai)</p><p>Project: <strong>Kundrathur Residence (G+1 Villa)</strong></p><p>Total Proposal: <strong style="color:#0B192C;font-size:16px;">₹42,27,400</strong></p><p style="font-size:12px;color:#475569;">Schedule A Engineering Specifications &amp; Schedule B 8-Stage Payment Terms Apply.</p><div style="margin-top:50px;display:flex;justify-content:space-between;"><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Authorized Builder Signatory</div><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Client / House Owner Signature</div></div></body></html>`
+        html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:30px;"><div style="border-bottom:2px solid #0B192C;padding-bottom:10px;"><h2 style="color:#0B192C;margin:0;">${company.company_name}</h2><p style="color:#D97706;font-weight:bold;margin:2px 0;">${company.tagline}</p><p style="color:#64748B;font-size:12px;margin:2px 0;">${company.address}</p></div><h3 style="margin-top:20px;">OFFICIAL ESTIMATE &amp; PROPOSAL: ${q.quotation_number} (Rev ${q.revision_number})</h3><p>Client: <strong>${q.client_name || 'Client'}</strong></p><p>Proposal: <strong>${q.title || 'Estimate'}</strong></p><p>Total Proposal: <strong style="color:#0B192C;font-size:16px;">₹${(parseFloat(q.total_amount) || 0).toLocaleString('en-IN')}</strong></p><p style="font-size:12px;color:#475569;">Schedule A Engineering Specifications &amp; Schedule B Milestone Payment Terms Apply.</p><div style="margin-top:50px;display:flex;justify-content:space-between;"><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Authorized Builder Signatory</div><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Client / House Owner Signature</div></div></body></html>`
       };
     }
 
     return { success: true, offline: true, endpoint, data };
   },
 
+  _getOfflineCompany() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_company') : null;
+    return stored ? JSON.parse(stored) : {
+      id: 'company-main',
+      company_name: 'D DEV ULTRA HOMES',
+      tagline: 'Building your dreams',
+      phone: '+91 98414 24271',
+      email: 'info@ddevultrahomes.com',
+      address: '6a MGR Nagar, 2nd Cross Street, Velachery, Chennai - 600042',
+      gstin: '33AABCD1234E1Z5',
+      pan: 'AABCD1234E'
+    };
+  },
+
+  _getOfflineAccounts() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_accounts') : null;
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return [
+      { id: 'acc-hdfc-current', account_name: 'HDFC Construction Main Current A/C', account_type: 'BANK', bank_name: 'HDFC Bank', account_number: '', branch_ifsc: '', current_balance: 0.00, is_active: 1 },
+      { id: 'acc-icici-escrow', account_name: 'ICICI Project Escrow A/C', account_type: 'BANK', bank_name: 'ICICI Bank', account_number: '', branch_ifsc: '', current_balance: 0.00, is_active: 1 },
+      { id: 'acc-petty-site', account_name: 'Site Petty Cash Box', account_type: 'PETTY_CASH', bank_name: 'Cash in Hand', account_number: '', branch_ifsc: '', current_balance: 0.00, is_active: 1 }
+    ];
+  },
+
   _getOfflineProjects() {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_projects') : null;
-    return stored ? JSON.parse(stored) : [
-      {
-        id: 'prj-kun-01',
-        project_code: 'PRJ-KUN-2026',
-        name: 'Kundrathur Residence (G+1 Villa)',
-        client_name: 'Mr. Thiumani P.',
-        client_phone: '+91 98400 99887',
-        site_address: 'Kundrathur, Chennai - 600069',
-        district: 'Chennai',
-        contract_value: 4227400.00,
-        budgeted_cost: 3400000.00,
-        current_stage: 'STRUCTURE',
-        status: 'ACTIVE'
-      },
-      {
-        id: 'prj-gnd-01',
-        project_code: 'PRJ-GND-01',
-        name: 'Guindy Residence (G+1 Villa)',
-        client_name: 'Mr. JAS Guindy',
-        client_phone: '+91 98400 12345',
-        site_address: 'Guindy, Chennai',
-        district: 'Chennai',
-        contract_value: 8500000.00,
-        budgeted_cost: 6800000.00,
-        current_stage: 'FOUNDATION',
-        status: 'ACTIVE'
-      }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineClients() {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_clients') : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'cli-thiumani-01', name: 'Mr. Thiumani P.', phone: '+91 98400 99887', email: 'thiumani.p@gmail.com', project_count: 1, total_contract_value: 4227400.00, billing_address: 'Anakaputhur, Chennai - 600070' },
-      { id: 'cli-1', name: 'Mr. JAS Guindy', phone: '+91 98400 12345', email: 'client.guindy@gmail.com', project_count: 1, total_contract_value: 8500000.00, billing_address: 'Guindy, Chennai' },
-      { id: 'cli-2', name: 'Arunachalam & Co', phone: '+91 98401 22334', email: 'arun@example.com', project_count: 1, total_contract_value: 3000000.00, billing_address: 'Velachery, Chennai' }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineSuppliers() {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_suppliers') : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'sup-1', name: 'Chennai TMT Traders (Fe550D Steel)', category: 'STEEL', contact_person: 'Mr. Balan', phone: '+91 94440 99887', outstanding_dues: 150000.00, gstin: '33AABCT9920A1Z1' },
-      { id: 'sup-2', name: 'Dalmia & UltraTech Depot Velachery', category: 'CEMENT', contact_person: 'Mr. Senthil', phone: '+91 98402 11223', outstanding_dues: 35000.00, gstin: '33AABCD4401B1Z2' },
-      { id: 'sup-3', name: 'Kag & Anuj Tiles Gallery', category: 'TILES_SANITARY', contact_person: 'Mr. Murugan', phone: '+91 94450 33445', outstanding_dues: 45000.00, gstin: '33AAECK1120C1Z3' }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineExpenses() {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_expenses') : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'exp-1', expense_number: 'EXP-2026-0001', category: 'LABOUR', amount: 45000.00, expense_date: '2026-10-20', paid_to: 'Masons Guild Chennai', payment_mode: 'BANK_TRANSFER', account_name: 'HDFC Current A/C', project_name: 'Kundrathur Residence', notes: 'Ground floor brickwork labour payment week 42' },
-      { id: 'exp-2', expense_number: 'EXP-2026-0002', category: 'SITE_PURCHASES', amount: 8500.00, expense_date: '2026-10-22', paid_to: 'Velachery Hardware', payment_mode: 'PETTY_CASH', account_name: 'Site Petty Cash', project_name: 'Kundrathur Residence', notes: 'Binding wire, nails & shuttering grease' },
-      { id: 'exp-3', expense_number: 'EXP-2026-0003', category: 'EQUIPMENT_RENTAL', amount: 18000.00, expense_date: '2026-10-24', paid_to: 'Sri Murugan Mixer Hire', payment_mode: 'UPI', account_name: 'HDFC Current A/C', project_name: 'Kundrathur Residence', notes: 'Diesel concrete mixer & vibrator hire 3 days' }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineReceipts() {
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_receipts') : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'rec-1', receipt_number: 'REC-2026-0001', project_name: 'Kundrathur Residence (G+1 Villa)', client_name: 'Mr. Thiumani P.', amount: 800000.00, receipt_date: '2026-04-05', account_name: 'HDFC Current A/C', is_advance: 1, allocated_amount: 600000.00, unallocated_balance: 200000.00, notes: 'Initial mobilization advance cheque' }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineMilestones(prjId) {
-    const key = `ddev_offline_milestones_${prjId || 'prj-kun-01'}`;
+    const key = `ddev_offline_milestones_${prjId || 'default'}`;
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'ms-1', milestone_code: 'MS-01', title: 'Mobilization Advance', description: 'Advance cash deposit as per agreement clause 2', target_percentage: 18.92, invoice_percentage: 18.92, invoice_amount: 800000.00, status: 'BILLED' },
-      { id: 'ms-2', milestone_code: 'MS-02', title: 'Ground Floor Roof Level Brickwork', description: '9" flyash bricks in CM 1:5 & 4.5" partitions', target_percentage: 14.19, invoice_percentage: 14.19, invoice_amount: 600000.00, status: 'COMPLETED' },
-      { id: 'ms-3', milestone_code: 'MS-03', title: 'Ground Floor Roof Slab Concrete', description: '5" RCC framed slab, beams & columns', target_percentage: 16.56, invoice_percentage: 16.56, invoice_amount: 700000.00, status: 'IN_PROGRESS' },
-      { id: 'ms-4', milestone_code: 'MS-04', title: 'First Floor Roof Level Brickwork', description: 'First floor 9" & 4.5" brickwork up to roof beam', target_percentage: 14.19, invoice_percentage: 14.19, invoice_amount: 600000.00, status: 'NOT_STARTED' },
-      { id: 'ms-5', milestone_code: 'MS-05', title: 'First Floor Roof Slab Concrete', description: 'First floor 5" RCC roof slab & sunshades', target_percentage: 16.56, invoice_percentage: 16.56, invoice_amount: 700000.00, status: 'NOT_STARTED' },
-      { id: 'ms-6', milestone_code: 'MS-06', title: 'Outer & Inner Plastering', description: 'Internal CM 1:4 and external CM 1:5 plastering', target_percentage: 11.83, invoice_percentage: 11.83, invoice_amount: 500000.00, status: 'NOT_STARTED' },
-      { id: 'ms-7', milestone_code: 'MS-07', title: 'Plumbing, Painting & Electrical Fittings', description: 'Orbit 3-phase wiring, Parryware & Asian Paints', target_percentage: 7.10, invoice_percentage: 7.10, invoice_amount: 300000.00, status: 'NOT_STARTED' },
-      { id: 'ms-8', milestone_code: 'MS-08', title: 'Handover & Final Settlement', description: 'Pre-handover final snag clearance & delivery', target_percentage: 0.65, invoice_percentage: 0.65, invoice_amount: 27400.00, status: 'NOT_STARTED' }
-    ];
+    return stored ? JSON.parse(stored) : [];
   },
 
   _getOfflineProgress(prjId) {
-    const key = `ddev_offline_progress_${prjId || 'prj-kun-01'}`;
+    const key = `ddev_offline_progress_${prjId || 'default'}`;
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
-    return stored ? JSON.parse(stored) : [
-      { id: 'prog-1', report_date: '2026-10-24', completion_percentage: 33.11, site_notes: 'GF Roof slab centering shuttering completed. 16mm & 12mm TMT steel binding 80% done.', weather_condition: 'Sunny (34°C)', workforce_count: 14, delay_reason: null },
-      { id: 'prog-2', report_date: '2026-10-18', completion_percentage: 28.50, site_notes: 'GF Brickwork lintel concrete cast and cured. Outer curing ongoing twice daily.', weather_condition: 'Clear', workforce_count: 12, delay_reason: null }
-    ];
+    return stored ? JSON.parse(stored) : [];
   }
 };

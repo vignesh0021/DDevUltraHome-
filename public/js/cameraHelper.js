@@ -1,19 +1,29 @@
 /**
  * DDevUltraHome — Mobile Camera & Image Capture Helper
- * Works natively in Capacitor APK via Camera Plugin, and in Browser via HTML5 capture.
+ * Works natively in Capacitor APK with Camera permissions, with fallback action sheet.
  */
 
 export const CameraHelper = {
   /**
-   * Capture a photo from device camera or prompt file picker
+   * Capture a photo from device camera or file picker
    * @param {Object} options { source: 'CAMERA' | 'PHOTOS' | 'PROMPT' }
-   * @returns {Promise<{ dataUrl: string, fileName: string, fileSize: number, mimeType: string }>}
+   * @returns {Promise<{ dataUrl: string, fileName: string, fileSize: number, mimeType: string } | null>}
    */
   async capturePhoto(options = { source: 'CAMERA' }) {
-    // 1. Try Native Capacitor Camera Plugin first (for Android APK)
-    if (window.Capacitor && window.Capacitor.isPluginAvailable && window.Capacitor.isPluginAvailable('Camera')) {
+    // 1. Try Native Capacitor Camera Plugin (Android APK)
+    if (typeof window !== 'undefined' && window.Capacitor?.isPluginAvailable?.('Camera')) {
       try {
         const Camera = window.Capacitor.Plugins.Camera;
+
+        // Request permissions first
+        if (Camera.requestPermissions) {
+          try {
+            await Camera.requestPermissions();
+          } catch (permErr) {
+            console.warn('Camera requestPermissions warning:', permErr);
+          }
+        }
+
         const photo = await Camera.getPhoto({
           quality: 85,
           allowEditing: false,
@@ -24,7 +34,6 @@ export const CameraHelper = {
         if (photo && photo.dataUrl) {
           const mimeType = photo.format ? `image/${photo.format}` : 'image/jpeg';
           const fileName = `SiteScan_${Date.now()}.${photo.format || 'jpg'}`;
-          // Estimate byte size from base64 length
           const fileSize = Math.round((photo.dataUrl.length * 3) / 4);
 
           return {
@@ -34,47 +43,155 @@ export const CameraHelper = {
             mimeType
           };
         }
+
+        return null;
       } catch (err) {
-        // If user cancelled, don't fallback; rethrow or return null
-        if (err.message && err.message.toLowerCase().includes('cancel')) {
+        // User cancel returns null and DOES NOT fall through
+        const msg = String(err?.message || '').toLowerCase();
+        if (msg.includes('cancel') || msg.includes('user cancelled') || msg.includes('canceled')) {
           return null;
         }
-        console.warn('Native Capacitor camera error, falling back to file input:', err);
+        console.warn('Native Capacitor Camera failed, showing fallback selector sheet:', err);
       }
     }
 
-    // 2. Fallback to HTML5 File / Capture Input (for browser or WebChromeClient)
+    // 2. Fallback: Display Action Sheet with Open Camera, Choose from Gallery, and Cancel
+    return new Promise((resolve, reject) => {
+      this._showCameraSheet({
+        onCamera: () => {
+          this._openFileInput({ isCamera: true }).then(resolve).catch(reject);
+        },
+        onGallery: () => {
+          this._openFileInput({ isCamera: false }).then(resolve).catch(reject);
+        },
+        onCancel: () => {
+          resolve(null);
+        }
+      });
+    });
+  },
+
+  /**
+   * Render in-DOM action sheet modal for camera/gallery choices
+   */
+  _showCameraSheet({ onCamera, onGallery, onCancel }) {
+    const existing = document.getElementById('ddev-camera-sheet');
+    if (existing) existing.remove();
+
+    const sheet = document.createElement('div');
+    sheet.id = 'ddev-camera-sheet';
+    sheet.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 10000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+    `;
+
+    sheet.innerHTML = `
+      <div style="background: white; border-radius: 16px; width: 100%; max-width: 420px; padding: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: slideUp 0.2s ease-out;">
+        <div style="font-size: 15px; font-weight: 800; color: #0B192C; margin-bottom: 4px; text-align: center;">
+          📸 Capture Bill / Document
+        </div>
+        <div style="font-size: 12px; color: #64748B; margin-bottom: 16px; text-align: center;">
+          Choose source to scan voucher or purchase bill:
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button id="btn-sheet-camera" style="width: 100%; min-height: 46px; background: #0B192C; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            📷 Open camera
+          </button>
+          <button id="btn-sheet-gallery" style="width: 100%; min-height: 46px; background: #F8FAFC; color: #0B192C; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            🖼️ Choose from gallery
+          </button>
+          <button id="btn-sheet-cancel" style="width: 100%; min-height: 44px; background: transparent; color: #EF4444; border: none; font-size: 13px; font-weight: 700; cursor: pointer;">
+            ✕ Cancel
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(sheet);
+
+    const cleanup = () => {
+      if (sheet.parentNode) sheet.parentNode.removeChild(sheet);
+    };
+
+    sheet.querySelector('#btn-sheet-camera').onclick = () => {
+      cleanup();
+      onCamera();
+    };
+
+    sheet.querySelector('#btn-sheet-gallery').onclick = () => {
+      cleanup();
+      onGallery();
+    };
+
+    sheet.querySelector('#btn-sheet-cancel').onclick = () => {
+      cleanup();
+      onCancel();
+    };
+
+    sheet.onclick = (e) => {
+      if (e.target === sheet) {
+        cleanup();
+        onCancel();
+      }
+    };
+  },
+
+  /**
+   * HTML5 file chooser with body attachment for Android WebView compatibility
+   */
+  _openFileInput({ isCamera }) {
     return new Promise((resolve, reject) => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
-      if (options.source !== 'PHOTOS') {
+      if (isCamera) {
         input.capture = 'environment';
       }
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      input.style.left = '-9999px';
+
+      // Required: Must be appended to document.body before click or WebView ignores it
+      document.body.appendChild(input);
 
       input.onchange = (e) => {
         const file = e.target.files?.[0];
         if (!file) {
+          if (input.parentNode) input.parentNode.removeChild(input);
           resolve(null);
           return;
         }
 
         const reader = new FileReader();
         reader.onload = (event) => {
+          if (input.parentNode) input.parentNode.removeChild(input);
           resolve({
             dataUrl: event.target.result,
-            fileName: file.name || `Bill_${Date.now()}.jpg`,
+            fileName: file.name || `Scan_${Date.now()}.jpg`,
             fileSize: file.size,
             mimeType: file.type || 'image/jpeg'
           });
         };
-        reader.onerror = () => reject(new Error('Failed to read photo data.'));
+        reader.onerror = () => {
+          if (input.parentNode) input.parentNode.removeChild(input);
+          reject(new Error('Failed to read photo data.'));
+        };
         reader.readAsDataURL(file);
       };
 
-      input.oncancel = () => resolve(null);
+      input.oncancel = () => {
+        if (input.parentNode) input.parentNode.removeChild(input);
+        resolve(null);
+      };
 
-      // Trigger user file chooser
       input.click();
     });
   }
