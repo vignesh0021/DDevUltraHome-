@@ -191,4 +191,15 @@ describe('Mobile-First UI/UX Redesign & Layout Integrity', () => {
     assert.match(sw, /'\/manifest\.json'/, 'sw.js caches manifest.json');
   });
 
+
+  it('keeps dark-mode primary buttons visible (not white on the inverted navy token)', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'public', 'css', 'design-system.css'), 'utf8');
+    const start = css.indexOf('[data-theme="dark"] .btn-primary');
+    assert.ok(start >= 0, 'dark primary button override exists');
+    const rule = css.slice(start, css.indexOf('}', start));
+    assert.match(rule, /background:\s*#ea580c/i);
+    assert.match(rule, /color:\s*#ffffff/i);
+    assert.ok(!rule.includes('var(--brand-navy-900)'), 'must not use the inverted navy token');
+  });
+
 });

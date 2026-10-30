@@ -421,9 +421,17 @@ export function buildQuotationPdf(quote) {
     if (y - height < 64) newPage();
   }
 
-  function text(x, yy, size, font, value) {
+  const INK = [0.07, 0.09, 0.12];
+  const WHITE = [1, 1, 1];
+  const GOLD = [0.894, 0.761, 0.478];
+  const COPPER = [0.769, 0.361, 0.071];
+
+  function text(x, yy, size, font, value, rgb = INK) {
     const clean = String(value ?? '').replace(/[^\x20-\x7E]/g, ' ');
-    ops.push({ t: 'text', x, y: yy, size, font, value: clean });
+    ops.push({
+      t: 'text', x, y: yy, size, font, value: clean,
+      r: rgb[0], g: rgb[1], b: rgb[2]
+    });
   }
 
   function fill(x, yy, w, h, r, g, b) {
@@ -449,10 +457,10 @@ export function buildQuotationPdf(quote) {
   }
 
   fill(0, 800, 595, 42, 0.043, 0.098, 0.173);
-  text(36, 822, 16, 'F2', firm);
-  text(36, 806, 9, 'F1', tagline);
-  text(400, 818, 9, 'F1', `No. ${number}`);
-  text(400, 806, 9, 'F1', `Rev ${revision}`);
+  text(36, 822, 16, 'F2', firm, WHITE);
+  text(36, 806, 9, 'F1', tagline, GOLD);
+  text(400, 818, 9, 'F1', `No. ${number}`, WHITE);
+  text(400, 806, 9, 'F1', `Rev ${revision}`, GOLD);
   y = 786;
   text(36, y, 8, 'F1', `${address}  |  ${phone}`);
   y -= 22;
@@ -470,11 +478,11 @@ export function buildQuotationPdf(quote) {
 
   need(28);
   fill(36, y - 6, 523, 18, 0.043, 0.098, 0.173);
-  text(42, y, 8, 'F2', '#');
-  text(64, y, 8, 'F2', 'DESCRIPTION');
-  text(330, y, 8, 'F2', 'QTY');
-  text(390, y, 8, 'F2', 'RATE');
-  text(480, y, 8, 'F2', 'AMOUNT');
+  text(42, y, 8, 'F2', '#', WHITE);
+  text(64, y, 8, 'F2', 'DESCRIPTION', WHITE);
+  text(330, y, 8, 'F2', 'QTY', WHITE);
+  text(390, y, 8, 'F2', 'RATE', WHITE);
+  text(480, y, 8, 'F2', 'AMOUNT', WHITE);
   y -= 20;
 
   const rows = items.length ? items : [{ description: 'Scope as per drawings', quantity: 1, unit: 'job', unit_rate: grand, total_price: grand }];
@@ -505,8 +513,8 @@ export function buildQuotationPdf(quote) {
     text(470, y, 10, 'F1', inrWhole(tax));
     y -= 14;
   }
-  text(330, y, 12, 'F2', 'Grand total');
-  text(450, y, 12, 'F2', inrWhole(grand));
+  text(330, y, 12, 'F2', 'Grand total', INK);
+  text(450, y, 12, 'F2', inrWhole(grand), COPPER);
   y -= 28;
 
   need(20);
@@ -574,7 +582,7 @@ function renderQuotePages(pages) {
       if (op.t === 'fill') {
         stream += `${op.r} ${op.g} ${op.b} rg\n${op.x} ${op.y} ${op.w} ${op.h} re f\n`;
       } else if (op.t === 'text') {
-        stream += `BT /${op.font} ${op.size} Tf 1 0 0 1 ${op.x} ${op.y} Tm (${esc(op.value)}) Tj ET\n`;
+        stream += `${op.r} ${op.g} ${op.b} rg\nBT /${op.font} ${op.size} Tf 1 0 0 1 ${op.x} ${op.y} Tm (${esc(op.value)}) Tj ET\n`;
       }
     }
     stream += 'q\n/GS1 gs\n0.82 -0.57 0.57 0.82 70 300 cm\n0 0 0 rg\nBT /F2 28 Tf (D DEV ULTRA HOMES) Tj 0 -16 Td /F1 11 Tf (Building your dreams) Tj ET\nQ\n';

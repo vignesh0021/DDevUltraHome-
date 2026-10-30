@@ -221,4 +221,47 @@ describe('DDevUltraHome — Quotation Builder & Client-Ready Watermarked PDF Eng
     assert.ok(res);
     assert.equal(typeof res.success, 'boolean');
   });
+
+  test('buildQuotationPdf paints every line in its own solid colour', async () => {
+    const { buildQuotationPdf } = await import('../public/js/printDoc.js');
+    const blob = buildQuotationPdf({
+      client_name: 'thru',
+      project_name: 'Residential Building Construction Kundrathur',
+      quotation_number: 'QUO-2026-001',
+      revision_number: 0,
+      subtotal: 4227400,
+      tax_amount: 0,
+      total_amount: 4227400,
+      items: [
+        { description: 'Ground Floor Built-up Area', quantity: 723, unit: 'sqft', unit_rate: 2300, total_price: 1662900 }
+      ]
+    });
+    const source = Buffer.from(await blob.arrayBuffer()).toString('latin1');
+    assert.match(source, /OFFICIAL QUOTATION/);
+    assert.match(source, /thru/);
+    assert.match(source, /Rs\.42,27,400/);
+    const streams = [...source.matchAll(/stream\n([\s\S]*?)\nendstream/g)].map((match) => match[1]);
+    assert.ok(streams.length > 0);
+    for (const stream of streams) {
+      let fill = '';
+      let qDepth = 0;
+      let faded = false;
+      for (const line of stream.split('\n')) {
+        if (line === 'q') qDepth += 1;
+        if (line === 'Q') {
+          qDepth = Math.max(0, qDepth - 1);
+          if (qDepth === 0) faded = false;
+        }
+        if (line.includes('/GS1 gs')) {
+          assert.ok(qDepth >= 1, 'watermark opacity must stay inside q/Q');
+          faded = true;
+        }
+        if (/^[0-9.]+ [0-9.]+ [0-9.]+ rg$/.test(line)) fill = line;
+        if (!line.includes(' Tj') || faded) continue;
+        const parts = fill.split(' ').map(Number);
+        const pale = parts.length === 3 && parts.every((part) => part > 0.85) && fill !== '1 1 1 rg';
+        assert.equal(pale, false, `text painted with unreadable fill ${fill || '(none)'}`);
+      }
+    }
+  });
 });

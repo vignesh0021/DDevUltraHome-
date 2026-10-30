@@ -475,3 +475,17 @@
   border-color: var(--brand-gold-600);
 }
 
+
+/* Dark mode remaps --brand-navy-900 to near-white paper. Primary buttons
+   must not inherit that token, or the white label disappears. */
+[data-theme="dark"] .btn-primary {
+  background: #ea580c;
+  color: #ffffff;
+  border: 1px solid #fdba74;
+}
+
+[data-theme="dark"] .btn-gold {
+  background: #d97706;
+  color: #ffffff;
+  border: 1px solid #fbbf24;
+}
