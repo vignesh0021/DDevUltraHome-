@@ -119,6 +119,10 @@ export const ExpensesScreen = {
               <input type="date" id="edit-exp-date" class="form-control" required>
             </div>
             <div class="form-group">
+              <label class="form-label">Amount (₹) *</label>
+              <input type="number" id="edit-exp-amount" class="form-control" step="0.01" min="0.01" required>
+            </div>
+            <div class="form-group">
               <label class="form-label">Notes / Description</label>
               <input type="text" id="edit-exp-notes" class="form-control">
             </div>
@@ -156,7 +160,8 @@ export const ExpensesScreen = {
         category: container.querySelector('#edit-exp-category').value,
         paid_to: container.querySelector('#edit-exp-vendor').value.trim(),
         expense_date: container.querySelector('#edit-exp-date').value,
-        notes: container.querySelector('#edit-exp-notes').value.trim()
+        notes: container.querySelector('#edit-exp-notes').value.trim(),
+        amount: parseFloat(container.querySelector('#edit-exp-amount').value) || 0
       };
 
       try {
@@ -262,6 +267,7 @@ export const ExpensesScreen = {
           container.querySelector('#edit-exp-vendor').value = exp.paid_to;
           container.querySelector('#edit-exp-date').value = exp.expense_date;
           container.querySelector('#edit-exp-notes').value = exp.notes || '';
+          container.querySelector('#edit-exp-amount').value = exp.amount || '';
 
           container.querySelector('#modal-edit-expense').style.display = 'flex';
         });

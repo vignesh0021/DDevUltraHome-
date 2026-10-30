@@ -13,6 +13,7 @@ export const QuotationsScreen = {
   cachedQuotations: [],
   activeQuotation: null,
   currentPrintHtml: '',
+  editingQuoteId: null,
 
   async render(container) {
     container.innerHTML = `
@@ -37,7 +38,7 @@ export const QuotationsScreen = {
         <div style="background: white; border-radius: var(--radius-lg); width: 100%; max-width: 680px; max-height: 92vh; overflow-y: auto; padding: 22px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
             <div>
-              <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--brand-navy-900);">Create Construction Quotation</h3>
+              <h3 id="quote-modal-heading" style="margin: 0; font-size: 17px; font-weight: 800; color: var(--brand-navy-900);">Create Construction Quotation</h3>
               <div style="font-size: 11px; color: var(--text-muted);">Detailed civil cost proposal with Schedule A & B terms</div>
             </div>
             <button id="btn-cancel-quote" class="btn-outline" style="min-height: 32px; width: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 18px;" type="button">✕</button>
@@ -114,7 +115,7 @@ export const QuotationsScreen = {
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
               <button type="button" id="btn-cancel-quote-2" class="btn-outline">Cancel</button>
-              <button type="submit" class="btn-primary">Save Quotation</button>
+              <button type="submit" id="btn-save-quote" class="btn-primary">Save Quotation</button>
             </div>
           </form>
         </div>
@@ -201,9 +202,15 @@ export const QuotationsScreen = {
                   <button type="button" class="btn-print-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
                     🖨️ Print / PDF
                   </button>
-                  <button type="button" class="btn-revise-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
-                    📋 Revise
-                  </button>
+                  ${q.status === 'DRAFT' ? `
+                    <button type="button" class="btn-edit-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
+                      ✏️ Edit
+                    </button>
+                  ` : `
+                    <button type="button" class="btn-revise-quote btn-outline" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 10px;">
+                      📋 Revise
+                    </button>
+                  `}
                   ${q.status === 'DRAFT' ? `
                     <button type="button" class="btn-delete-quote btn-outline" data-id="${q.id}" data-number="${q.quotation_number}" style="min-height: 32px; font-size: 11px; padding: 0 8px; color: #DC2626; border-color: #FCA5A5;">
                       🗑️ Delete Draft
@@ -249,6 +256,21 @@ export const QuotationsScreen = {
         });
       });
 
+      listEl.querySelectorAll('.btn-edit-quote').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const qId = btn.getAttribute('data-id');
+          try {
+            const res = await BusinessApi.request(`/quotations/${qId}`);
+            const quote = (res && res.quotation) || (this.cachedQuotations || []).find(q => q.id === qId);
+            if (!quote) throw new Error('Quotation not found');
+            await this.openQuoteEditor(container, quote);
+          } catch (err) {
+            alert('Could not open quotation: ' + err.message);
+          }
+        });
+      });
+
       listEl.querySelectorAll('.btn-revise-quote').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -289,7 +311,20 @@ export const QuotationsScreen = {
 
     // Open Add Quote Modal
     container.querySelector('#btn-add-quote')?.addEventListener('click', async () => {
+      this.editingQuoteId = null;
+      const heading = container.querySelector('#quote-modal-heading');
+      const saveBtn = container.querySelector('#btn-save-quote');
+      if (heading) heading.textContent = 'Create Construction Quotation';
+      if (saveBtn) saveBtn.textContent = 'Save Quotation';
       await this.populateDropdowns(container);
+      const titleInput = container.querySelector('#inp-quote-title');
+      const taxInput = container.querySelector('#inp-quote-taxrate');
+      const termsInput = container.querySelector('#inp-quote-terms');
+      if (titleInput) titleInput.value = '';
+      if (taxInput) taxInput.value = '0';
+      if (termsInput) {
+        termsInput.value = '1. 8-Stage milestone payment schedule as per Schedule B terms.\n2. Advance amount is an unearned liability deposit until stage certification.\n3. Electricity connection & water charges to be borne by client.\n4. Quotation valid for 30 days from date of issue.';
+      }
       cardsContainer.innerHTML = '';
       this.addLineItem(cardsContainer, {
         description: '',
@@ -425,7 +460,23 @@ export const QuotationsScreen = {
       };
 
       try {
-        await BusinessApi.request('/quotations', 'POST', payload);
+        if (this.editingQuoteId) {
+          const subtotal = items.reduce((sum, it) => sum + (parseFloat(it.totalPrice) || 0), 0);
+          const taxAmount = (subtotal * payload.taxRate) / 100;
+          await BusinessApi.request(`/quotations/${this.editingQuoteId}`, 'PUT', {
+            ...payload,
+            client_id: payload.clientId,
+            project_id: payload.projectId,
+            subtotal,
+            tax_rate: payload.taxRate,
+            tax_amount: taxAmount,
+            total_amount: subtotal + taxAmount,
+            terms_conditions: payload.termsConditions
+          });
+          this.editingQuoteId = null;
+        } else {
+          await BusinessApi.request('/quotations', 'POST', payload);
+        }
         modal.style.display = 'none';
         await this.loadQuotations(container);
       } catch (err) {
@@ -435,6 +486,10 @@ export const QuotationsScreen = {
   },
 
   addLineItem(container, data = {}) {
+    const esc = (value) => String(value ?? '')
+      .replace(/&/g, '&')
+      .replace(/"/g, '"')
+      .replace(/</g, '<');
     const card = document.createElement('div');
     card.className = 'quote-item-card';
     card.style.cssText = 'background: #F8FAFC; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 12px; box-shadow: var(--shadow-xs);';
@@ -451,7 +506,7 @@ export const QuotationsScreen = {
 
       <div class="form-group" style="margin-bottom: 8px;">
         <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Description *</label>
-        <input type="text" class="inp-item-desc form-control" style="font-size: 12px;" required placeholder="e.g. Ground Floor Built-up Area" value="${data.description || ''}">
+        <input type="text" class="inp-item-desc form-control" style="font-size: 12px;" required placeholder="e.g. Ground Floor Built-up Area" value="${esc(data.description || '')}">
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
@@ -468,7 +523,7 @@ export const QuotationsScreen = {
         </div>
         <div class="form-group" style="margin-bottom: 0;">
           <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Unit</label>
-          <input type="text" class="inp-item-unit form-control" style="font-size: 12px;" placeholder="sqft / nos / liters" value="${data.unit || 'sqft'}">
+          <input type="text" class="inp-item-unit form-control" style="font-size: 12px;" placeholder="sqft / nos / liters" value="${esc(data.unit || 'sqft')}">
         </div>
       </div>
 
@@ -542,6 +597,41 @@ export const QuotationsScreen = {
 
     if (subEl) subEl.textContent = `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (totEl) totEl.textContent = `₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  },
+
+  async openQuoteEditor(container, quote) {
+    const modal = container.querySelector('#modal-new-quotation');
+    const cardsContainer = container.querySelector('#quote-items-cards-container');
+    await this.populateDropdowns(container);
+    this.editingQuoteId = quote.id;
+
+    const heading = container.querySelector('#quote-modal-heading');
+    const saveBtn = container.querySelector('#btn-save-quote');
+    if (heading) heading.textContent = 'Edit Quotation';
+    if (saveBtn) saveBtn.textContent = 'Update Quotation';
+
+    const cliSel = container.querySelector('#sel-quote-client');
+    const prjSel = container.querySelector('#sel-quote-project');
+    const clientId = quote.client_id || quote.clientId || '';
+    const projectId = quote.project_id || quote.projectId || '';
+    if (cliSel && clientId) cliSel.value = clientId;
+    if (prjSel) prjSel.value = projectId || '';
+
+    const titleInput = container.querySelector('#inp-quote-title');
+    const taxInput = container.querySelector('#inp-quote-taxrate');
+    const termsInput = container.querySelector('#inp-quote-terms');
+    if (titleInput) titleInput.value = quote.title || '';
+    if (taxInput) taxInput.value = quote.tax_rate ?? quote.taxRate ?? 0;
+    if (termsInput) termsInput.value = quote.terms_conditions || quote.termsConditions || termsInput.value;
+
+    if (cardsContainer) {
+      cardsContainer.innerHTML = '';
+      const items = Array.isArray(quote.items) ? quote.items : [];
+      if (items.length === 0) this.addLineItem(cardsContainer);
+      else items.forEach((itm) => this.addLineItem(cardsContainer, itm));
+    }
+    this.recalculateTotals(container);
+    if (modal) modal.style.display = 'flex';
   },
 
   async populateDropdowns(container) {

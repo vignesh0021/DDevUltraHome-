@@ -26,10 +26,10 @@ export const DocsHubScreen = {
       <div style="padding: 12px 14px 20px;">
         <!-- Clean Full-Width Segmented Tab Control (Zero Horizontal Scroll) -->
         <div style="background: #E2E8F0; padding: 4px; border-radius: var(--radius-md); display: flex; gap: 4px; margin-bottom: 14px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-          <button id="seg-btn-quotes" class="docs-seg-btn ${this.currentTab === 'quotes' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'quotes' ? 'background: var(--brand-navy-900); color: white; box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'}">
+          <button id="seg-btn-quotes" class="docs-seg-btn ${this.currentTab === 'quotes' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'quotes' ? 'background: #0B192C; color: #ffffff; box-shadow: var(--shadow-sm);' : 'background: transparent; color: #1E293B;'}">
             ${quotesLabel}
           </button>
-          <button id="seg-btn-vault" class="docs-seg-btn ${this.currentTab === 'vault' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'vault' ? 'background: var(--brand-navy-900); color: white; box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'}">
+          <button id="seg-btn-vault" class="docs-seg-btn ${this.currentTab === 'vault' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'vault' ? 'background: #0B192C; color: #ffffff; box-shadow: var(--shadow-sm);' : 'background: transparent; color: #1E293B;'}">
             ${vaultLabel}
           </button>
         </div>
@@ -47,16 +47,16 @@ export const DocsHubScreen = {
       this.currentTab = activeTab;
       [quotesBtn, vaultBtn].forEach(btn => {
         btn.style.background = 'transparent';
-        btn.style.color = 'var(--text-secondary)';
+        btn.style.color = '#1E293B';
         btn.style.boxShadow = 'none';
       });
       if (activeTab === 'quotes') {
-        quotesBtn.style.background = 'var(--brand-navy-900)';
-        quotesBtn.style.color = 'white';
+        quotesBtn.style.background = '#0B192C';
+        quotesBtn.style.color = '#ffffff';
         quotesBtn.style.boxShadow = 'var(--shadow-sm)';
       } else if (activeTab === 'vault') {
-        vaultBtn.style.background = 'var(--brand-navy-900)';
-        vaultBtn.style.color = 'white';
+        vaultBtn.style.background = '#0B192C';
+        vaultBtn.style.color = '#ffffff';
         vaultBtn.style.boxShadow = 'var(--shadow-sm)';
       }
     };

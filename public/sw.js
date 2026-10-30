@@ -6,7 +6,7 @@
  * - Safe Cache API usage (zero POST caching attempts)
  */
 
-const CACHE_NAME = 'ddevultrahome-v4';
+const CACHE_NAME = 'ddevultrahome-v5';
 
 const STATIC_ASSETS = [
   '/',

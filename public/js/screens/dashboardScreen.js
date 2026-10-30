@@ -93,7 +93,7 @@ export const DashboardScreen = {
               <!-- Timeframe switchers: Day, Month, Year -->
               <div style="display: flex; gap: 4px; background: var(--bg-card-subtle); padding: 3px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
                 <button type="button" class="btn-timeframe" data-period="DAY" style="border: none; background: transparent; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; color: var(--text-secondary);">Day</button>
-                <button type="button" class="btn-timeframe active" data-period="MONTH" style="border: none; background: var(--brand-navy-900); color: white; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer;">Month</button>
+                <button type="button" class="btn-timeframe active" data-period="MONTH" style="border: none; background: #ea580c; color: #ffffff; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer;">Month</button>
                 <button type="button" class="btn-timeframe" data-period="YEAR" style="border: none; background: transparent; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; color: var(--text-secondary);">Year</button>
               </div>
             </div>
@@ -487,8 +487,8 @@ export const DashboardScreen = {
       // Update button active states
       container.querySelectorAll('.btn-timeframe').forEach(b => {
         const isCurrent = b.dataset.period === period;
-        b.style.background = isCurrent ? 'var(--brand-navy-900)' : 'transparent';
-        b.style.color = isCurrent ? '#FFFFFF' : 'var(--text-secondary)';
+        b.style.background = isCurrent ? '#ea580c' : 'transparent';
+        b.style.color = isCurrent ? '#ffffff' : '#e2e8f0';
       });
     };
 

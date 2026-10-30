@@ -236,7 +236,7 @@ describe('Production Readiness Audit — Security, Repository & Service Worker',
     const content = fs.readFileSync(swPath, 'utf8');
 
     assert.ok(content.includes("if (request.method !== 'GET')"), 'sw.js must reject non-GET requests from caching');
-    assert.ok(content.includes('ddevultrahome-v4'), 'sw.js must be bumped to v4');
+    assert.ok(content.includes('ddevultrahome-v5'), 'sw.js must be bumped to v5');
     assert.ok(content.includes('request.mode === \'navigate\''), 'sw.js must have navigation network-first handler');
     assert.ok(content.includes('/js/apiClient.js'), 'sw.js must cache apiClient.js');
     assert.ok(content.includes('/js/i18n.js'), 'sw.js must cache i18n.js');

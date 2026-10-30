@@ -65,7 +65,7 @@ export const DocumentsScreen = {
 
         <!-- Document Filter Chips -->
         <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px;">
-          <button class="doc-filter-btn btn-chip active" data-type="ALL" style="padding: 4px 12px; font-size: 12px; border-radius: 16px; border: 1px solid var(--border-medium); background: var(--brand-navy-900); color: white; cursor: pointer;">All Documents</button>
+          <button class="doc-filter-btn btn-chip active" data-type="ALL" style="padding: 4px 12px; font-size: 12px; border-radius: 16px; border: 1px solid #0B192C; background: #0B192C; color: #ffffff; cursor: pointer;">All Documents</button>
           <button class="doc-filter-btn btn-chip" data-type="INVOICE" style="padding: 4px 12px; font-size: 12px; border-radius: 16px; border: 1px solid var(--border-medium); background: white; color: var(--text-secondary); cursor: pointer;">Invoices</button>
           <button class="doc-filter-btn btn-chip" data-type="CONTRACT" style="padding: 4px 12px; font-size: 12px; border-radius: 16px; border: 1px solid var(--border-medium); background: white; color: var(--text-secondary); cursor: pointer;">Contracts</button>
           <button class="doc-filter-btn btn-chip" data-type="DRAWING" style="padding: 4px 12px; font-size: 12px; border-radius: 16px; border: 1px solid var(--border-medium); background: white; color: var(--text-secondary); cursor: pointer;">Drawings</button>
@@ -469,11 +469,11 @@ Total Amount: 159,300.00`;
     container.querySelectorAll('.doc-filter-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         container.querySelectorAll('.doc-filter-btn').forEach(b => {
-          b.style.background = 'white';
-          b.style.color = 'var(--text-secondary)';
+          b.style.background = '#ffffff';
+          b.style.color = '#1E293B';
         });
-        e.target.style.background = 'var(--brand-navy-900)';
-        e.target.style.color = 'white';
+        e.target.style.background = '#0B192C';
+        e.target.style.color = '#ffffff';
         this.currentFilter = e.target.dataset.type;
         this.loadVault(container);
       });

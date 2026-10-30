@@ -581,24 +581,44 @@ export class FinancialService {
   updateExpense(expenseId, data) {
     if (!expenseId) throw new Error('Expense ID is required to update.');
 
-    const expense = this.db.queryOne('SELECT * FROM expenses WHERE id = ? AND deleted_at IS NULL;', [expenseId]);
-    if (!expense) throw new Error(`Expense ${expenseId} not found or voided.`);
+    return this.db.transaction(() => {
+      const expense = this.db.queryOne('SELECT * FROM expenses WHERE id = ? AND deleted_at IS NULL;', [expenseId]);
+      if (!expense) throw new Error(`Expense ${expenseId} not found or voided.`);
 
-    const category = data.category !== undefined ? data.category : expense.category;
-    const paidTo = data.paid_to !== undefined ? data.paid_to : (data.paidTo !== undefined ? data.paidTo : expense.paid_to);
-    const expenseDate = data.expense_date !== undefined ? data.expense_date : (data.expenseDate !== undefined ? data.expenseDate : expense.expense_date);
-    const notes = data.notes !== undefined ? data.notes : expense.notes;
+      const category = data.category !== undefined ? data.category : expense.category;
+      const paidTo = data.paid_to !== undefined ? data.paid_to : (data.paidTo !== undefined ? data.paidTo : expense.paid_to);
+      const expenseDate = data.expense_date !== undefined ? data.expense_date : (data.expenseDate !== undefined ? data.expenseDate : expense.expense_date);
+      const notes = data.notes !== undefined ? data.notes : expense.notes;
+      let amount = expense.amount;
 
-    this.db.run(`
-      UPDATE expenses
-      SET category = ?,
-          paid_to = ?,
-          expense_date = ?,
-          notes = ?
-      WHERE id = ?;
-    `, [category, paidTo, expenseDate, notes, expenseId]);
+      if (data.amount !== undefined && data.amount !== null && data.amount !== '') {
+        const next = Number(data.amount);
+        if (!Number.isFinite(next) || next <= 0) throw new Error('Amount must be greater than zero.');
+        const delta = SafeMath.round(next - expense.amount, 2);
+        if (delta !== 0) {
+          const account = this.db.queryOne('SELECT id, current_balance FROM financial_accounts WHERE id = ?;', [expense.account_id]);
+          if (!account) throw new Error(`Financial account ${expense.account_id} not found.`);
+          if (delta > 0 && account.current_balance + 0.001 < delta) {
+            throw new Error(`Not enough balance to raise this expense by ₹${delta.toLocaleString('en-IN')}.`);
+          }
+          const newBalance = SafeMath.round(account.current_balance - delta, 2);
+          this.db.run('UPDATE financial_accounts SET current_balance = ?, updated_at = datetime(\'now\') WHERE id = ?;', [newBalance, account.id]);
+          amount = next;
+        }
+      }
 
-    return this.db.queryOne('SELECT * FROM expenses WHERE id = ?;', [expenseId]);
+      this.db.run(`
+        UPDATE expenses
+        SET category = ?,
+            paid_to = ?,
+            expense_date = ?,
+            notes = ?,
+            amount = ?
+        WHERE id = ?;
+      `, [category, paidTo, expenseDate, notes, amount, expenseId]);
+
+      return this.db.queryOne('SELECT * FROM expenses WHERE id = ?;', [expenseId]);
+    });
   }
 
   /**

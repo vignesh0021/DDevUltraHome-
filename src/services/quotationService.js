@@ -271,6 +271,13 @@ export class QuotationService {
       items = null
     } = data;
 
+    const clientId = data.clientId || data.client_id || existing.client_id;
+    let projectId = existing.project_id;
+    if (data.projectId !== undefined || data.project_id !== undefined) {
+      const raw = data.projectId !== undefined ? data.projectId : data.project_id;
+      projectId = raw ? raw : null;
+    }
+
     return this.db.transaction(() => {
       let subtotal = existing.subtotal;
       let taxAmount = existing.tax_amount;
@@ -323,11 +330,12 @@ export class QuotationService {
       this.db.run(`
         UPDATE quotations
         SET title = ?, tax_rate = ?, tax_amount = ?, subtotal = ?, total_amount = ?,
-            terms_conditions = ?, valid_until = ?, updated_at = datetime('now')
+            terms_conditions = ?, valid_until = ?, client_id = ?, project_id = ?,
+            updated_at = datetime('now')
         WHERE id = ?;
       `, [
         title.trim(), taxRate, taxAmount, subtotal, totalAmount,
-        termsConditions, validUntil, id
+        termsConditions, validUntil, clientId, projectId, id
       ]);
 
       return this.getQuotationById(id);

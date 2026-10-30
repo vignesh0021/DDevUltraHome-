@@ -100,6 +100,10 @@
 .badge-status.badge-unpaid { background: var(--color-danger-bg); color: #991B1B; border: 1px solid var(--color-danger-border); }
 .badge-status.badge-advance { background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; }
 .badge-status.badge-verified { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+.badge-status.badge-draft { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+.badge-status.badge-approved { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+.badge-status.badge-superseded { background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; }
+.badge-status.badge-sent { background: #EFF6FF; color: #1E3A8A; border: 1px solid #BFDBFE; }
 
 /* Business App Shell Header */
 .business-header {
@@ -422,6 +426,7 @@
   --border-light: #334155;
   --border-medium: #475569;
   --border-focus: #F59E0B;
+  color-scheme: dark;
 }
 
 [data-theme="dark"] .brand-title {
@@ -488,4 +493,74 @@
   background: #d97706;
   color: #ffffff;
   border: 1px solid #fbbf24;
+}
+
+/* Night mode turns --brand-navy-900 into near-white so page titles stay
+   readable on the dark canvas. Ledger cards, forms, and totals are painted
+   on white, so they must take the real navy ink back or the filled data
+   disappears. */
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background:white"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #FFF"],
+[data-theme="dark"] [style*="background:#FFF"],
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background: #FFFFFF"],
+[data-theme="dark"] [style*="background:#FFFFFF"],
+[data-theme="dark"] [style*="background: #F8FAFC"],
+[data-theme="dark"] [style*="background:#F8FAFC"],
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background: #F1F5F9"],
+[data-theme="dark"] [style*="background:#F1F5F9"],
+[data-theme="dark"] [style*="background: #FFFBEB"],
+[data-theme="dark"] [style*="background: #FAF5FF"],
+[data-theme="dark"] [style*="background: #EFF6FF"],
+[data-theme="dark"] [style*="background: #F0FDF4"],
+[data-theme="dark"] [style*="background: #EEF2FF"],
+[data-theme="dark"] [style*="background: #ECFDF5"],
+[data-theme="dark"] [style*="background: #FEF3C7"],
+[data-theme="dark"] [style*="background: #E2E8F0"] {
+  --brand-navy-950: #060D17;
+  --brand-navy-900: #0B192C;
+  --brand-navy-800: #132A4A;
+  --brand-navy-700: #1E3E62;
+  --brand-navy-600: #2B527E;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --bg-card: #FFFFFF;
+  --bg-card-subtle: #F1F5F9;
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
+  color: #0F172A;
+  color-scheme: light;
+}
+
+[data-theme="dark"] [style*="background: white"] .form-control,
+[data-theme="dark"] [style*="background: white"] input,
+[data-theme="dark"] [style*="background: white"] select,
+[data-theme="dark"] [style*="background: white"] textarea,
+[data-theme="dark"] [style*="background:white"] .form-control,
+[data-theme="dark"] [style*="background:white"] input,
+[data-theme="dark"] [style*="background:white"] select,
+[data-theme="dark"] [style*="background:white"] textarea {
+  background: #ffffff !important;
+  color: #0F172A !important;
+  border: 1px solid #CBD5E1 !important;
+  -webkit-text-fill-color: #0F172A;
+}
+
+[data-theme="dark"] [style*="background: white"] .form-label,
+[data-theme="dark"] [style*="background:white"] .form-label {
+  color: #334155;
+}
+
+[data-theme="dark"] [style*="background: white"] input::placeholder,
+[data-theme="dark"] [style*="background:white"] input::placeholder,
+[data-theme="dark"] [style*="background: white"] textarea::placeholder,
+[data-theme="dark"] [style*="background:white"] textarea::placeholder {
+  color: #64748B;
+  -webkit-text-fill-color: #64748B;
 }

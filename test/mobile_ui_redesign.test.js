@@ -202,4 +202,28 @@ describe('Mobile-First UI/UX Redesign & Layout Integrity', () => {
     assert.ok(!rule.includes('var(--brand-navy-900)'), 'must not use the inverted navy token');
   });
 
+  it('keeps filled names and amounts dark on white cards in night mode', () => {
+    const css = fs.readFileSync(path.join(ROOT, 'public', 'css', 'design-system.css'), 'utf8');
+    const marker = '[data-theme="dark"] [style*="background: white"]';
+    const start = css.indexOf(marker);
+    assert.ok(start >= 0, 'paper-surface night rule exists');
+    const block = css.slice(start, css.indexOf('}', start));
+    assert.match(block, /--brand-navy-900:\s*#0B192C/);
+    assert.match(block, /--text-muted:\s*#475569/);
+    assert.match(block, /color:\s*#0F172A/);
+    assert.match(block, /color-scheme:\s*light/);
+    assert.match(css, /\.badge-status\.badge-draft/);
+
+    const finance = fs.readFileSync(path.join(ROOT, 'public', 'js', 'screens', 'financeHubScreen.js'), 'utf8');
+    const docs = fs.readFileSync(path.join(ROOT, 'public', 'js', 'screens', 'docsHubScreen.js'), 'utf8');
+    assert.match(finance, /background: #0B192C; color: #ffffff/);
+    assert.match(docs, /background: #0B192C; color: #ffffff/);
+    assert.ok(!finance.includes('background: var(--brand-navy-900)'), 'selected finance tab must not use inverted navy');
+
+    const quotes = fs.readFileSync(path.join(ROOT, 'public', 'js', 'screens', 'quotationsScreen.js'), 'utf8');
+    assert.match(quotes, /btn-edit-quote/);
+    assert.match(quotes, /editingQuoteId/);
+    assert.match(quotes, /\/quotations\/\$\{this\.editingQuoteId\}`,\s*'PUT'/);
+  });
+
 });

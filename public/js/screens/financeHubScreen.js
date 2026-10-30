@@ -29,13 +29,13 @@ export const FinanceHubScreen = {
       <div style="padding: 12px 14px 20px;">
         <!-- Clean Full-Width Segmented Tab Control (Zero Horizontal Scroll) -->
         <div style="background: #E2E8F0; padding: 4px; border-radius: var(--radius-md); display: flex; gap: 4px; margin-bottom: 14px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-          <button id="seg-btn-receipts" class="finance-seg-btn ${this.currentTab === 'receipts' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'receipts' ? 'background: var(--brand-navy-900); color: white; box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'}">
+          <button id="seg-btn-receipts" class="finance-seg-btn ${this.currentTab === 'receipts' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'receipts' ? 'background: #0B192C; color: #ffffff; box-shadow: var(--shadow-sm);' : 'background: transparent; color: #1E293B;'}">
             ${receiptsLabel}
           </button>
-          <button id="seg-btn-expenses" class="finance-seg-btn ${this.currentTab === 'expenses' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'expenses' ? 'background: var(--brand-navy-900); color: white; box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'}">
+          <button id="seg-btn-expenses" class="finance-seg-btn ${this.currentTab === 'expenses' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'expenses' ? 'background: #0B192C; color: #ffffff; box-shadow: var(--shadow-sm);' : 'background: transparent; color: #1E293B;'}">
             ${expensesLabel}
           </button>
-          <button id="seg-btn-suppliers" class="finance-seg-btn ${this.currentTab === 'suppliers' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'suppliers' ? 'background: var(--brand-navy-900); color: white; box-shadow: var(--shadow-sm);' : 'background: transparent; color: var(--text-secondary);'}">
+          <button id="seg-btn-suppliers" class="finance-seg-btn ${this.currentTab === 'suppliers' ? 'active' : ''}" type="button" style="flex: 1; min-height: 42px; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; ${this.currentTab === 'suppliers' ? 'background: #0B192C; color: #ffffff; box-shadow: var(--shadow-sm);' : 'background: transparent; color: #1E293B;'}">
             ${suppliersLabel}
           </button>
         </div>
@@ -54,20 +54,20 @@ export const FinanceHubScreen = {
       this.currentTab = activeTab;
       [receiptsBtn, expensesBtn, suppliersBtn].forEach(btn => {
         btn.style.background = 'transparent';
-        btn.style.color = 'var(--text-secondary)';
+        btn.style.color = '#1E293B';
         btn.style.boxShadow = 'none';
       });
       if (activeTab === 'receipts') {
-        receiptsBtn.style.background = 'var(--brand-navy-900)';
-        receiptsBtn.style.color = 'white';
+        receiptsBtn.style.background = '#0B192C';
+        receiptsBtn.style.color = '#ffffff';
         receiptsBtn.style.boxShadow = 'var(--shadow-sm)';
       } else if (activeTab === 'expenses') {
-        expensesBtn.style.background = 'var(--brand-navy-900)';
-        expensesBtn.style.color = 'white';
+        expensesBtn.style.background = '#0B192C';
+        expensesBtn.style.color = '#ffffff';
         expensesBtn.style.boxShadow = 'var(--shadow-sm)';
       } else if (activeTab === 'suppliers') {
-        suppliersBtn.style.background = 'var(--brand-navy-900)';
-        suppliersBtn.style.color = 'white';
+        suppliersBtn.style.background = '#0B192C';
+        suppliersBtn.style.color = '#ffffff';
         suppliersBtn.style.boxShadow = 'var(--shadow-sm)';
       }
     };
