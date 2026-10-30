@@ -145,6 +145,9 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
+  max-width: 100%;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -155,7 +158,9 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
+  touch-action: pan-y;
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + 16px);
 }
 
@@ -185,12 +190,13 @@ header.app-header {
 }
 
 .header-inner {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .brand-wrapper {
@@ -228,6 +234,9 @@ header.app-header {
   color: var(--text-primary);
   letter-spacing: -0.015em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46vw;
 }
 
 .brand-subtitle {
@@ -242,7 +251,9 @@ header.app-header {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 @media (max-width: 420px) {
@@ -838,13 +849,24 @@ main.app-content {
 }
 
 /* --- Tables & Data Grids --- */
+main.app-content,
+.tab-pane,
+.business-subnav,
+.table-responsive {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   margin: 0.75rem 0;
+}
+
+table.data-table th {
+  white-space: normal;
 }
 
 table.data-table {
@@ -941,11 +963,12 @@ nav.mobile-bottom-nav {
 }
 
 .nav-item-btn .nav-label {
-  font-size: 0.72rem;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.1;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 100%;
 }
 
 .nav-item-btn.active {

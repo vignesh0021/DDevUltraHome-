@@ -4,6 +4,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { handoffFile } from '../printDoc.js';
 
 export const BackupScreen = {
   async render(container) {
@@ -60,8 +61,8 @@ export const BackupScreen = {
           </div>
 
           <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button id="btn-sync-gdrive" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 12px; color: var(--text-muted); border-color: var(--border-medium);">
-              Google Drive (Not Connected)
+            <button id="btn-sync-gdrive" class="btn-primary" style="flex: 1; min-height: 44px; font-size: 13px; font-weight: 800;">
+              Save backup to Google Drive
             </button>
             <button id="btn-sync-supabase" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 12px; color: var(--text-muted); border-color: var(--border-medium);">
               Supabase (Not Connected)
@@ -212,8 +213,25 @@ export const BackupScreen = {
     });
 
     // Cloud sync triggers
-    container.querySelector('#btn-sync-gdrive')?.addEventListener('click', () => {
-      alert('Google Drive is not connected. Cloud backup is inactive.');
+    container.querySelector('#btn-sync-gdrive')?.addEventListener('click', async () => {
+      const infoBox = container.querySelector('#backup-snapshot-info');
+      infoBox.style.display = 'block';
+      infoBox.innerHTML = 'Preparing the backup for Google Drive…';
+      try {
+        const res = await BusinessApi.request('/backup/snapshot');
+        const serialized = res.serialized || JSON.stringify(res.payload, null, 2);
+        const filename = `D-DEV-ULTRA-HOMES-backup-${new Date().toISOString().split('T')[0]}.json`;
+        const blob = new Blob([serialized], { type: 'application/json' });
+        const handed = await handoffFile(filename, blob);
+        const when = new Date().toISOString();
+        if (!handed.cancelled) localStorage.setItem('ddev-drive-shared-at', when);
+        infoBox.innerHTML = handed.cancelled
+          ? 'Drive save was cancelled. The books are still on this phone.'
+          : 'Choose <strong>Google Drive</strong> in the share sheet and save this file into a folder named D DEV ULTRA HOMES. Each site stays inside this one backup.';
+        await this.loadSyncStatus(container);
+      } catch (err) {
+        infoBox.innerHTML = `<span style="color: var(--color-danger);">Drive backup failed: ${err.message}</span>`;
+      }
     });
 
     container.querySelector('#btn-sync-supabase')?.addEventListener('click', () => {
@@ -225,21 +243,19 @@ export const BackupScreen = {
     const listEl = container.querySelector('#cloud-sync-status-list');
     try {
       const res = await BusinessApi.request('/backup/status');
-      const providers = res.status?.cloudProviders || [];
+      if (!res) throw new Error('No backup status');
 
+      const driveAt = localStorage.getItem('ddev-drive-shared-at');
+      const driveLabel = driveAt ? `Last sent ${new Date(driveAt).toLocaleDateString('en-IN')}` : 'Tap below to save';
       listEl.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px;">
-            <span>Local Database Storage</span>
-            <span class="badge-status badge-active">Active • Connected</span>
+            <span>On this phone</span>
+            <span class="badge-status badge-active">Saved here</span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px;">
-            <span>Google Drive API</span>
-            <span class="badge-status badge-neutral" style="color: #64748B; background: #F1F5F9; border: 1px solid #CBD5E1;">Not Connected</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px;">
-            <span>Supabase Cloud DB</span>
-            <span class="badge-status badge-neutral" style="color: #64748B; background: #F1F5F9; border: 1px solid #CBD5E1;">Not Connected</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px; gap: 8px;">
+            <span>Google Drive</span>
+            <span class="badge-status badge-active">${driveLabel}</span>
           </div>
         </div>
       `;

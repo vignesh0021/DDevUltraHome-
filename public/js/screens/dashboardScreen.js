@@ -111,7 +111,7 @@ export const DashboardScreen = {
               </div>
 
               <!-- Metrics & Category Breakdown -->
-              <div style="flex: 1; min-width: 170px;">
+              <div style="flex: 1 1 160px; min-width: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border-light);">
                   <span style="font-size: 12px; font-weight: 700; color: #10B981; display: flex; align-items: center; gap: 5px;">
                     <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Received

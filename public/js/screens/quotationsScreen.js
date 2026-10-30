@@ -6,7 +6,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
-import { deliverPdf, textToPdf } from '../printDoc.js';
+import { deliverPdf, buildQuotationPdf } from '../printDoc.js';
 
 export const QuotationsScreen = {
   cachedClients: [],
@@ -313,59 +313,12 @@ export const QuotationsScreen = {
       const quote = this.activeQuotation;
       if (!quote) return;
 
-      const title = quote.title || 'D DEV ULTRA HOMES Construction Proposal';
-      const total = `₹${(parseFloat(quote.total_amount) || 0).toLocaleString('en-IN')}`;
-      const items = quote.items || [];
-
-      const lines = [
-        '================================================================',
-        '                      D DEV ULTRA HOMES                         ',
-        '                    Building your dreams                        ',
-        '      6a MGR Nagar, 2nd Cross Street, Velachery, Chennai        ',
-        '================================================================',
-        '',
-        `OFFICIAL ESTIMATE & PROPOSAL: ${quote.quotation_number || 'QUO'} (Rev ${quote.revision_number || 0})`,
-        `Date: ${new Date().toISOString().split('T')[0]}`,
-        `Client: ${quote.client_name || 'Direct Client'}`,
-        `Project: ${quote.project_name || quote.title || 'Construction Estimate'}`,
-        `Proposal: ${title}`,
-        `Total Value: ${total}`,
-        '',
-        '----------------------------------------------------------------',
-        'ITEMIZED SCOPE OF WORK & SPECIFICATIONS (SCHEDULE A & B)',
-        '----------------------------------------------------------------',
-        ...(items.length > 0 ? items.map((itm, idx) => {
-          const desc = itm.description || 'Civil Works Item';
-          const cat = itm.category || 'CIVIL';
-          const qty = itm.quantity !== undefined ? itm.quantity : 1;
-          const unit = itm.unit || 'sqft';
-          const rate = parseFloat(itm.unitRate !== undefined ? itm.unitRate : (itm.unit_rate !== undefined ? itm.unit_rate : 0)) || 0;
-          const lineTotal = parseFloat(itm.totalPrice !== undefined ? itm.totalPrice : (itm.total_price !== undefined ? itm.total_price : (qty * rate))) || 0;
-          return `${(idx + 1).toString().padStart(2, '0')}. ${desc} [${cat}] | ${qty} ${unit} @ Rs.${rate.toLocaleString('en-IN')} = Rs.${lineTotal.toLocaleString('en-IN')}`;
-        }) : ['1. Standard civil specifications and built-up area as per architectural drawings']),
-        '',
-        '----------------------------------------------------------------',
-        `Subtotal: Rs.${(parseFloat(quote.subtotal || quote.total_amount) || 0).toLocaleString('en-IN')}`,
-        `Tax / GST: Rs.${(parseFloat(quote.tax_amount) || 0).toLocaleString('en-IN')}`,
-        `GRAND TOTAL: ${total}`,
-        '----------------------------------------------------------------',
-        '',
-        'TERMS & CONDITIONS:',
-        '1. 8-Stage milestone payment schedule as per Schedule B terms.',
-        '2. Advance amount is an unearned liability deposit until stage certification.',
-        '3. Electricity connection & water charges to be borne by client.',
-        '4. Quotation valid for 30 days from date of issue.',
-        '',
-        '',
-        'Authorized Builder Signatory            Client / Owner Signature',
-        '----------------------------            ------------------------'
-      ];
-
       try {
         const filename = `${quote.quotation_number || 'Quotation'}.pdf`;
-        await deliverPdf(filename, lines, {
-          title: `${quote.quotation_number} - D DEV ULTRA HOMES`,
-          text: `Construction quotation for ${quote.client_name || 'Client'}: ${total}`,
+        const pdf = buildQuotationPdf(quote);
+        await deliverPdf(filename, pdf, {
+          title: `${quote.quotation_number || 'Quotation'} - D DEV ULTRA HOMES`,
+          text: `Construction quotation for ${quote.client_name || 'Client'}`,
           dialogTitle: 'Share Quotation PDF'
         });
       } catch (err) {
