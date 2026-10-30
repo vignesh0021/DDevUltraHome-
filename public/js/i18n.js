@@ -167,6 +167,47 @@ export const I18N_DATA = {
       empty: 'தகவல் இல்லை',
       required: 'கட்டாயம்',
       optional: 'விருப்பத்திற்குரியது'
+    },
+
+    business: {
+      appName: 'D DEV ULTRA HOMES',
+      tagline: 'Building your dreams',
+      subtitle: 'வணிக மேலாண்மை தளம்',
+      brandBadge: 'தமிழ்நாடு • தொழில்முறை கட்டுமானம்',
+      statusOnline: 'ஆன்லைன்',
+      statusOffline: 'ஆஃப்லைன் (சேமித்த தரவு)',
+      roleOwner: '👑 உரிமையாளர் (Owner)',
+      roleAccountant: '📊 கணக்காளர் (Accountant)',
+      roleSiteManager: '👷 தள மேலாளர் (Site Manager)',
+      roleEngineer: '📐 பொறியாளர் (Engineer)',
+      roleClient: '🏠 வாடிக்கையாளர் (Client)',
+      hubs: {
+        dashboard: 'முகப்பு பலகை',
+        projects: 'திட்டங்கள்',
+        finance: 'நிதி & செலவு',
+        documents: 'மதிப்பீடு & ஆவணம்',
+        settings: 'அமைப்புகள்'
+      },
+      tabs: {
+        receipts: 'வரவு ரசீதுகள்',
+        expenses: 'திட்ட செலவுகள்',
+        suppliers: 'சப்ளையர் பாக்கிகள்',
+        quotes: 'மதிப்பீடு தயாரிப்பு',
+        vaultOcr: 'ஆவணப் பெட்டகம் & OCR'
+      },
+      common: {
+        search: 'தேடுக...',
+        filter: 'வடிகட்டு',
+        addNew: '+ புதிதாக சேர்',
+        save: 'சேமி',
+        cancel: 'ரத்து',
+        status: 'நிலை',
+        amount: 'தொகை',
+        date: 'தேதி',
+        actions: 'செயல்கள்',
+        loading: 'தரவு ஏற்றப்படுகிறது...',
+        noData: 'பதிவுகள் எதுவும் இல்லை'
+      }
     }
   },
 
@@ -333,6 +374,47 @@ export const I18N_DATA = {
       empty: 'No data',
       required: 'Required',
       optional: 'Optional'
+    },
+
+    business: {
+      appName: 'D DEV ULTRA HOMES',
+      tagline: 'Building your dreams',
+      subtitle: 'Business Management Suite',
+      brandBadge: 'Tamil Nadu • Construction ERP',
+      statusOnline: 'Online',
+      statusOffline: 'Offline (Local Vault)',
+      roleOwner: '👑 Owner',
+      roleAccountant: '📊 Accountant',
+      roleSiteManager: '👷 Site Manager',
+      roleEngineer: '📐 Engineer',
+      roleClient: '🏠 Client',
+      hubs: {
+        dashboard: 'Dashboard',
+        projects: 'Projects',
+        finance: 'Finance',
+        documents: 'Quotes & Docs',
+        settings: 'Settings'
+      },
+      tabs: {
+        receipts: 'Receipts',
+        expenses: 'Expenses',
+        suppliers: 'Suppliers & Dues',
+        quotes: 'Quotation Builder',
+        vaultOcr: 'Document Vault & OCR'
+      },
+      common: {
+        search: 'Search...',
+        filter: 'Filter',
+        addNew: '+ Add New',
+        save: 'Save',
+        cancel: 'Cancel',
+        status: 'Status',
+        amount: 'Amount',
+        date: 'Date',
+        actions: 'Actions',
+        loading: 'Loading data...',
+        noData: 'No records found'
+      }
     }
   }
 };
@@ -340,6 +422,7 @@ export const I18N_DATA = {
 class I18nManager {
   constructor() {
     this.currentLang = localStorage.getItem('ddev_lang') || 'ta'; // Default to Tamil
+    this.listeners = [];
   }
 
   get lang() {
@@ -351,6 +434,29 @@ class I18nManager {
       this.currentLang = l;
       localStorage.setItem('ddev_lang', l);
       this.applyTranslations();
+      this.notifyListeners();
+    }
+  }
+
+  toggle() {
+    const next = this.currentLang === 'ta' ? 'en' : 'ta';
+    this.lang = next;
+    return next;
+  }
+
+  onChange(listener) {
+    if (typeof listener === 'function') {
+      this.listeners.push(listener);
+    }
+  }
+
+  notifyListeners() {
+    for (const fn of this.listeners) {
+      try {
+        fn(this.currentLang);
+      } catch (err) {
+        console.error('i18n listener error:', err);
+      }
     }
   }
 
@@ -358,7 +464,14 @@ class I18nManager {
     const keys = path.split('.');
     let curr = I18N_DATA[this.currentLang] || I18N_DATA['en'];
     for (const k of keys) {
-      if (!curr || typeof curr !== 'object') return path;
+      if (!curr || typeof curr !== 'object') {
+        let fallback = I18N_DATA['en'];
+        for (const fk of keys) {
+          if (!fallback || typeof fallback !== 'object') return path;
+          fallback = fallback[fk];
+        }
+        return fallback || path;
+      }
       curr = curr[k];
     }
     return curr || path;
@@ -380,6 +493,15 @@ class I18nManager {
       const val = this.t(key);
       if (val && typeof val === 'string') {
         el.setAttribute('placeholder', val);
+      }
+    });
+
+    // Translate title tooltips with data-i18n-title
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      const val = this.t(key);
+      if (val && typeof val === 'string') {
+        el.setAttribute('title', val);
       }
     });
 

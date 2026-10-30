@@ -286,6 +286,35 @@ header.app-header {
   border-color: var(--accent-border);
 }
 
+.role-pill-btn {
+  background: linear-gradient(135deg, #0B192C 0%, #1E3E62 100%);
+  color: #FBBF24;
+  border: 1px solid #F59E0B;
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  min-height: 36px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(11, 25, 44, 0.2);
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.role-pill-btn:hover {
+  background: linear-gradient(135deg, #1E3E62 0%, #2B527E 100%);
+  color: #FEF3C7;
+  border-color: #FBBF24;
+}
+
+.role-pill-btn .role-dot {
+  font-size: 0.85rem;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;

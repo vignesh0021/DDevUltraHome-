@@ -78,26 +78,56 @@ function initBusinessPlatform() {
   if (!mountEl) return;
 
   const router = new ScreenRouter(mountEl);
-  const activeUser = BusinessApi.getActiveUser();
-  const roleDisplay = document.getElementById('active-role-display');
-  if (roleDisplay && activeUser) {
-    const roleEmoji = {
-      OWNER: '👑 OWNER',
-      ACCOUNTANT: '📊 ACCOUNTANT',
-      SITE_MANAGER: '👷 SITE MANAGER',
-      ENGINEER: '📐 ENGINEER',
-      CLIENT: '🏠 CLIENT'
-    };
-    roleDisplay.textContent = roleEmoji[activeUser.role] || activeUser.role;
-  }
+  window.appRouter = router;
+
+  const updateRoleDisplay = () => {
+    const activeUser = BusinessApi.getActiveUser();
+    const roleDisplay = document.getElementById('active-role-display');
+    if (roleDisplay && activeUser) {
+      const isTa = i18n.lang === 'ta';
+      const roleMap = {
+        OWNER: isTa ? '👑 உரிமையாளர்' : '👑 OWNER',
+        ACCOUNTANT: isTa ? '📊 கணக்காளர்' : '📊 ACCOUNTANT',
+        SITE_MANAGER: isTa ? '👷 தள மேலாளர்' : '👷 SITE MANAGER',
+        ENGINEER: isTa ? '📐 பொறியாளர்' : '📐 ENGINEER',
+        CLIENT: isTa ? '🏠 வாடிக்கையாளர்' : '🏠 CLIENT'
+      };
+      roleDisplay.textContent = roleMap[activeUser.role] || activeUser.role;
+    }
+  };
+  updateRoleDisplay();
 
   window.appNavigate = (screenKey) => {
+    // Map child screens to their primary 5-hub bottom navigation item
+    let bottomNavTarget = screenKey;
+    if (['income', 'expenses', 'suppliers', 'finance'].includes(screenKey)) {
+      bottomNavTarget = 'finance';
+    } else if (['quotations', 'vault', 'documents', 'docs'].includes(screenKey)) {
+      bottomNavTarget = 'documents';
+    } else if (['settings', 'clients', 'reports', 'backup'].includes(screenKey)) {
+      bottomNavTarget = 'settings';
+    } else if (screenKey === 'dashboard') {
+      bottomNavTarget = 'dashboard';
+    } else if (screenKey === 'projects') {
+      bottomNavTarget = 'projects';
+    }
+
+    // Highlight bottom nav buttons
+    document.querySelectorAll('.mobile-bottom-nav .nav-item-btn').forEach(btn => {
+      const s = btn.getAttribute('data-screen');
+      btn.classList.toggle('active', s === bottomNavTarget);
+    });
+
+    // Also update legacy business-tab-btn if present
     document.querySelectorAll('.business-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-screen') === screenKey);
     });
+
     router.navigate(screenKey);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Wire business subnav buttons if any exist
   document.querySelectorAll('.business-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const screen = btn.getAttribute('data-screen');
@@ -152,10 +182,10 @@ function initConnectionStatus() {
     if (pill && text) {
       if (isOnline) {
         pill.className = 'status-pill';
-        pill.innerHTML = `<span>🟢</span><span>${i18n.t('statusOnline')}</span>`;
+        pill.innerHTML = `<span>🟢</span><span>${i18n.t('business.statusOnline')}</span>`;
       } else {
         pill.className = 'status-pill offline';
-        pill.innerHTML = `<span>📴</span><span>${i18n.t('statusOffline')}</span>`;
+        pill.innerHTML = `<span>📴</span><span>${i18n.t('business.statusOffline')}</span>`;
       }
     }
   }
@@ -172,13 +202,32 @@ function initLocalization() {
   const langBtn = document.getElementById('lang-toggle-btn');
   if (langBtn) {
     langBtn.addEventListener('click', () => {
-      const nextLang = i18n.lang === 'ta' ? 'en' : 'ta';
-      i18n.lang = nextLang;
-      state.currentLang = nextLang;
-      initConnectionStatus();
-      updateDistrictLabel();
+      i18n.toggle();
     });
   }
+
+  i18n.onChange((lang) => {
+    state.currentLang = lang;
+    initConnectionStatus();
+    updateDistrictLabel();
+    const roleDisplay = document.getElementById('active-role-display');
+    const activeUser = BusinessApi.getActiveUser();
+    if (roleDisplay && activeUser) {
+      const isTa = lang === 'ta';
+      const roleMap = {
+        OWNER: isTa ? '👑 உரிமையாளர்' : '👑 OWNER',
+        ACCOUNTANT: isTa ? '📊 கணக்காளர்' : '📊 ACCOUNTANT',
+        SITE_MANAGER: isTa ? '👷 தள மேலாளர்' : '👷 SITE MANAGER',
+        ENGINEER: isTa ? '📐 பொறியாளர்' : '📐 ENGINEER',
+        CLIENT: isTa ? '🏠 வாடிக்கையாளர்' : '🏠 CLIENT'
+      };
+      roleDisplay.textContent = roleMap[activeUser.role] || activeUser.role;
+    }
+    // Re-render currently mounted screen in new language immediately
+    if (window.appRouter && window.appRouter.currentScreen) {
+      window.appRouter.navigate(window.appRouter.currentScreen);
+    }
+  });
 }
 
 function updateDistrictLabel() {
@@ -193,11 +242,18 @@ function updateDistrictLabel() {
 
 // --- Mobile Bottom Navigation Bar (5 Primary Destinations) ---
 function initMobileNavigation() {
-  const navBtns = document.querySelectorAll('.nav-item-btn');
+  const navBtns = document.querySelectorAll('.mobile-bottom-nav .nav-item-btn');
   navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      const screenKey = btn.getAttribute('data-screen');
+      if (screenKey && window.appNavigate) {
+        window.appNavigate(screenKey);
+        return;
+      }
       const targetTab = btn.getAttribute('data-tab');
-      switchPrimaryTab(targetTab);
+      if (targetTab) {
+        switchPrimaryTab(targetTab);
+      }
     });
   });
 
