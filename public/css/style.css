@@ -227,6 +227,7 @@ header.app-header {
   line-height: 1.2;
   color: var(--text-primary);
   letter-spacing: -0.015em;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
@@ -234,12 +235,53 @@ header.app-header {
   color: var(--accent);
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  header.app-header {
+    padding: 0.5rem 0.5rem;
+    padding-top: calc(0.5rem + var(--safe-top));
+  }
+  .header-inner {
+    gap: 0.35rem;
+  }
+  .brand-wrapper {
+    gap: 0.4rem;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+  .brand-details {
+    min-width: 0;
+  }
+  .brand-title {
+    font-size: clamp(0.78rem, 3.8vw, 0.95rem);
+    white-space: nowrap;
+  }
+  .brand-subtitle {
+    font-size: 0.65rem;
+  }
+  .header-actions {
+    gap: 0.25rem;
+  }
+  .status-pill {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  .role-pill-btn {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.7rem;
+  }
+  .header-btn {
+    padding: 0.25rem;
+  }
 }
 
 /* District Dropdown in Header */

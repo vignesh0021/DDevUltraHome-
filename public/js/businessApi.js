@@ -982,17 +982,31 @@ export const BusinessApi = {
       let quotations = stored ? JSON.parse(stored) : [];
 
       if (method === 'POST' && data) {
+        const clients = this._getOfflineClients();
+        const client = clients.find(c => c.id === (data.clientId || data.client_id));
+        const clientName = data.client_name || data.clientName || client?.name || 'Direct Client';
+
+        const computedSubtotal = data.items ? data.items.reduce((s, itm) => s + (parseFloat(itm.totalPrice || itm.total_price) || 0), 0) : 0;
+        const taxRate = parseFloat(data.taxRate) || 0;
+        const taxAmount = (computedSubtotal * taxRate) / 100;
+        const totalAmount = computedSubtotal + taxAmount;
+
         const newQ = {
           id: `quo_off_${Date.now()}`,
           quotation_number: `QUO-${new Date().getFullYear()}-${(quotations.length + 1).toString().padStart(3, '0')}`,
           revision_number: 0,
           title: data.title || 'Construction Estimate',
-          total_amount: data.items ? data.items.reduce((s, itm) => s + (parseFloat(itm.totalPrice) || 0), 0) : 0,
+          subtotal: computedSubtotal,
+          tax_rate: taxRate,
+          tax_amount: taxAmount,
+          total_amount: totalAmount,
           status: 'DRAFT',
           created_at: new Date().toISOString(),
-          client_name: data.client_name || 'Direct Client',
+          client_id: data.clientId || data.client_id,
+          client_name: clientName,
           ...data
         };
+        newQ.client_name = clientName;
         quotations.unshift(newQ);
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotations));
@@ -1001,6 +1015,15 @@ export const BusinessApi = {
       }
 
       return { success: true, quotations };
+    }
+
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'GET') {
+      const qId = endpoint.replace('/quotations/', '');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
+      let quotes = stored ? JSON.parse(stored) : [];
+      const q = quotes.find(item => item.id === qId);
+      if (q) return { success: true, quotation: q };
+      return { success: false, error: 'Quotation not found' };
     }
 
     if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'PUT' && data) {
@@ -1053,13 +1076,130 @@ export const BusinessApi = {
         revision_number: 0,
         title: 'Construction Estimate',
         client_name: 'Direct Client',
-        total_amount: 0
+        total_amount: 0,
+        items: []
       };
 
       const company = this._getOfflineCompany();
+      const items = q.items || [];
+      const subtotal = q.subtotal !== undefined ? q.subtotal : (q.total_amount || 0);
+      const taxAmount = q.tax_amount || 0;
+      const totalAmount = q.total_amount || subtotal;
+
+      const itemsHtml = items.length > 0 ? items.map((itm, i) => `
+        <tr style="border-bottom: 1px solid #E2E8F0;">
+          <td style="padding: 8px; border: 1px solid #E2E8F0; text-align: center;">${i + 1}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0; font-weight: 600; color: #0B192C;">${itm.description}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0; font-size: 11px; color: #64748B;">${itm.category || 'CIVIL'}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0; text-align: right;">${itm.quantity}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0;">${itm.unit || 'sqft'}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0; text-align: right;">₹${(parseFloat(itm.unitRate !== undefined ? itm.unitRate : (itm.unit_rate || 0)) || 0).toLocaleString('en-IN')}</td>
+          <td style="padding: 8px; border: 1px solid #E2E8F0; text-align: right; font-weight: 700; color: #0B192C;">₹${(parseFloat(itm.totalPrice !== undefined ? itm.totalPrice : (itm.total_price || 0)) || 0).toLocaleString('en-IN')}</td>
+        </tr>
+      `).join('') : `
+        <tr><td colspan="7" style="padding: 16px; text-align: center; color: #64748B;">Standard civil specifications and built-up area as per architectural drawings</td></tr>
+      `;
+
       return {
         success: true,
-        html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:30px;"><div style="border-bottom:2px solid #0B192C;padding-bottom:10px;"><h2 style="color:#0B192C;margin:0;">${company.company_name}</h2><p style="color:#D97706;font-weight:bold;margin:2px 0;">${company.tagline}</p><p style="color:#64748B;font-size:12px;margin:2px 0;">${company.address}</p></div><h3 style="margin-top:20px;">OFFICIAL ESTIMATE &amp; PROPOSAL: ${q.quotation_number} (Rev ${q.revision_number})</h3><p>Client: <strong>${q.client_name || 'Client'}</strong></p><p>Proposal: <strong>${q.title || 'Estimate'}</strong></p><p>Total Proposal: <strong style="color:#0B192C;font-size:16px;">₹${(parseFloat(q.total_amount) || 0).toLocaleString('en-IN')}</strong></p><p style="font-size:12px;color:#475569;">Schedule A Engineering Specifications &amp; Schedule B Milestone Payment Terms Apply.</p><div style="margin-top:50px;display:flex;justify-content:space-between;"><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Authorized Builder Signatory</div><div style="border-top:1px solid #333;padding-top:6px;font-size:12px;">Client / House Owner Signature</div></div></body></html>`
+        html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${q.quotation_number || 'Quotation'} - D DEV ULTRA HOMES</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; color: #1E293B; background: #fff; line-height: 1.4; }
+    .header-box { border-bottom: 2px solid #0B192C; padding-bottom: 12px; margin-bottom: 16px; }
+    .company-title { color: #0B192C; margin: 0; font-size: 22px; font-weight: 800; }
+    .company-tagline { color: #D97706; font-weight: 700; font-size: 13px; margin: 2px 0; }
+    .company-meta { color: #64748B; font-size: 11px; margin-top: 4px; }
+    .doc-title { font-size: 16px; font-weight: 800; color: #0B192C; margin: 12px 0 6px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px; font-size: 12px; margin-bottom: 16px; }
+    .section-title { font-size: 13px; font-weight: 800; color: #0B192C; text-transform: uppercase; margin: 14px 0 6px; border-bottom: 1px solid #E2E8F0; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    th { background: #0B192C; color: white; padding: 8px; font-weight: 700; text-align: left; }
+    .summary-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 12px; margin-top: 14px; font-size: 13px; }
+    .specs-box { font-size: 11px; color: #475569; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; line-height: 1.6; }
+    .sign-row { margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="header-box">
+    <h1 class="company-title">${company.company_name}</h1>
+    <div class="company-tagline">${company.tagline}</div>
+    <div class="company-meta">${company.address} • Phone: ${company.phone}</div>
+  </div>
+
+  <div class="doc-title">OFFICIAL ESTIMATE &amp; PROPOSAL: ${q.quotation_number} (Rev ${q.revision_number})</div>
+
+  <div class="meta-grid">
+    <div>
+      <strong>Client:</strong> ${q.client_name || 'Direct Client'}<br>
+      <strong>Project:</strong> ${q.title || 'Construction Estimate'}
+    </div>
+    <div style="text-align: right;">
+      <strong>Date:</strong> ${new Date().toISOString().split('T')[0]}<br>
+      <strong>Status:</strong> ${q.status || 'DRAFT'}
+    </div>
+  </div>
+
+  <div class="section-title">Schedule A: Engineering Specifications</div>
+  <div class="specs-box">
+    • RCC Framed Structure (IS 456 compliant) with column footing, plinth beams, and 5" roof slab.<br>
+    • Fe 550D TMT Reinforcement Steel &amp; UltraTech / Dalmia 53 Grade OPC Cement.<br>
+    • 9" exterior chamber brick masonry, 4.5" partitions in CM 1:4 with river sand/M-sand plastering.<br>
+    • Premium vitrified tiles, teakwood joinery, Orbit fire-resistant wiring &amp; Parryware fixtures.
+  </div>
+
+  <div class="section-title">Schedule B: Itemized Scope of Work &amp; Line Items</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 30px; text-align: center;">#</th>
+        <th>Description</th>
+        <th style="width: 80px;">Category</th>
+        <th style="width: 50px; text-align: right;">Qty</th>
+        <th style="width: 50px;">Unit</th>
+        <th style="width: 80px; text-align: right;">Rate (₹)</th>
+        <th style="width: 95px; text-align: right;">Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsHtml}
+    </tbody>
+  </table>
+
+  <div class="summary-box">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+      <span>Subtotal:</span>
+      <strong>₹${(parseFloat(subtotal) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+    </div>
+    ${taxAmount > 0 ? `
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span>GST / Tax:</span>
+        <strong>₹${(parseFloat(taxAmount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+      </div>
+    ` : ''}
+    <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 800; color: #0B192C; border-top: 1px solid #CBD5E1; padding-top: 6px; margin-top: 4px;">
+      <span>Grand Total:</span>
+      <span style="color: #D97706;">₹${(parseFloat(totalAmount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+    </div>
+  </div>
+
+  <div style="margin-top: 14px; font-size: 11px; color: #64748B;">
+    <strong>Terms &amp; Conditions:</strong><br>
+    1. 8-Stage milestone payment schedule as per contract terms.<br>
+    2. Mobilization advance is an unearned deposit until milestone certification.<br>
+    3. Electricity connection &amp; water charges to be borne by client.<br>
+    4. Quotation valid for 30 days from date of issue.
+  </div>
+
+  <div class="sign-row">
+    <div style="border-top: 1px solid #333; padding-top: 4px; width: 180px; text-align: center;">Authorized Builder Signatory</div>
+    <div style="border-top: 1px solid #333; padding-top: 4px; width: 180px; text-align: center;">Client / Owner Signature</div>
+  </div>
+</body>
+</html>`
       };
     }
 

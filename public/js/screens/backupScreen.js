@@ -59,12 +59,12 @@ export const BackupScreen = {
             <div style="padding: 14px; text-align: center; color: var(--text-muted);">Loading sync status...</div>
           </div>
 
-          <div style="margin-top: 16px; display: flex; gap: 10px;">
-            <button id="btn-sync-gdrive" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 13px;">
-              Sync Google Drive
+          <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="btn-sync-gdrive" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 12px; color: var(--text-muted); border-color: var(--border-medium);">
+              Google Drive (Not Connected)
             </button>
-            <button id="btn-sync-supabase" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 13px;">
-              Sync Supabase
+            <button id="btn-sync-supabase" class="btn-outline" style="flex: 1; min-height: 44px; font-size: 12px; color: var(--text-muted); border-color: var(--border-medium);">
+              Supabase (Not Connected)
             </button>
           </div>
         </div>
@@ -212,12 +212,12 @@ export const BackupScreen = {
     });
 
     // Cloud sync triggers
-    container.querySelector('#btn-sync-gdrive')?.addEventListener('click', async () => {
-      alert('Google Drive Sync: Adapter verification check active. Connect Google OAuth token in Settings to sync live.');
+    container.querySelector('#btn-sync-gdrive')?.addEventListener('click', () => {
+      alert('Google Drive is not connected. Cloud backup is inactive.');
     });
 
-    container.querySelector('#btn-sync-supabase')?.addEventListener('click', async () => {
-      alert('Supabase Sync: Remote PostgreSQL adapter configured. Provide SUPABASE_URL & ANON_KEY to synchronize.');
+    container.querySelector('#btn-sync-supabase')?.addEventListener('click', () => {
+      alert('Supabase is not connected. Cloud database sync is inactive.');
     });
   },
 
@@ -235,11 +235,11 @@ export const BackupScreen = {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px;">
             <span>Google Drive API</span>
-            <span class="badge-status badge-pending">Standby • Ready</span>
+            <span class="badge-status badge-neutral" style="color: #64748B; background: #F1F5F9; border: 1px solid #CBD5E1;">Not Connected</span>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #F8FAFC; border-radius: var(--radius-md); font-size: 13px;">
             <span>Supabase Cloud DB</span>
-            <span class="badge-status badge-pending">Standby • Ready</span>
+            <span class="badge-status badge-neutral" style="color: #64748B; background: #F1F5F9; border: 1px solid #CBD5E1;">Not Connected</span>
           </div>
         </div>
       `;

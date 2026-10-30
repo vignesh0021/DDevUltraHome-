@@ -6,9 +6,14 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
-import { printHtml, handoffFile, textToPdf } from '../printDoc.js';
+import { deliverPdf, textToPdf } from '../printDoc.js';
 
 export const QuotationsScreen = {
+  cachedClients: [],
+  cachedQuotations: [],
+  activeQuotation: null,
+  currentPrintHtml: '',
+
   async render(container) {
     container.innerHTML = `
       <div style="padding: 16px;">
@@ -66,32 +71,20 @@ export const QuotationsScreen = {
               <input type="text" id="inp-quote-title" class="form-control" required placeholder="e.g. Residential Villa Construction — Kundrathur (G+1)">
             </div>
 
-            <!-- Line Items Builder Table -->
+            <!-- Line Items Builder: Stacked Cards (Mobile Friendly, No Table Overflow) -->
             <div style="margin-top: 14px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label class="form-label" style="margin: 0; font-size: 13px;">Itemized Scope of Work & Built-up Area</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                  <label class="form-label" style="margin: 0; font-size: 13px; font-weight: 700; color: var(--brand-navy-900);">Itemized Scope of Work</label>
+                  <div style="font-size: 11px; color: var(--text-muted);">Stacked line item cards (description, category, unit, qty, rate, amount)</div>
+                </div>
                 <button type="button" id="btn-add-line-item" class="btn-outline" style="min-height: 30px; font-size: 11px; padding: 0 10px;">
                   + Add Item
                 </button>
               </div>
 
-              <div style="overflow-x: auto; border: 1px solid var(--border-light); border-radius: var(--radius-md);">
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px;" id="tbl-quote-items">
-                  <thead>
-                    <tr style="background: #F8FAFC; border-bottom: 1px solid var(--border-light);">
-                      <th style="padding: 8px; text-align: left;">Description</th>
-                      <th style="padding: 8px; width: 90px;">Category</th>
-                      <th style="padding: 8px; width: 60px;">Qty</th>
-                      <th style="padding: 8px; width: 50px;">Unit</th>
-                      <th style="padding: 8px; width: 85px;">Rate (₹)</th>
-                      <th style="padding: 8px; width: 90px; text-align: right;">Total (₹)</th>
-                      <th style="padding: 8px; width: 35px;"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="quote-items-tbody">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
+              <div id="quote-items-cards-container" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Populated dynamically with stacked item cards -->
               </div>
             </div>
 
@@ -292,17 +285,17 @@ export const QuotationsScreen = {
   initModalControls(container) {
     const modal = container.querySelector('#modal-new-quotation');
     const printModal = container.querySelector('#modal-quotation-print');
-    const itemsTbody = container.querySelector('#quote-items-tbody');
+    const cardsContainer = container.querySelector('#quote-items-cards-container');
 
     // Open Add Quote Modal
     container.querySelector('#btn-add-quote')?.addEventListener('click', async () => {
       await this.populateDropdowns(container);
-      itemsTbody.innerHTML = '';
-      this.addLineItem(itemsTbody, {
+      cardsContainer.innerHTML = '';
+      this.addLineItem(cardsContainer, {
         description: '',
         category: 'CIVIL',
         unit: 'sqft',
-        quantity: 0,
+        quantity: 1,
         unitRate: 0,
         totalPrice: 0
       });
@@ -313,25 +306,17 @@ export const QuotationsScreen = {
     container.querySelector('#btn-cancel-quote')?.addEventListener('click', () => { modal.style.display = 'none'; });
     container.querySelector('#btn-cancel-quote-2')?.addEventListener('click', () => { modal.style.display = 'none'; });
 
-    // Print Modal Controls (Do not call print inside hidden iframe in Android WebView)
+    // Print & Share Modal Controls (Never calls window.print() for quotations)
     container.querySelector('#btn-close-print')?.addEventListener('click', () => { printModal.style.display = 'none'; });
-    container.querySelector('#btn-print-frame')?.addEventListener('click', () => {
-      if (this.currentPrintHtml) {
-        printHtml(this.currentPrintHtml);
-      } else {
-        const iframe = container.querySelector('#iframe-quotation-print');
-        if (iframe && iframe.contentDocument && iframe.contentDocument.body) {
-          printHtml(iframe.contentDocument.body.innerHTML);
-        }
-      }
-    });
 
-    container.querySelector('#btn-share-quote')?.addEventListener('click', async () => {
+    const handleDeliverQuotationPdf = async () => {
       const quote = this.activeQuotation;
-      const title = quote?.title || 'D DEV ULTRA HOMES Construction Proposal';
-      const total = quote ? `₹${(parseFloat(quote.total_amount) || 0).toLocaleString('en-IN')}` : '₹0.00';
+      if (!quote) return;
 
-      const items = quote?.items || [];
+      const title = quote.title || 'D DEV ULTRA HOMES Construction Proposal';
+      const total = `₹${(parseFloat(quote.total_amount) || 0).toLocaleString('en-IN')}`;
+      const items = quote.items || [];
+
       const lines = [
         '================================================================',
         '                      D DEV ULTRA HOMES                         ',
@@ -339,23 +324,29 @@ export const QuotationsScreen = {
         '      6a MGR Nagar, 2nd Cross Street, Velachery, Chennai        ',
         '================================================================',
         '',
-        `OFFICIAL ESTIMATE & PROPOSAL: ${quote?.quotation_number || 'QUO'} (Rev ${quote?.revision_number || 0})`,
+        `OFFICIAL ESTIMATE & PROPOSAL: ${quote.quotation_number || 'QUO'} (Rev ${quote.revision_number || 0})`,
         `Date: ${new Date().toISOString().split('T')[0]}`,
-        `Client: ${quote?.client_name || 'Direct Client'}`,
-        `Project: ${quote?.project_name || quote?.title || 'Construction Estimate'}`,
+        `Client: ${quote.client_name || 'Direct Client'}`,
+        `Project: ${quote.project_name || quote.title || 'Construction Estimate'}`,
         `Proposal: ${title}`,
         `Total Value: ${total}`,
         '',
         '----------------------------------------------------------------',
         'ITEMIZED SCOPE OF WORK & SPECIFICATIONS (SCHEDULE A & B)',
         '----------------------------------------------------------------',
-        ...(items.length > 0 ? items.map((itm, idx) => 
-          `${(idx + 1).toString().padStart(2, '0')}. ${itm.description || 'Civil Works'} [${itm.category || 'CIVIL'}] - ${itm.quantity || 0} ${itm.unit || 'sqft'} @ Rs.${itm.unitRate || 0} = Rs.${itm.totalPrice || 0}`
-        ) : ['1. Standard civil specifications and built-up area as per architectural drawings']),
+        ...(items.length > 0 ? items.map((itm, idx) => {
+          const desc = itm.description || 'Civil Works Item';
+          const cat = itm.category || 'CIVIL';
+          const qty = itm.quantity !== undefined ? itm.quantity : 1;
+          const unit = itm.unit || 'sqft';
+          const rate = parseFloat(itm.unitRate !== undefined ? itm.unitRate : (itm.unit_rate !== undefined ? itm.unit_rate : 0)) || 0;
+          const lineTotal = parseFloat(itm.totalPrice !== undefined ? itm.totalPrice : (itm.total_price !== undefined ? itm.total_price : (qty * rate))) || 0;
+          return `${(idx + 1).toString().padStart(2, '0')}. ${desc} [${cat}] | ${qty} ${unit} @ Rs.${rate.toLocaleString('en-IN')} = Rs.${lineTotal.toLocaleString('en-IN')}`;
+        }) : ['1. Standard civil specifications and built-up area as per architectural drawings']),
         '',
         '----------------------------------------------------------------',
-        `Subtotal: Rs.${(parseFloat(quote?.subtotal || quote?.total_amount) || 0).toLocaleString('en-IN')}`,
-        `Tax / GST: Rs.${(parseFloat(quote?.tax_amount) || 0).toLocaleString('en-IN')}`,
+        `Subtotal: Rs.${(parseFloat(quote.subtotal || quote.total_amount) || 0).toLocaleString('en-IN')}`,
+        `Tax / GST: Rs.${(parseFloat(quote.tax_amount) || 0).toLocaleString('en-IN')}`,
         `GRAND TOTAL: ${total}`,
         '----------------------------------------------------------------',
         '',
@@ -371,17 +362,23 @@ export const QuotationsScreen = {
       ];
 
       try {
-        const pdfBlob = textToPdf(lines);
-        const filename = `${quote?.quotation_number || 'Quotation'}.pdf`;
-        await handoffFile(filename, pdfBlob);
+        const filename = `${quote.quotation_number || 'Quotation'}.pdf`;
+        await deliverPdf(filename, lines, {
+          title: `${quote.quotation_number} - D DEV ULTRA HOMES`,
+          text: `Construction quotation for ${quote.client_name || 'Client'}: ${total}`,
+          dialogTitle: 'Share Quotation PDF'
+        });
       } catch (err) {
-        alert('Failed to generate or share PDF: ' + err.message);
+        alert('Failed to deliver PDF: ' + err.message);
       }
-    });
+    };
 
-    // Add Line Item Button
+    container.querySelector('#btn-print-frame')?.addEventListener('click', handleDeliverQuotationPdf);
+    container.querySelector('#btn-share-quote')?.addEventListener('click', handleDeliverQuotationPdf);
+
+    // Add Line Item Button (Stacked Card)
     container.querySelector('#btn-add-line-item')?.addEventListener('click', () => {
-      this.addLineItem(itemsTbody);
+      this.addLineItem(cardsContainer);
       this.recalculateTotals(container);
     });
 
@@ -393,7 +390,7 @@ export const QuotationsScreen = {
     // Template Loader: Kundrathur Residence
     container.querySelector('#btn-load-kundrathur-template')?.addEventListener('click', () => {
       container.querySelector('#inp-quote-title').value = 'Residential Building Construction — Kundrathur (G+1 Villa + Headroom)';
-      itemsTbody.innerHTML = '';
+      cardsContainer.innerHTML = '';
 
       const kundrathurItems = [
         { description: 'Ground Floor Built-up Area (723 sqft @ ₹2300/sqft)', category: 'CIVIL', unit: 'sqft', quantity: 723, unitRate: 2300, totalPrice: 1662900 },
@@ -414,7 +411,7 @@ export const QuotationsScreen = {
       ];
 
       for (const itm of kundrathurItems) {
-        this.addLineItem(itemsTbody, itm);
+        this.addLineItem(cardsContainer, itm);
       }
       this.recalculateTotals(container);
     });
@@ -422,16 +419,16 @@ export const QuotationsScreen = {
     // Form submit
     container.querySelector('#form-create-quotation')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const rows = itemsTbody.querySelectorAll('tr');
+      const cards = cardsContainer.querySelectorAll('.quote-item-card');
       const items = [];
 
-      rows.forEach((row, i) => {
-        const desc = row.querySelector('.inp-item-desc').value.trim();
-        const cat = row.querySelector('.sel-item-cat').value;
-        const qty = parseFloat(row.querySelector('.inp-item-qty').value) || 1;
-        const unit = row.querySelector('.inp-item-unit').value.trim() || 'sqft';
-        const rate = parseFloat(row.querySelector('.inp-item-rate').value) || 0;
-        const total = parseFloat(row.querySelector('.inp-item-total').value) || (qty * rate);
+      cards.forEach((card, i) => {
+        const desc = card.querySelector('.inp-item-desc').value.trim();
+        const cat = card.querySelector('.sel-item-cat').value;
+        const qty = parseFloat(card.querySelector('.inp-item-qty').value) || 0;
+        const unit = card.querySelector('.inp-item-unit').value.trim() || 'sqft';
+        const rate = parseFloat(card.querySelector('.inp-item-rate').value) || 0;
+        const total = parseFloat(card.querySelector('.inp-item-total').value) || (qty * rate);
 
         if (desc) {
           items.push({
@@ -451,8 +448,22 @@ export const QuotationsScreen = {
         return;
       }
 
+      const cliSelect = container.querySelector('#sel-quote-client');
+      const selectedOption = cliSelect.selectedOptions ? cliSelect.selectedOptions[0] : null;
+      let clientName = 'Direct Client';
+      if (selectedOption) {
+        const text = selectedOption.textContent || '';
+        clientName = text.includes(' (') ? text.split(' (')[0].trim() : text.trim();
+      }
+      if ((!clientName || clientName === 'Direct Client') && this.cachedClients) {
+        const matched = this.cachedClients.find(c => c.id === cliSelect.value);
+        if (matched) clientName = matched.name;
+      }
+
       const payload = {
-        clientId: container.querySelector('#sel-quote-client').value,
+        clientId: cliSelect.value,
+        client_name: clientName,
+        clientName: clientName,
         projectId: container.querySelector('#sel-quote-project').value || null,
         title: container.querySelector('#inp-quote-title').value.trim(),
         taxRate: parseFloat(container.querySelector('#inp-quote-taxrate').value) || 0,
@@ -470,66 +481,96 @@ export const QuotationsScreen = {
     });
   },
 
-  addLineItem(tbody, data = {}) {
-    const tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid var(--border-light)';
-    tr.innerHTML = `
-      <td style="padding: 6px;">
-        <input type="text" class="inp-item-desc" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 12px;" required placeholder="Item description" value="${data.description || ''}">
-      </td>
-      <td style="padding: 6px;">
-        <select class="sel-item-cat" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 11px;">
-          <option value="CIVIL" ${data.category === 'CIVIL' ? 'selected' : ''}>CIVIL</option>
-          <option value="ELECTRICAL" ${data.category === 'ELECTRICAL' ? 'selected' : ''}>ELECTRICAL</option>
-          <option value="PLUMBING" ${data.category === 'PLUMBING' ? 'selected' : ''}>PLUMBING</option>
-          <option value="FINISHING" ${data.category === 'FINISHING' ? 'selected' : ''}>FINISHING</option>
-          <option value="LABOUR" ${data.category === 'LABOUR' ? 'selected' : ''}>LABOUR</option>
-          <option value="OTHER" ${data.category === 'OTHER' ? 'selected' : ''}>OTHER</option>
-        </select>
-      </td>
-      <td style="padding: 6px;">
-        <input type="number" class="inp-item-qty" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 12px; text-align: right;" step="0.01" value="${data.quantity !== undefined ? data.quantity : 1}">
-      </td>
-      <td style="padding: 6px;">
-        <input type="text" class="inp-item-unit" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 12px;" value="${data.unit || 'sqft'}">
-      </td>
-      <td style="padding: 6px;">
-        <input type="number" class="inp-item-rate" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 12px; text-align: right;" step="0.01" value="${data.unitRate !== undefined ? data.unitRate : 0}">
-      </td>
-      <td style="padding: 6px;">
-        <input type="number" class="inp-item-total" style="width: 100%; padding: 4px 6px; border: 1px solid var(--border-medium); border-radius: 4px; font-size: 12px; font-weight: 700; text-align: right;" step="0.01" value="${data.totalPrice !== undefined ? data.totalPrice : 0}">
-      </td>
-      <td style="padding: 6px; text-align: center;">
-        <button type="button" class="btn-del-item" style="border: none; background: transparent; color: #EF4444; font-size: 16px; cursor: pointer;">✕</button>
-      </td>
+  addLineItem(container, data = {}) {
+    const card = document.createElement('div');
+    card.className = 'quote-item-card';
+    card.style.cssText = 'background: #F8FAFC; border: 1px solid var(--border-medium); border-radius: var(--radius-md); padding: 12px; box-shadow: var(--shadow-xs);';
+
+    const qty = data.quantity !== undefined ? data.quantity : 1;
+    const rate = data.unitRate !== undefined ? data.unitRate : (data.unit_rate !== undefined ? data.unit_rate : 0);
+    const total = data.totalPrice !== undefined ? data.totalPrice : (data.total_price !== undefined ? data.total_price : (qty * rate));
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span class="item-card-index" style="font-size: 11px; font-weight: 700; color: var(--brand-navy-900); background: #E2E8F0; padding: 2px 8px; border-radius: 4px;">Item</span>
+        <button type="button" class="btn-del-item" style="border: none; background: transparent; color: #DC2626; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 6px;">✕ Remove</button>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 8px;">
+        <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Description *</label>
+        <input type="text" class="inp-item-desc form-control" style="font-size: 12px;" required placeholder="e.g. Ground Floor Built-up Area" value="${data.description || ''}">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Category</label>
+          <select class="sel-item-cat form-control" style="font-size: 12px;">
+            <option value="CIVIL" ${data.category === 'CIVIL' ? 'selected' : ''}>CIVIL</option>
+            <option value="ELECTRICAL" ${data.category === 'ELECTRICAL' ? 'selected' : ''}>ELECTRICAL</option>
+            <option value="PLUMBING" ${data.category === 'PLUMBING' ? 'selected' : ''}>PLUMBING</option>
+            <option value="FINISHING" ${data.category === 'FINISHING' ? 'selected' : ''}>FINISHING</option>
+            <option value="LABOUR" ${data.category === 'LABOUR' ? 'selected' : ''}>LABOUR</option>
+            <option value="OTHER" ${data.category === 'OTHER' ? 'selected' : ''}>OTHER</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Unit</label>
+          <input type="text" class="inp-item-unit form-control" style="font-size: 12px;" placeholder="sqft / nos / liters" value="${data.unit || 'sqft'}">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Qty</label>
+          <input type="number" class="inp-item-qty form-control" style="font-size: 12px; text-align: right;" step="0.01" value="${qty}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Rate (₹)</label>
+          <input type="number" class="inp-item-rate form-control" style="font-size: 12px; text-align: right;" step="0.01" value="${rate}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-size: 11px; margin-bottom: 2px; font-weight: 600;">Amount (₹)</label>
+          <input type="number" class="inp-item-total form-control" style="font-size: 12px; font-weight: 700; text-align: right; background: #F1F5F9;" step="0.01" value="${total}">
+        </div>
+      </div>
     `;
 
-    const qtyInp = tr.querySelector('.inp-item-qty');
-    const rateInp = tr.querySelector('.inp-item-rate');
-    const totalInp = tr.querySelector('.inp-item-total');
+    const qtyInp = card.querySelector('.inp-item-qty');
+    const rateInp = card.querySelector('.inp-item-rate');
+    const totalInp = card.querySelector('.inp-item-total');
 
     const updateLineTotal = () => {
       const q = parseFloat(qtyInp.value) || 0;
       const r = parseFloat(rateInp.value) || 0;
       totalInp.value = Math.round(q * r * 100) / 100;
-      const root = tbody.closest('.modal-new-quotation') || document;
+      const root = container.closest('#modal-new-quotation') || document;
       this.recalculateTotals(root);
     };
 
     qtyInp.addEventListener('input', updateLineTotal);
     rateInp.addEventListener('input', updateLineTotal);
     totalInp.addEventListener('input', () => {
-      const root = tbody.closest('.modal-new-quotation') || document;
+      const root = container.closest('#modal-new-quotation') || document;
       this.recalculateTotals(root);
     });
 
-    tr.querySelector('.btn-del-item').addEventListener('click', () => {
-      tr.remove();
-      const root = tbody.closest('.modal-new-quotation') || document;
+    card.querySelector('.btn-del-item').addEventListener('click', () => {
+      card.remove();
+      this.renumberItemCards(container);
+      const root = container.closest('#modal-new-quotation') || document;
       this.recalculateTotals(root);
     });
 
-    tbody.appendChild(tr);
+    container.appendChild(card);
+    this.renumberItemCards(container);
+  },
+
+  renumberItemCards(container) {
+    const cards = container.querySelectorAll('.quote-item-card');
+    cards.forEach((card, idx) => {
+      const badge = card.querySelector('.item-card-index');
+      if (badge) badge.textContent = `Item #${idx + 1}`;
+    });
   },
 
   recalculateTotals(container) {
@@ -562,6 +603,7 @@ export const QuotationsScreen = {
 
       const clients = cRes.clients || [];
       const projects = pRes.projects || [];
+      this.cachedClients = clients;
 
       cliSel.innerHTML = clients.map(c => `<option value="${c.id}">${c.name} (${c.phone})</option>`).join('');
       prjSel.innerHTML = '<option value="">-- No Linked Project (Draft Estimate) --</option>' + 
@@ -577,13 +619,21 @@ export const QuotationsScreen = {
   async openPrintPreview(container, qId) {
     const printModal = container.querySelector('#modal-quotation-print');
     const iframe = container.querySelector('#iframe-quotation-print');
-    this.activeQuotation = (this.cachedQuotations || []).find(q => q.id === qId);
 
     try {
-      const res = await BusinessApi.request(`/quotations/${qId}/html`);
-      const html = res.html || '';
-      this.currentPrintHtml = html;
+      const [quoteRes, htmlRes] = await Promise.all([
+        BusinessApi.request(`/quotations/${qId}`).catch(() => ({ quotation: (this.cachedQuotations || []).find(q => q.id === qId) })),
+        BusinessApi.request(`/quotations/${qId}/html`).catch(() => ({ html: '' }))
+      ]);
 
+      const quote = quoteRes.quotation || (this.cachedQuotations || []).find(q => q.id === qId);
+      this.activeQuotation = quote;
+
+      let html = htmlRes.html || '';
+      // Remove any onclick="window.print()" inside preview HTML so window.print is never invoked
+      html = html.replace(/onclick="window\.print\(\)"/g, 'style="display:none;"');
+
+      this.currentPrintHtml = html;
       iframe.srcdoc = html;
       printModal.style.display = 'flex';
     } catch (err) {

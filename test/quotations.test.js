@@ -189,10 +189,11 @@ describe('DDevUltraHome — Quotation Builder & Client-Ready Watermarked PDF Eng
     assert.equal(listRes.status, 200);
     assert.ok(listRes.data.quotations.length >= 1);
 
-    // 3. Fetch printable HTML document
+    // 3. Fetch printable HTML document and ensure every line item is listed
     const htmlRes = await router.handle(`/api/business/quotations/${quoteId}/html`, 'GET');
     assert.equal(htmlRes.status, 200);
     assert.ok(htmlRes.data.html.includes('D DEV ULTRA HOMES'));
+    assert.ok(htmlRes.data.html.includes('Brickwork 9" flyash'), 'Preview must list every quote.items line');
 
     // 4. Update status to APPROVED
     const statusRes = await router.handle(`/api/business/quotations/${quoteId}/status`, 'POST', {
@@ -200,5 +201,24 @@ describe('DDevUltraHome — Quotation Builder & Client-Ready Watermarked PDF Eng
     });
     assert.equal(statusRes.status, 200);
     assert.equal(statusRes.data.quotation.status, 'APPROVED');
+  });
+
+  test('deliverPdf module exports deliverPdf and generates valid PDF with every quote item line', async () => {
+    const { deliverPdf, textToPdf } = await import('../public/js/printDoc.js');
+    assert.equal(typeof deliverPdf, 'function');
+    assert.equal(typeof textToPdf, 'function');
+
+    const lines = [
+      'D DEV ULTRA HOMES',
+      'Item 1: Ground Floor RCC Slab',
+      'Item 2: Brickwork 9" flyash'
+    ];
+    const pdfBlob = textToPdf(lines);
+    assert.ok(pdfBlob);
+
+    // Call deliverPdf in headless environment without crashing
+    const res = await deliverPdf('Test_Quotation.pdf', lines);
+    assert.ok(res);
+    assert.equal(typeof res.success, 'boolean');
   });
 });

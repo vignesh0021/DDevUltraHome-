@@ -109,6 +109,157 @@ export async function handoffFile(filename, fileBlob) {
 }
 
 /**
+ * Convert Blob to base64 string for Capacitor Filesystem
+ * @param {Blob} blob 
+ * @returns {Promise<string>}
+ */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') {
+      if (blob && blob.arrayBuffer) {
+        blob.arrayBuffer().then(buf => {
+          resolve(Buffer.from(buf).toString('base64'));
+        }).catch(reject);
+        return;
+      }
+      resolve('');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        const parts = reader.result.split(',');
+        resolve(parts[1] || parts[0]);
+      } else {
+        resolve('');
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Deliver a PDF document:
+ * 1. Writes with Capacitor Filesystem in CACHE directory
+ * 2. Opens Capacitor Share with files: [uri]
+ * 3. Falls back to navigator.share, then body-appended download link
+ * Never calls window.print()
+ * 
+ * @param {string} filename 
+ * @param {Blob|string[]|string} pdfInput Blob, array of text lines, or PDF raw string
+ * @param {Object} options Optional share parameters (title, text, dialogTitle)
+ * @returns {Promise<{ success: boolean, method: string, cancelled?: boolean }>}
+ */
+export async function deliverPdf(filename, pdfInput, options = {}) {
+  let blob;
+  if (pdfInput instanceof Blob) {
+    blob = pdfInput;
+  } else if (Array.isArray(pdfInput)) {
+    blob = textToPdf(pdfInput);
+  } else if (typeof pdfInput === 'string' && pdfInput.startsWith('%PDF')) {
+    const bytes = new Uint8Array(pdfInput.length);
+    for (let i = 0; i < pdfInput.length; i++) bytes[i] = pdfInput.charCodeAt(i) & 0xff;
+    blob = new Blob([bytes], { type: 'application/pdf' });
+  } else {
+    blob = textToPdf(pdfInput || '');
+  }
+
+  const safeFilename = filename.toLowerCase().endsWith('.pdf') ? filename : `${filename}.pdf`;
+
+  // 1. Try Native Capacitor Filesystem (CACHE) & Capacitor Share
+  try {
+    let Filesystem = typeof window !== 'undefined' ? window.Capacitor?.Plugins?.Filesystem : null;
+    let Share = typeof window !== 'undefined' ? window.Capacitor?.Plugins?.Share : null;
+
+    if (typeof window !== 'undefined' && (!Filesystem || !Share)) {
+      try {
+        const fsMod = await import('@capacitor/filesystem');
+        if (fsMod?.Filesystem) Filesystem = Filesystem || fsMod.Filesystem;
+      } catch (_) {}
+      try {
+        const shareMod = await import('@capacitor/share');
+        if (shareMod?.Share) Share = Share || shareMod.Share;
+      } catch (_) {}
+    }
+
+    if (Filesystem && Share) {
+      const base64Data = await blobToBase64(blob);
+      const writeResult = await Filesystem.writeFile({
+        path: safeFilename,
+        data: base64Data,
+        directory: 'CACHE',
+        recursive: true
+      });
+
+      let fileUri = writeResult?.uri;
+      if (!fileUri && Filesystem.getUri) {
+        const uriRes = await Filesystem.getUri({
+          path: safeFilename,
+          directory: 'CACHE'
+        });
+        fileUri = uriRes?.uri;
+      }
+
+      if (fileUri) {
+        await Share.share({
+          title: options.title || safeFilename,
+          text: options.text || 'D DEV ULTRA HOMES Quotation Document',
+          files: [fileUri],
+          dialogTitle: options.dialogTitle || 'Share Quotation PDF'
+        });
+        return { success: true, method: 'capacitor', uri: fileUri };
+      }
+    }
+  } catch (err) {
+    const msg = String(err?.message || '').toLowerCase();
+    if (msg.includes('cancel') || msg.includes('user cancelled') || msg.includes('dismiss')) {
+      return { success: true, cancelled: true, method: 'capacitor' };
+    }
+    console.warn('Capacitor Filesystem/Share failed, attempting standard fallbacks:', err);
+  }
+
+  // 2. Fallback: Web Share API (navigator.share with File)
+  if (typeof navigator !== 'undefined' && navigator.canShare) {
+    try {
+      const file = new File([blob], safeFilename, { type: 'application/pdf' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: options.title || safeFilename,
+          text: options.text || 'D DEV ULTRA HOMES Quotation'
+        });
+        return { success: true, method: 'navigator.share' };
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        return { success: true, cancelled: true, method: 'navigator.share' };
+      }
+      console.warn('navigator.share failed, falling back to download:', e);
+    }
+  }
+
+  // 3. Fallback: Body-appended anchor download link (required for Android WebView)
+  if (typeof document !== 'undefined') {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeFilename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (a.parentNode) {
+        a.parentNode.removeChild(a);
+      }
+      URL.revokeObjectURL(url);
+    }, 250);
+    return { success: true, downloaded: true, method: 'download' };
+  }
+
+  return { success: false, method: 'none' };
+}
+
+/**
  * Minimal valid multi-page PDF generator (PDF-1.4, Helvetica, xref, %%EOF)
  * @param {string[]|string} lines 
  * @returns {Blob} PDF binary Blob
