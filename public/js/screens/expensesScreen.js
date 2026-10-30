@@ -3,6 +3,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const ExpensesScreen = {
   async render(container) {
@@ -273,15 +274,25 @@ export const ExpensesScreen = {
           const amount = e.currentTarget.dataset.amount;
           const vendor = e.currentTarget.dataset.vendor;
 
-          const reason = prompt(`Reason for VOIDING expense of ₹${parseFloat(amount).toLocaleString('en-IN')} paid to "${vendor}"?\n(Double-entry ledger credit will reverse this deduction and refund your bank balance)`);
+          const reason = await AppDialog.prompt({
+            title: '🚫 Void Project Expense',
+            message: `Reason for VOIDING expense of ₹${parseFloat(amount).toLocaleString('en-IN')} paid to "${vendor}"?\n(Double-entry ledger credit will reverse this deduction and refund your bank balance)`,
+            placeholder: 'e.g. Cancelled delivery / Refunded payment'
+          });
           if (!reason || !reason.trim()) return;
 
           try {
             await BusinessApi.request(`/expenses/${expId}/void`, 'POST', { reason: reason.trim() });
-            alert('✅ Expense voided successfully. Reversing ledger credit posted and funds refunded.');
+            await AppDialog.alert({
+              title: 'Expense Voided',
+              message: '✅ Expense voided successfully. Reversing ledger credit posted and account balance refunded.'
+            });
             await this.loadExpenses(container);
           } catch (err) {
-            alert('Voiding failed: ' + err.message);
+            await AppDialog.alert({
+              title: 'Voiding Failed',
+              message: err.message
+            });
           }
         });
       });

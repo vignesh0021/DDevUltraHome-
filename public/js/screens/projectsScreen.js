@@ -378,6 +378,16 @@ export const ProjectsScreen = {
                   <span style="color: var(--brand-gold-600); font-weight: 800;">Inspect Contract & Milestones →</span>
                 </div>
               </div>
+
+              <!-- Quick Action Bar -->
+              <div style="display: flex; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-light); justify-content: flex-end;">
+                <button class="btn-card-edit-prj btn-outline" data-id="${p.id}" style="min-height: 28px; padding: 0 10px; font-size: 11px; font-weight: 700;">
+                  ✏️ Edit Project
+                </button>
+                <button class="btn-card-del-prj btn-outline" data-id="${p.id}" data-name="${p.name}" style="min-height: 28px; padding: 0 10px; font-size: 11px; font-weight: 700; color: #DC2626; border-color: #FCA5A5;">
+                  🗑️ Delete / Archive
+                </button>
+              </div>
             </div>
           `).join('')}
         </div>
@@ -387,6 +397,45 @@ export const ProjectsScreen = {
         card.addEventListener('click', () => {
           const prjId = card.getAttribute('data-id');
           this.viewProjectDetails(container, prjId);
+        });
+      });
+
+      // Direct Edit buttons on cards
+      listEl.querySelectorAll('.btn-card-edit-prj').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const prjId = e.currentTarget.dataset.id;
+          const p = (projects || []).find(x => x.id === prjId);
+          if (!p) return;
+          this.currentProject = p;
+          container.querySelector('#edit-prj-id').value = p.id;
+          container.querySelector('#edit-prj-name').value = p.name || '';
+          container.querySelector('#edit-prj-address').value = p.site_address || '';
+          container.querySelector('#edit-prj-district').value = p.district || 'Chennai';
+          container.querySelector('#edit-prj-stage').value = p.current_stage || 'FOUNDATION';
+          container.querySelector('#edit-prj-status').value = p.status || 'ACTIVE';
+          container.querySelector('#edit-prj-contract').value = p.contract_value || 0;
+          container.querySelector('#edit-prj-budget').value = p.budgeted_cost || 0;
+          editModal.style.display = 'flex';
+        });
+      });
+
+      // Direct Delete / Archive buttons on cards
+      listEl.querySelectorAll('.btn-card-del-prj').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const prjId = e.currentTarget.dataset.id;
+          const prjName = e.currentTarget.dataset.name;
+          const confirmed = confirm(`Are you sure you want to delete / archive project "${prjName}"?\nAll financial audit ledgers and transaction history will remain safely preserved.`);
+          if (!confirmed) return;
+
+          try {
+            await BusinessApi.request(`/projects/${prjId}`, 'DELETE');
+            alert('📦 Project archived / deleted successfully.');
+            await this.loadProjects(container);
+          } catch (err) {
+            alert('Failed to delete project: ' + err.message);
+          }
         });
       });
     } catch (e) {

@@ -5,6 +5,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const IncomeScreen = {
   async render(container) {
@@ -209,15 +210,25 @@ export const IncomeScreen = {
           const rNum = e.currentTarget.dataset.number;
           const amount = e.currentTarget.dataset.amount;
 
-          const reason = prompt(`Reason for VOIDING receipt "${rNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Reversing debit entry will deduct this from bank balance)`);
+          const reason = await AppDialog.prompt({
+            title: '🚫 Void Client Receipt',
+            message: `Reason for VOIDING receipt "${rNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Reversing debit entry will deduct this from bank balance)`,
+            placeholder: 'e.g. Cheque bounced / Payment reversed'
+          });
           if (!reason || !reason.trim()) return;
 
           try {
             await BusinessApi.request(`/income/receipts/${rId}/void`, 'POST', { reason: reason.trim() });
-            alert('✅ Receipt voided successfully. Reversing entry posted and bank balance adjusted.');
+            await AppDialog.alert({
+              title: 'Receipt Voided',
+              message: '✅ Receipt voided successfully. Reversing entry posted and bank balance adjusted.'
+            });
             await this.loadReceipts(container);
           } catch (err) {
-            alert('Voiding failed: ' + err.message);
+            await AppDialog.alert({
+              title: 'Voiding Failed',
+              message: err.message
+            });
           }
         });
       });

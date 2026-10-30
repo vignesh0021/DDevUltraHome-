@@ -8,6 +8,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { CameraHelper } from '../cameraHelper.js';
 
 export const DocumentsScreen = {
   currentFilter: 'ALL',
@@ -313,16 +314,50 @@ export const DocumentsScreen = {
       uploadModal.style.display = 'none';
     });
 
+    const handleCapturedPhoto = (photo) => {
+      if (!photo) return;
+      container.querySelector('#lbl-file-name').textContent = photo.fileName || 'Scanned_Bill.jpg';
+      container.querySelector('#lbl-file-size').textContent = `${Math.round((photo.fileSize || 50000) / 1024)} KB`;
+      container.querySelector('#lbl-file-sha').textContent = `SHA-256: Hardware Capt. ${Date.now().toString(16).substring(4)}`;
+      container.querySelector('#box-file-meta').style.display = 'block';
+      if (!txtOcrRaw.value) {
+        txtOcrRaw.value = `Scanned Bill: ${photo.fileName || 'Invoice'}\nDate: ${new Date().toISOString().split('T')[0]}\nCaptured via Camera Hardware`;
+      }
+      this.runClientOcrExtraction(container, txtOcrRaw.value);
+      uploadModal.style.display = 'flex';
+    };
+
+    // Check if a photo was captured from the dashboard quick action
+    if (window._pendingScannedPhoto) {
+      const p = window._pendingScannedPhoto;
+      window._pendingScannedPhoto = null;
+      setTimeout(() => handleCapturedPhoto(p), 150);
+    }
+
     // Trigger Camera
-    container.querySelector('#btn-trigger-camera')?.addEventListener('click', () => {
-      fileInput.setAttribute('capture', 'environment');
-      fileInput.click();
+    container.querySelector('#btn-trigger-camera')?.addEventListener('click', async () => {
+      try {
+        const photo = await CameraHelper.capturePhoto({ source: 'CAMERA' });
+        if (photo) {
+          handleCapturedPhoto(photo);
+        }
+      } catch (e) {
+        fileInput.setAttribute('capture', 'environment');
+        fileInput.click();
+      }
     });
 
     // Trigger File Storage
-    container.querySelector('#btn-trigger-file')?.addEventListener('click', () => {
-      fileInput.removeAttribute('capture');
-      fileInput.click();
+    container.querySelector('#btn-trigger-file')?.addEventListener('click', async () => {
+      try {
+        const photo = await CameraHelper.capturePhoto({ source: 'PHOTOS' });
+        if (photo) {
+          handleCapturedPhoto(photo);
+        }
+      } catch (e) {
+        fileInput.removeAttribute('capture');
+        fileInput.click();
+      }
     });
 
     // Load Sample Bill

@@ -397,3 +397,81 @@
 .fab-add:active {
   transform: scale(0.92);
 }
+
+/* ==========================================================================
+   Dark / Night Theme Overrides (High-Contrast Industrial Mobile UI)
+   ========================================================================== */
+[data-theme="dark"] {
+  --brand-navy-950: #F8FAFC;
+  --brand-navy-900: #F1F5F9;
+  --brand-navy-800: #E2E8F0;
+  --brand-navy-700: #CBD5E1;
+  --brand-navy-600: #94A3B8;
+
+  --bg-app: #0F172A;
+  --bg-card: #1E293B;
+  --bg-card-subtle: #27354A;
+  --bg-glass: rgba(30, 41, 59, 0.9);
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-on-navy: #FFFFFF;
+  --text-on-gold: #78350F;
+
+  --border-light: #334155;
+  --border-medium: #475569;
+  --border-focus: #F59E0B;
+}
+
+[data-theme="dark"] .brand-title {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .btn-outline {
+  background: #1E293B;
+  color: #F8FAFC !important;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] .btn-outline:active {
+  background: #334155;
+  border-color: var(--brand-gold-500);
+  color: #FBBF24 !important;
+}
+
+[data-theme="dark"] .form-control {
+  background: #1E293B;
+  color: #F8FAFC;
+  border-color: #475569;
+}
+
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .metric-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .quick-action-btn,
+[data-theme="dark"] #btn-quick-new-project,
+[data-theme="dark"] #btn-quick-record-receipt,
+[data-theme="dark"] #btn-quick-record-expense,
+[data-theme="dark"] #btn-quick-scan-bill {
+  background: #1E293B !important;
+  color: #FBBF24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="dark"] .business-tab-btn {
+  background: #1E293B;
+  color: #CBD5E1;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .business-tab-btn.active {
+  background: var(--brand-gold-600);
+  color: #FFFFFF;
+  border-color: var(--brand-gold-600);
+}
+

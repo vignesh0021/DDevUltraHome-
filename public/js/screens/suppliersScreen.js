@@ -9,6 +9,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const SuppliersScreen = {
   expandedSupplierId: null,
@@ -781,16 +782,26 @@ export const SuppliersScreen = {
           const amount = e.currentTarget.dataset.amount;
           const supId = e.currentTarget.dataset.supid;
 
-          const reason = prompt(`Reason for VOIDING bill "${invNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Accounts Payable dues will be reversed)`);
+          const reason = await AppDialog.prompt({
+            title: '🚫 Void Supplier Bill',
+            message: `Reason for VOIDING bill "${invNum}" of ₹${parseFloat(amount).toLocaleString('en-IN')}?\n(Accounts Payable supplier dues will be rolled back)`,
+            placeholder: 'e.g. Erroneous bill entry / Delivery cancelled'
+          });
           if (!reason || !reason.trim()) return;
 
           try {
             await BusinessApi.request(`/suppliers/invoices/${invId}/void`, 'POST', { reason: reason.trim() });
-            alert('✅ Invoice voided. Accounts Payable reversed.');
+            await AppDialog.alert({
+              title: 'Bill Voided',
+              message: `✅ Invoice "${invNum}" has been voided. Accounts Payable dues have been reversed.`
+            });
             await this.loadSupplierInvoices(container, supId, targetElement);
             await this.loadSuppliers(container);
           } catch (err) {
-            alert('Voiding failed: ' + err.message);
+            await AppDialog.alert({
+              title: 'Voiding Failed',
+              message: err.message
+            });
           }
         });
       });
