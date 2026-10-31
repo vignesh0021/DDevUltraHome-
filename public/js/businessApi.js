@@ -812,6 +812,44 @@ export const BusinessApi = {
       };
     }
 
+    // Add a bank / cash account (phone stores it with the other offline accounts)
+    if (endpoint === '/settings/accounts' && method === 'POST' && data) {
+      if (!data.account_name || !String(data.account_name).trim()) {
+        return { success: false, error: 'Account name cannot be blank' };
+      }
+      const type = data.account_type || 'BANK';
+      if (!['BANK', 'CASH', 'PETTY_CASH'].includes(type)) {
+        return { success: false, error: 'Account type must be BANK, CASH, or PETTY_CASH' };
+      }
+      const bal = parseFloat(data.current_balance);
+      if (isNaN(bal) || bal < 0) {
+        return { success: false, error: 'Current balance must be a non-negative number' };
+      }
+      const ifsc = data.branch_ifsc ? String(data.branch_ifsc).trim().toUpperCase() : '';
+      if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+        return { success: false, error: 'Invalid IFSC code format (must match ^[A-Z]{4}0[A-Z0-9]{6}$)' };
+      }
+
+      const accounts = this._getOfflineAccounts();
+      const account = {
+        id: `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        account_name: String(data.account_name).trim(),
+        account_type: type,
+        bank_name: data.bank_name ? String(data.bank_name).trim() : '',
+        account_number: data.account_number ? String(data.account_number).trim() : '',
+        branch_ifsc: ifsc,
+        current_balance: bal,
+        currency: 'INR',
+        is_active: 1,
+        created_at: new Date().toISOString()
+      };
+      accounts.push(account);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_accounts', JSON.stringify(accounts));
+      }
+      return { success: true, account };
+    }
+
     // Financial Account update
     if (endpoint.startsWith('/settings/accounts/') && method === 'PUT' && data) {
       const accId = endpoint.replace('/settings/accounts/', '');

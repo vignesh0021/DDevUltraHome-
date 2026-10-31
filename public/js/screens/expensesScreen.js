@@ -64,11 +64,7 @@ export const ExpensesScreen = {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="form-group">
                 <label class="form-label">Deduct From Account *</label>
-                <select id="sel-exp-account" class="form-control" required>
-                  <option value="acc-hdfc-current">HDFC Bank Current</option>
-                  <option value="acc-petty-cash">Site Petty Cash</option>
-                  <option value="acc-icici-escrow">ICICI Project Escrow</option>
-                </select>
+                <select id="sel-exp-account" class="form-control" required></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Payment Mode</label>
@@ -199,8 +195,14 @@ export const ExpensesScreen = {
 
   async populateProjectDropdown(container) {
     const selPrj = container.querySelector('#sel-exp-project');
-    const prjRes = await BusinessApi.request('/projects');
+    const [prjRes, settingsRes] = await Promise.all([
+      BusinessApi.request('/projects'),
+      BusinessApi.request('/settings/company')
+    ]);
     selPrj.innerHTML = (prjRes.projects || []).map(p => `<option value="${p.id}">${p.name} (${p.project_code})</option>`).join('');
+    const selAcc = container.querySelector('#sel-exp-account');
+    const accounts = settingsRes.accounts || [];
+    selAcc.innerHTML = accounts.map(a => `<option value="${a.id}">${a.account_name}</option>`).join('');
   },
 
   async loadExpenses(container) {

@@ -60,11 +60,7 @@ export const IncomeScreen = {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="form-group">
                 <label class="form-label">Deposit Account *</label>
-                <select id="sel-rec-account" class="form-control" required>
-                  <option value="acc-hdfc-current">HDFC Bank Current</option>
-                  <option value="acc-icici-escrow">ICICI Project Escrow</option>
-                  <option value="acc-petty-cash">Site Petty Cash</option>
-                </select>
+                <select id="sel-rec-account" class="form-control" required></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Payment Mode</label>
@@ -137,11 +133,17 @@ export const IncomeScreen = {
     const selPrj = container.querySelector('#sel-rec-project');
     const selCli = container.querySelector('#sel-rec-client');
 
-    const prjRes = await BusinessApi.request('/projects');
-    const cliRes = await BusinessApi.request('/clients');
+    const [prjRes, cliRes, settingsRes] = await Promise.all([
+      BusinessApi.request('/projects'),
+      BusinessApi.request('/clients'),
+      BusinessApi.request('/settings/company')
+    ]);
 
     selPrj.innerHTML = (prjRes.projects || []).map(p => `<option value="${p.id}">${p.name} (${p.project_code})</option>`).join('');
     selCli.innerHTML = (cliRes.clients || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    const selAcc = container.querySelector('#sel-rec-account');
+    const accounts = settingsRes.accounts || [];
+    selAcc.innerHTML = accounts.map(a => `<option value="${a.id}">${a.account_name}</option>`).join('');
   },
 
   async loadReceipts(container) {
