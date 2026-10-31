@@ -23,6 +23,7 @@ import { FinancialService } from '../services/financialService.js';
 import { DocumentService } from '../services/documentService.js';
 import { SyncService } from '../services/syncService.js';
 import { QuotationService } from '../services/quotationService.js';
+import { LabourService } from '../services/labourService.js';
 
 export class BusinessApiRouter {
   constructor(db = null) {
@@ -32,6 +33,7 @@ export class BusinessApiRouter {
     this.documentService = new DocumentService(this.db);
     this.syncService = new SyncService(this.db);
     this.quotationService = new QuotationService(this.db);
+    this.labourService = new LabourService(this.db);
 
     // Ensure migrations are up-to-date
     try {
@@ -138,19 +140,44 @@ export class BusinessApiRouter {
     }
 
     if (route === '/projects' && method === 'POST') {
-      const { name, client_id, project_code, site_address, district, contract_value, budgeted_cost } = body;
+      const { name, client_id, project_code, site_address, district, contract_value, budgeted_cost, description, client_contact, start_date, expected_completion_date } = body;
       const id = `prj_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       const pCode = project_code || `PRJ-${Date.now().toString().slice(-4)}`;
 
       this.db.run(`
         INSERT INTO projects (
           id, project_code, name, client_id, site_address,
-          district, contract_value, budgeted_cost, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', datetime('now'));
-      `, [id, pCode, name, client_id, site_address || '', district || 'Chennai', contract_value || 0, budgeted_cost || 0]);
+          district, contract_value, budgeted_cost, status, description, client_contact,
+          start_date, expected_completion_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, datetime('now'), datetime('now'));
+      `, [
+        id, pCode, name, client_id, site_address || '', district || 'Chennai',
+        contract_value || 0, budgeted_cost || 0, description || '', client_contact || '',
+        start_date || null, expected_completion_date || null
+      ]);
 
       const project = this.db.queryOne('SELECT * FROM projects WHERE id = ?;', [id]);
       return { status: 201, data: { success: true, project } };
+    }
+
+    if (route.startsWith('/projects/') && route.endsWith('/report') && method === 'GET') {
+      const prjId = route.replace('/projects/', '').replace('/report', '');
+      try {
+        const report = this.financialService.getProjectFullReport(prjId, query);
+        return { status: 200, data: { success: true, report } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/projects/') && route.endsWith('/transactions') && method === 'GET') {
+      const prjId = route.replace('/projects/', '').replace('/transactions', '');
+      try {
+        const report = this.financialService.getProjectFullReport(prjId, query);
+        return { status: 200, data: { success: true, transactions: report.transactionHistory } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
     }
 
     if (route.startsWith('/projects/') && method === 'GET') {
@@ -185,7 +212,7 @@ export class BusinessApiRouter {
       const project = this.db.queryOne('SELECT * FROM projects WHERE id = ? AND deleted_at IS NULL;', [prjId]);
       if (!project) return { status: 404, data: { success: false, error: 'Project not found' } };
 
-      const { name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status } = body;
+      const { name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status, description, client_contact, start_date, expected_completion_date } = body;
       this.db.run(`
         UPDATE projects
         SET name = COALESCE(?, name),
@@ -196,9 +223,13 @@ export class BusinessApiRouter {
             budgeted_cost = COALESCE(?, budgeted_cost),
             current_stage = COALESCE(?, current_stage),
             status = COALESCE(?, status),
+            description = COALESCE(?, description),
+            client_contact = COALESCE(?, client_contact),
+            start_date = COALESCE(?, start_date),
+            expected_completion_date = COALESCE(?, expected_completion_date),
             updated_at = datetime('now')
         WHERE id = ?;
-      `, [name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status, prjId]);
+      `, [name, client_id, site_address, district, contract_value, budgeted_cost, current_stage, status, description, client_contact, start_date, expected_completion_date, prjId]);
 
       const updated = this.db.queryOne('SELECT * FROM projects WHERE id = ?;', [prjId]);
       return { status: 200, data: { success: true, project: updated } };
@@ -330,7 +361,17 @@ export class BusinessApiRouter {
       return { status: 200, data: { success: true, quotation } };
     }
 
-    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && method === 'PUT') {
+    if (route.startsWith('/quotations/') && route.endsWith('/convert-to-project') && method === 'POST') {
+      const qId = route.replace('/quotations/', '').replace('/convert-to-project', '');
+      try {
+        const result = this.quotationService.convertQuotationToProject(qId);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && !route.endsWith('/convert-to-project') && method === 'PUT') {
       const qId = route.replace('/quotations/', '');
       try {
         const quotation = this.quotationService.updateQuotation(qId, body);
@@ -340,7 +381,7 @@ export class BusinessApiRouter {
       }
     }
 
-    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && method === 'DELETE') {
+    if (route.startsWith('/quotations/') && !route.endsWith('/html') && !route.endsWith('/status') && !route.endsWith('/revision') && !route.endsWith('/convert-to-project') && method === 'DELETE') {
       const qId = route.replace('/quotations/', '');
       try {
         const result = this.quotationService.deleteQuotation(qId);
@@ -391,6 +432,26 @@ export class BusinessApiRouter {
       }
     }
 
+    if (route.startsWith('/income/receipts/') && !route.endsWith('/void') && method === 'PUT') {
+      const recId = route.replace('/income/receipts/', '');
+      try {
+        const receipt = this.financialService.updateClientReceipt(recId, body);
+        return { status: 200, data: { success: true, receipt } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/income/receipts/') && !route.endsWith('/void') && method === 'DELETE') {
+      const recId = route.replace('/income/receipts/', '');
+      try {
+        const result = this.financialService.voidClientReceipt(recId, body?.reason || 'Deleted by user', context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
     // 7. Expenses
     if (route === '/expenses' && method === 'GET') {
       const { projectId, category } = query;
@@ -435,6 +496,16 @@ export class BusinessApiRouter {
       try {
         const updated = this.financialService.updateExpense(expId, body);
         return { status: 200, data: { success: true, expense: updated } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/expenses/') && !route.endsWith('/void') && method === 'DELETE') {
+      const expId = route.replace('/expenses/', '');
+      try {
+        const result = this.financialService.voidExpense(expId, body?.reason || 'Deleted by user', context?.user?.id);
+        return { status: 200, data: { success: true, ...result } };
       } catch (err) {
         return { status: 400, data: { success: false, error: err.message } };
       }
@@ -556,6 +627,136 @@ export class BusinessApiRouter {
       } catch (err) {
         return { status: 400, data: { success: false, error: err.message } };
       }
+    }
+
+    // 8.5 Labour Management & Wages Ledger
+    if (route === '/labour/workers' && method === 'GET') {
+      const workers = this.labourService.listWorkers(query);
+      return { status: 200, data: { success: true, workers } };
+    }
+
+    if (route === '/labour/workers' && method === 'POST') {
+      try {
+        const worker = this.labourService.createWorker(body);
+        return { status: 201, data: { success: true, worker } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/workers/') && method === 'GET') {
+      const workerId = route.replace('/labour/workers/', '');
+      const worker = this.labourService.getWorkerById(workerId);
+      if (!worker) return { status: 404, data: { success: false, error: 'Worker not found' } };
+      return { status: 200, data: { success: true, worker } };
+    }
+
+    if (route.startsWith('/labour/workers/') && method === 'PUT') {
+      const workerId = route.replace('/labour/workers/', '');
+      try {
+        const worker = this.labourService.updateWorker(workerId, body);
+        return { status: 200, data: { success: true, worker } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/workers/') && method === 'DELETE') {
+      const workerId = route.replace('/labour/workers/', '');
+      try {
+        const result = this.labourService.deleteWorker(workerId);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route === '/labour/attendance/monthly-summary' && method === 'GET') {
+      const ym = query.yearMonth || new Date().toISOString().slice(0, 7);
+      const summary = this.labourService.getMonthlyAttendanceSummary(ym, query.projectId);
+      return { status: 200, data: { success: true, summary } };
+    }
+
+    if (route === '/labour/attendance' && method === 'GET') {
+      const attendance = this.labourService.listAttendance(query);
+      return { status: 200, data: { success: true, attendance } };
+    }
+
+    if (route === '/labour/attendance' && method === 'POST') {
+      try {
+        const attendance = this.labourService.recordAttendance({
+          ...body,
+          recordedBy: body.recordedBy || context?.user?.id
+        });
+        return { status: 201, data: { success: true, attendance } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route === '/labour/payments' && method === 'GET') {
+      const payments = this.labourService.listPayments(query);
+      return { status: 200, data: { success: true, payments } };
+    }
+
+    if (route === '/labour/payments' && method === 'POST') {
+      try {
+        const payment = this.labourService.recordLabourPayment({
+          ...body,
+          recordedBy: body.recordedBy || context?.user?.id
+        });
+        return { status: 201, data: { success: true, payment } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/payments/') && method === 'DELETE') {
+      const payId = route.replace('/labour/payments/', '');
+      try {
+        const result = this.labourService.voidLabourPayment(payId, body?.reason);
+        return { status: 200, data: { success: true, ...result } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/ledger/') && method === 'GET') {
+      const workerId = route.replace('/labour/ledger/', '');
+      try {
+        const ledger = this.labourService.getWorkerLedger(workerId);
+        return { status: 200, data: { success: true, ...ledger } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/statement/') && method === 'GET') {
+      const workerId = route.replace('/labour/statement/', '');
+      try {
+        const statement = this.labourService.generateWageStatement(workerId, query.startDate, query.endDate);
+        return { status: 200, data: { success: true, statement } };
+      } catch (err) {
+        return { status: 404, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route === '/labour/adjustments' && method === 'POST') {
+      try {
+        const adj = this.labourService.recordAdjustment({
+          ...body,
+          authorisedBy: body.authorisedBy || context?.user?.id
+        });
+        return { status: 201, data: { success: true, adjustment: adj } };
+      } catch (err) {
+        return { status: 400, data: { success: false, error: err.message } };
+      }
+    }
+
+    if (route.startsWith('/labour/projects/') && route.endsWith('/summary') && method === 'GET') {
+      const pId = route.replace('/labour/projects/', '').replace('/summary', '');
+      const summary = this.labourService.getProjectLabourSummary(pId);
+      return { status: 200, data: { success: true, summary } };
     }
 
     // 9. Milestones & Progress

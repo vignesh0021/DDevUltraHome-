@@ -779,4 +779,50 @@ export class QuotationService {
 </body>
 </html>`;
   }
+
+  /**
+   * Convert Approved Quotation into an Active Project
+   * Rule: Converting a quotation to a project must not duplicate financial transactions
+   * or record quotation values as received income.
+   */
+  convertQuotationToProject(quoteId) {
+    if (!quoteId) throw new Error('Quotation ID is required.');
+    return this.db.transaction(() => {
+      const quote = this.getQuotationById(quoteId);
+      if (!quote) throw new Error(`Quotation ${quoteId} not found.`);
+
+      // If already linked to a project, return existing
+      if (quote.project_id) {
+        const existing = this.db.queryOne('SELECT * FROM projects WHERE id = ?;', [quote.project_id]);
+        if (existing) {
+          this.db.run("UPDATE quotations SET status = 'CONVERTED', updated_at = datetime('now') WHERE id = ?;", [quoteId]);
+          return existing;
+        }
+      }
+
+      const prjSeq = (this.db.queryOne('SELECT COUNT(*) as cnt FROM projects;').cnt + 1).toString().padStart(4, '0');
+      const projectCode = `PRJ-${new Date().getFullYear()}-${prjSeq}`;
+      const projectId = `prj_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+      this.db.run(`
+        INSERT INTO projects (
+          id, project_code, name, client_id, site_address, district, state,
+          contract_value, budgeted_cost, current_stage, status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'Chennai', 'Tamil Nadu', ?, ?, 'FOUNDATION', 'ACTIVE', datetime('now'), datetime('now'));
+      `, [
+        projectId, projectCode, quote.title, quote.client_id, 'Site Address',
+        quote.total_amount, quote.subtotal
+      ]);
+
+      // Link quotation to project and set status to CONVERTED
+      this.db.run(`
+        UPDATE quotations
+        SET project_id = ?, status = 'CONVERTED', updated_at = datetime('now')
+        WHERE id = ?;
+      `, [projectId, quoteId]);
+
+      return this.db.queryOne('SELECT * FROM projects WHERE id = ?;', [projectId]);
+    });
+  }
 }
+

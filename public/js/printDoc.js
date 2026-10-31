@@ -152,6 +152,12 @@ function blobToBase64(blob) {
  * @returns {Promise<{ success: boolean, method: string, cancelled?: boolean }>}
  */
 export async function deliverPdf(filename, pdfInput, options = {}) {
+  if (typeof filename === 'object' && filename !== null) {
+    options = filename.options || options || {};
+    pdfInput = filename.lines || filename.pdfInput || filename.blob || pdfInput;
+    filename = filename.filename || 'Document.pdf';
+  }
+
   let blob;
   if (pdfInput instanceof Blob) {
     blob = pdfInput;

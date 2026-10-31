@@ -8,6 +8,7 @@ import { ClientsScreen } from './clientsScreen.js';
 import { QuotationsScreen } from './quotationsScreen.js';
 import { IncomeScreen } from './incomeScreen.js';
 import { ExpensesScreen } from './expensesScreen.js';
+import { LabourScreen } from './labourScreen.js';
 import { SuppliersScreen } from './suppliersScreen.js';
 import { ProgressScreen } from './progressScreen.js';
 import { DocumentsScreen } from './documentsScreen.js';
@@ -24,6 +25,7 @@ export const SCREENS = {
   quotations: QuotationsScreen,
   income: IncomeScreen,
   expenses: ExpensesScreen,
+  labour: LabourScreen,
   suppliers: SuppliersScreen,
   progress: ProgressScreen,
   documents: DocumentsScreen,
@@ -51,6 +53,12 @@ export class ScreenRouter {
     if (screenKey === 'expenses') {
       FinanceHubScreen.setTab('expenses');
       this.currentScreen = 'expenses';
+      await FinanceHubScreen.render(this.mountElement);
+      return;
+    }
+    if (['labour', 'attendance', 'wages'].includes(screenKey)) {
+      FinanceHubScreen.setTab('labour');
+      this.currentScreen = 'labour';
       await FinanceHubScreen.render(this.mountElement);
       return;
     }

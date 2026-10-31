@@ -16,15 +16,15 @@ describe('DDevUltraHome Versioned Migration Framework & Relational Schema', () =
     db.close();
   });
 
-  test('runs migrations 001, 002 and 003 sequentially on a clean database', () => {
+  test('runs migrations 001, 002, 003 and 004 sequentially on a clean database', () => {
     const result = runner.runMigrations();
 
-    assert.equal(result.appliedCount, 3, 'Should have applied exactly 3 migrations');
-    assert.equal(result.currentVersion, 3, 'Current schema version must be 3');
+    assert.equal(result.appliedCount, 4, 'Should have applied exactly 4 migrations');
+    assert.equal(result.currentVersion, 4, 'Current schema version must be 4');
 
     // Verify migration tracking table
     const applied = runner.getAppliedVersions();
-    assert.deepEqual(applied, [1, 2, 3]);
+    assert.deepEqual(applied, [1, 2, 3, 4]);
 
     // Verify Kundrathur real project was seeded
     const kundrathur = db.queryOne("SELECT * FROM projects WHERE id = 'prj-kun-01';");

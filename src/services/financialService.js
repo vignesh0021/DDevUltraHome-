@@ -35,8 +35,10 @@ export class FinancialService {
       createdBy = null
     } = data;
 
-    if (!projectId || !clientId || !accountId || !amount || amount <= 0) {
-      throw new Error('Missing required fields: projectId, clientId, accountId, and positive amount are mandatory.');
+    const targetProjectId = projectId || 'prj-business-overhead';
+
+    if (!clientId || !accountId || !amount || amount <= 0) {
+      throw new Error('Missing required fields: clientId, accountId, and positive amount are mandatory.');
     }
 
     return this.db.transaction(() => {
@@ -62,7 +64,7 @@ export class FinancialService {
           notes, created_by, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, ?, ?, datetime('now'));
       `, [
-        receiptId, receiptNumber, projectId, clientId, contractId,
+        receiptId, receiptNumber, targetProjectId, clientId, contractId,
         amount, paymentMode, referenceNumber, receiptDate || new Date().toISOString().split('T')[0],
         accountId, isAdvance ? 1 : 0, unallocatedBalance, notes, createdBy
       ]);
@@ -305,7 +307,7 @@ export class FinancialService {
    */
   recordExpense(data) {
     const {
-      projectId,
+      projectId = null,
       category,
       amount,
       expenseDate,
@@ -318,7 +320,9 @@ export class FinancialService {
       createdBy = null
     } = data;
 
-    if (!projectId || !category || !amount || amount <= 0 || !accountId || !paidTo) {
+    const targetProjectId = projectId || 'prj-business-overhead';
+
+    if (!category || !amount || amount <= 0 || !accountId || !paidTo) {
       throw new Error('Missing mandatory expense fields.');
     }
 
@@ -341,7 +345,7 @@ export class FinancialService {
           supplier_id, document_id, approval_status, notes, created_by
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'APPROVED', ?, ?);
       `, [
-        expenseId, expenseNumber, projectId, category, amount,
+        expenseId, expenseNumber, targetProjectId, category, amount,
         expenseDate || new Date().toISOString().split('T')[0], paidTo,
         paymentMode, accountId, supplierId, documentId, notes, createdBy
       ]);
@@ -510,6 +514,48 @@ export class FinancialService {
       2
     );
 
+    // 6. Total Income Received
+    const incomeRow = this.db.queryOne(`
+      SELECT COALESCE(SUM(amount), 0.00) as total_income
+      FROM client_receipts
+      WHERE deleted_at IS NULL;
+    `);
+    const totalIncomeReceived = SafeMath.round(incomeRow?.total_income || 0, 2);
+
+    // 7. Outstanding Client Payments
+    const outstandingClientPayments = SafeMath.round(Math.max(0, (projects?.total_contract_value || 0) - totalIncomeReceived), 2);
+
+    // 8. Labour Wages Payable
+    let labourWagesPayable = 0;
+    try {
+      const labourEarned = this.db.queryOne(`
+        SELECT COALESCE(SUM(earned_amount + overtime_amount), 0.00) as earned
+        FROM labour_attendance;
+      `);
+      const labourPaid = this.db.queryOne(`
+        SELECT COALESCE(SUM(amount), 0.00) as paid
+        FROM labour_payments
+        WHERE deleted_at IS NULL;
+      `);
+      labourWagesPayable = SafeMath.round(Math.max(0, (labourEarned?.earned || 0) - (labourPaid?.paid || 0)), 2);
+    } catch (_) {}
+
+    // 9. Today's Attendance Summary
+    let todayAttendance = { totalPresent: 0, workersPresent: [] };
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayAttRows = this.db.query(`
+        SELECT a.*, w.name, w.trade
+        FROM labour_attendance a
+        JOIN labour_workers w ON a.worker_id = w.id
+        WHERE a.attendance_date = ? AND a.status IN ('PRESENT', 'HALF_DAY');
+      `, [todayStr]);
+      todayAttendance = {
+        totalPresent: todayAttRows.length,
+        workersPresent: todayAttRows.map(r => ({ name: r.name, trade: r.trade, status: r.status }))
+      };
+    } catch (_) {}
+
     return {
       totalLiquidFunds: SafeMath.round(liquidity.total_liquid_funds, 2),
       bankBalance: SafeMath.round(liquidity.bank_balance, 2),
@@ -519,7 +565,12 @@ export class FinancialService {
       totalContractValue: SafeMath.round(projects.total_contract_value, 2),
       accountsPayable: SafeMath.round(payables.total_accounts_payable, 2),
       unearnedAdvanceLiabilities: SafeMath.round(advances.total_unearned_advances, 2),
-      netOperatingCashflow
+      netOperatingCashflow,
+      totalIncomeReceived,
+      totalExpenses: SafeMath.round(expenses.total_expenses || 0, 2),
+      outstandingClientPayments,
+      labourWagesPayable,
+      todayAttendance
     };
   }
 
@@ -722,4 +773,254 @@ export class FinancialService {
       };
     });
   }
+
+  /**
+   * Update Client Receipt details
+   */
+  updateClientReceipt(receiptId, data) {
+    if (!receiptId) throw new Error('Receipt ID is required.');
+    return this.db.transaction(() => {
+      const receipt = this.db.queryOne('SELECT * FROM client_receipts WHERE id = ? AND deleted_at IS NULL;', [receiptId]);
+      if (!receipt) throw new Error(`Receipt ${receiptId} not found.`);
+
+      const paymentMode = data.payment_mode || data.paymentMode || receipt.payment_mode;
+      const referenceNumber = data.reference_number !== undefined ? data.reference_number : (data.referenceNumber !== undefined ? data.referenceNumber : receipt.reference_number);
+      const receiptDate = data.receipt_date || data.receiptDate || receipt.receipt_date;
+      const notes = data.notes !== undefined ? data.notes : receipt.notes;
+
+      let amount = receipt.amount;
+      if (data.amount !== undefined && data.amount !== null && data.amount !== '') {
+        const next = Number(data.amount);
+        if (!Number.isFinite(next) || next <= 0) throw new Error('Amount must be greater than zero.');
+        const delta = SafeMath.round(next - receipt.amount, 2);
+        if (delta !== 0) {
+          const account = this.db.queryOne('SELECT id, current_balance FROM financial_accounts WHERE id = ?;', [receipt.account_id]);
+          if (!account) throw new Error(`Financial account ${receipt.account_id} not found.`);
+          const newBalance = SafeMath.round(account.current_balance + delta, 2);
+          if (newBalance < 0) {
+            throw new Error(`Cannot lower receipt: Account balance ₹${account.current_balance} would become negative.`);
+          }
+          this.db.run('UPDATE financial_accounts SET current_balance = ?, updated_at = datetime(\'now\') WHERE id = ?;', [newBalance, account.id]);
+          amount = next;
+        }
+      }
+
+      this.db.run(`
+        UPDATE client_receipts
+        SET payment_mode = ?, reference_number = ?, receipt_date = ?, notes = ?, amount = ?
+        WHERE id = ?;
+      `, [paymentMode, referenceNumber, receiptDate, notes, amount, receiptId]);
+
+      return this.db.queryOne('SELECT * FROM client_receipts WHERE id = ?;', [receiptId]);
+    });
+  }
+
+  /**
+   * Comprehensive Project-Wise Financial Report with Date Range Filtering
+   */
+  getProjectFullReport(projectId, options = {}) {
+    const project = this.db.queryOne(`
+      SELECT p.*, c.name as client_name, c.phone as client_phone, c.email as client_email, c.billing_address as client_address
+      FROM projects p
+      LEFT JOIN clients c ON p.client_id = c.id
+      WHERE p.id = ?;
+    `, [projectId]);
+    if (!project) throw new Error(`Project ${projectId} not found.`);
+
+    let { dateRange = 'ALL', startDate = null, endDate = null } = options;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (dateRange === 'TODAY') {
+      startDate = todayStr;
+      endDate = todayStr;
+    } else if (dateRange === 'THIS_WEEK') {
+      const day = now.getDay() || 7;
+      const mon = new Date(now);
+      mon.setDate(now.getDate() - day + 1);
+      startDate = mon.toISOString().split('T')[0];
+      endDate = todayStr;
+    } else if (dateRange === 'THIS_MONTH') {
+      startDate = `${todayStr.slice(0, 7)}-01`;
+      endDate = todayStr;
+    }
+
+    // 1. Quotations linked to project
+    const quotations = this.db.query(`
+      SELECT id, quotation_number, revision_number, title, subtotal, tax_amount, total_amount, status, created_at
+      FROM quotations
+      WHERE project_id = ?
+      ORDER BY created_at DESC;
+    `, [projectId]);
+    const quotationValue = quotations.reduce((sum, q) => sum + (q.status !== 'REJECTED' && q.status !== 'SUPERSEDED' ? q.total_amount : 0), 0);
+
+    // 2. Client Receipts (Income)
+    let receiptSql = 'SELECT * FROM client_receipts WHERE project_id = ? AND deleted_at IS NULL';
+    const receiptParams = [projectId];
+    if (startDate) {
+      receiptSql += ' AND receipt_date >= ?';
+      receiptParams.push(startDate);
+    }
+    if (endDate) {
+      receiptSql += ' AND receipt_date <= ?';
+      receiptParams.push(endDate);
+    }
+    receiptSql += ' ORDER BY receipt_date DESC;';
+    const receipts = this.db.query(receiptSql, receiptParams);
+    const totalIncomeReceived = SafeMath.round(receipts.reduce((sum, r) => sum + (r.amount || 0), 0), 2);
+
+    // 3. Client payments outstanding
+    const effectiveContractValue = project.contract_value > 0 ? project.contract_value : quotationValue;
+    const outstandingClientPayments = SafeMath.round(Math.max(0, effectiveContractValue - totalIncomeReceived), 2);
+
+    // 4. Expenses with category breakdown
+    let expSql = 'SELECT * FROM expenses WHERE project_id = ? AND deleted_at IS NULL';
+    const expParams = [projectId];
+    if (startDate) {
+      expSql += ' AND expense_date >= ?';
+      expParams.push(startDate);
+    }
+    if (endDate) {
+      expSql += ' AND expense_date <= ?';
+      expParams.push(endDate);
+    }
+    expSql += ' ORDER BY expense_date DESC;';
+    const expenses = this.db.query(expSql, expParams);
+    const totalExpenses = SafeMath.round(expenses.reduce((sum, e) => sum + (e.amount || 0), 0), 2);
+
+    const expenseCategoryBreakdown = {
+      MATERIALS: 0,
+      TRANSPORT: 0,
+      EQUIPMENT: 0,
+      RENT: 0,
+      LABOUR: 0,
+      ELECTRICITY: 0,
+      FOOD: 0,
+      MISCELLANEOUS: 0
+    };
+    expenses.forEach(e => {
+      const cat = (e.category || '').toUpperCase();
+      if (cat.includes('MAT')) expenseCategoryBreakdown.MATERIALS = SafeMath.round(expenseCategoryBreakdown.MATERIALS + e.amount, 2);
+      else if (cat.includes('TRANS')) expenseCategoryBreakdown.TRANSPORT = SafeMath.round(expenseCategoryBreakdown.TRANSPORT + e.amount, 2);
+      else if (cat.includes('EQUIP')) expenseCategoryBreakdown.EQUIPMENT = SafeMath.round(expenseCategoryBreakdown.EQUIPMENT + e.amount, 2);
+      else if (cat.includes('RENT')) expenseCategoryBreakdown.RENT = SafeMath.round(expenseCategoryBreakdown.RENT + e.amount, 2);
+      else if (cat.includes('LAB')) expenseCategoryBreakdown.LABOUR = SafeMath.round(expenseCategoryBreakdown.LABOUR + e.amount, 2);
+      else if (cat.includes('ELEC') || cat.includes('POW')) expenseCategoryBreakdown.ELECTRICITY = SafeMath.round(expenseCategoryBreakdown.ELECTRICITY + e.amount, 2);
+      else if (cat.includes('FOOD') || cat.includes('TEA')) expenseCategoryBreakdown.FOOD = SafeMath.round(expenseCategoryBreakdown.FOOD + e.amount, 2);
+      else expenseCategoryBreakdown.MISCELLANEOUS = SafeMath.round(expenseCategoryBreakdown.MISCELLANEOUS + e.amount, 2);
+    });
+
+    // 5. Labour Wages (from attendance and labour payments)
+    let attSql = 'SELECT * FROM labour_attendance WHERE project_id = ?';
+    let labPaySql = 'SELECT * FROM labour_payments WHERE project_id = ? AND deleted_at IS NULL';
+    const attParams = [projectId];
+    const labPayParams = [projectId];
+    if (startDate) {
+      attSql += ' AND attendance_date >= ?';
+      labPaySql += ' AND payment_date >= ?';
+      attParams.push(startDate);
+      labPayParams.push(startDate);
+    }
+    if (endDate) {
+      attSql += ' AND attendance_date <= ?';
+      labPaySql += ' AND payment_date <= ?';
+      attParams.push(endDate);
+      labPayParams.push(endDate);
+    }
+    const attendanceRecords = this.db.query(attSql, attParams);
+    const labourPaymentRecords = this.db.query(labPaySql, labPayParams);
+
+    const labourWagesEarned = SafeMath.round(attendanceRecords.reduce((sum, a) => sum + (a.earned_amount || 0) + (a.overtime_amount || 0), 0), 2);
+    const labourWagesPaid = SafeMath.round(labourPaymentRecords.reduce((sum, p) => sum + (p.amount || 0), 0), 2);
+    const labourWagesOutstanding = SafeMath.round(Math.max(0, labourWagesEarned - labourWagesPaid), 2);
+
+    // 6. Project progress history
+    const progressHistory = this.db.query(`
+      SELECT * FROM progress_updates WHERE project_id = ? ORDER BY report_date DESC;
+    `, [projectId]);
+
+    // 7. Attached bills and receipts documents
+    const attachedDocuments = this.db.query(`
+      SELECT * FROM documents WHERE project_id = ? AND deleted_at IS NULL ORDER BY created_at DESC;
+    `, [projectId]);
+
+    // 8. Date-wise combined transaction history
+    const txHistory = [
+      ...receipts.map(r => ({
+        id: r.id,
+        date: r.receipt_date,
+        type: 'INCOME',
+        category: r.is_advance ? 'Advance Receipt' : 'Milestone Receipt',
+        description: `Receipt ${r.receipt_number} via ${r.payment_mode}` + (r.reference_number ? ` (Ref: ${r.reference_number})` : ''),
+        amount: r.amount,
+        flow: 'IN',
+        notes: r.notes
+      })),
+      ...expenses.map(e => ({
+        id: e.id,
+        date: e.expense_date,
+        type: 'EXPENSE',
+        category: e.category,
+        description: `Expense to ${e.paid_to} via ${e.payment_mode}`,
+        amount: e.amount,
+        flow: 'OUT',
+        notes: e.notes
+      })),
+      ...labourPaymentRecords.map(p => ({
+        id: p.id,
+        date: p.payment_date,
+        type: 'LABOUR_PAYMENT',
+        category: `Labour ${p.payment_type}`,
+        description: `Payment ${p.payment_number} via ${p.payment_mode}`,
+        amount: p.amount,
+        flow: 'OUT',
+        notes: p.notes
+      }))
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const summary = {
+      contractValue: project.contract_value,
+      quotationValue,
+      totalIncomeReceived,
+      outstandingClientPayments,
+      totalExpenses,
+      labourWagesEarned,
+      labourWagesPaid,
+      labourWagesOutstanding,
+      netCashflow: SafeMath.round(totalIncomeReceived - totalExpenses - labourWagesPaid, 2)
+    };
+
+    return {
+      project,
+      filters: {
+        dateRange,
+        startDate: startDate || null,
+        endDate: endDate || null
+      },
+      summary,
+      financials: summary,
+      effectiveContractValue: summary.contractValue,
+      totalIncomeReceived,
+      totalExpenses,
+      outstandingClientPayments,
+      labourWagesEarned,
+      labourWagesPaid,
+      labourWagesOutstanding,
+      netOperatingCashflow: summary.netCashflow,
+      expenseCategoryBreakdown,
+      receipts,
+      expenses,
+      labourSummary: {
+        attendanceCount: attendanceRecords.length,
+        wagesEarned: labourWagesEarned,
+        wagesPaid: labourWagesPaid,
+        wagesOutstanding: labourWagesOutstanding
+      },
+      quotations,
+      progressHistory,
+      attachedDocuments,
+      transactionHistory: txHistory
+    };
+  }
 }
+

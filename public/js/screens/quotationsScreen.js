@@ -7,6 +7,8 @@
 
 import { BusinessApi } from '../businessApi.js';
 import { deliverPdf, buildQuotationPdf } from '../printDoc.js';
+import { AppDialog } from '../components/appDialog.js';
+import { openQuickCalculator } from '../components/quickCalculator.js';
 
 export const QuotationsScreen = {
   cachedClients: [],
@@ -213,14 +215,19 @@ export const QuotationsScreen = {
                   `}
                   ${q.status === 'DRAFT' ? `
                     <button type="button" class="btn-delete-quote btn-outline" data-id="${q.id}" data-number="${q.quotation_number}" style="min-height: 32px; font-size: 11px; padding: 0 8px; color: #DC2626; border-color: #FCA5A5;">
-                      🗑️ Delete Draft
+                       Delete Draft
                     </button>
                   ` : ''}
                 </div>
-                <div>
+                <div style="display: flex; gap: 6px;">
                   ${q.status === 'DRAFT' ? `
                     <button type="button" class="btn-approve-quote btn-primary" data-id="${q.id}" style="min-height: 32px; font-size: 11px; padding: 0 12px; background: #059669;">
                       ✓ Approve Quote
+                    </button>
+                  ` : ''}
+                  ${q.status === 'APPROVED' ? `
+                    <button type="button" class="btn-convert-quote btn-primary" data-id="${q.id}" data-number="${q.quotation_number}" style="min-height: 32px; font-size: 11px; padding: 0 12px; background: #2563EB; color: white;">
+                      🚀 Convert to Project
                     </button>
                   ` : ''}
                 </div>
@@ -294,7 +301,31 @@ export const QuotationsScreen = {
             await BusinessApi.request(`/quotations/${qId}/status`, 'POST', { status: 'APPROVED' });
             await this.loadQuotations(container);
           } catch (err) {
-            alert('Approval error: ' + err.message);
+            await AppDialog.alert({ title: 'Approval Error', message: err.message });
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.btn-convert-quote').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const qId = btn.getAttribute('data-id');
+          const qNum = btn.getAttribute('data-number');
+          const confirmed = await AppDialog.confirm({
+            title: 'Convert Quotation to Project',
+            message: `Convert approved quotation "${qNum}" into an active construction project?\n\nThis links the quotation and initialises the project without duplicate revenue transactions.`
+          });
+          if (!confirmed) return;
+
+          try {
+            const res = await BusinessApi.request(`/quotations/${qId}/convert-to-project`, 'POST');
+            await AppDialog.alert({
+              title: 'Project Initialised',
+              message: res.message || `Quotation ${qNum} successfully converted to project.`
+            });
+            await this.loadQuotations(container);
+          } catch (err) {
+            await AppDialog.alert({ title: 'Conversion Failed', message: err.message });
           }
         });
       });
@@ -501,7 +532,10 @@ export const QuotationsScreen = {
     card.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <span class="item-card-index" style="font-size: 11px; font-weight: 700; color: var(--brand-navy-900); background: #E2E8F0; padding: 2px 8px; border-radius: 4px;">Item</span>
-        <button type="button" class="btn-del-item" style="border: none; background: transparent; color: #DC2626; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 6px;">✕ Remove</button>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn-calc-item" style="border: 1px solid #C7D2FE; background: #EEF2FF; color: #4338CA; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 2px 6px; cursor: pointer;">🧮 Calc</button>
+          <button type="button" class="btn-del-item" style="border: none; background: transparent; color: #DC2626; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 6px;">✕ Remove</button>
+        </div>
       </div>
 
       <div class="form-group" style="margin-bottom: 8px;">
@@ -546,6 +580,18 @@ export const QuotationsScreen = {
     const qtyInp = card.querySelector('.inp-item-qty');
     const rateInp = card.querySelector('.inp-item-rate');
     const totalInp = card.querySelector('.inp-item-total');
+
+    card.querySelector('.btn-calc-item')?.addEventListener('click', () => {
+      openQuickCalculator({
+        targetInput: totalInp,
+        title: 'Calculate Item Amount',
+        initialValue: parseFloat(totalInp.value) || 0,
+        onApply: () => {
+          const root = container.closest('#modal-new-quotation') || document;
+          this.recalculateTotals(root);
+        }
+      });
+    });
 
     const updateLineTotal = () => {
       const q = parseFloat(qtyInp.value) || 0;

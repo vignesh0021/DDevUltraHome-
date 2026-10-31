@@ -159,6 +159,7 @@ export const BusinessApi = {
       .filter(r => r.is_advance)
       .reduce((sum, r) => sum + (parseFloat(r.unallocated_balance) || 0), 0);
 
+    const totalIncomeReceived = receipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
     const earnedRevenue = receipts
       .reduce((sum, r) => sum + (r.is_advance ? (parseFloat(r.allocated_amount) || 0) : (parseFloat(r.amount) || 0)), 0);
 
@@ -169,6 +170,36 @@ export const BusinessApi = {
 
     const projects = this._getOfflineProjects();
     const clients = this._getOfflineClients();
+
+    // Outstanding client payments (active projects contract value - received)
+    const activeProjects = projects.filter(p => p.status === 'ACTIVE');
+    const totalContractValue = activeProjects.reduce((sum, p) => sum + (parseFloat(p.contract_value) || 0), 0);
+    const totalProjectReceipts = receipts
+      .filter(r => r.project_id && activeProjects.some(p => p.id === r.project_id))
+      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+    const outstandingClientPayments = Math.max(0, totalContractValue - totalProjectReceipts);
+
+    // Labour wages payable and attendance summary
+    const workers = this._getOfflineWorkers();
+    const attendance = this._getOfflineAttendance();
+    const labourPayments = this._getOfflineLabourPayments();
+    const labourAdjustments = this._getOfflineLabourAdjustments();
+
+    const totalWagesEarned = attendance.reduce((sum, a) => sum + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0);
+    const totalAdditions = labourAdjustments.filter(adj => adj.adjustment_type === 'ADDITION').reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+    const totalDeductions = labourAdjustments.filter(adj => adj.adjustment_type === 'DEDUCTION').reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+    const totalLabourDisbursed = labourPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const labourWagesPayable = Math.max(0, Math.round(((totalWagesEarned + totalAdditions) - (totalLabourDisbursed + totalDeductions)) * 100) / 100);
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayAtt = attendance.filter(a => a.attendance_date === todayStr);
+    const todayAttendance = {
+      present: todayAtt.filter(a => a.status === 'PRESENT').length,
+      halfDay: todayAtt.filter(a => a.status === 'HALF_DAY').length,
+      absent: todayAtt.filter(a => a.status === 'ABSENT').length,
+      leave: todayAtt.filter(a => a.status === 'LEAVE').length,
+      totalActiveWorkers: workers.filter(w => w.is_active !== 0).length
+    };
 
     const storedReviews = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_ocr_reviews') : null;
     const reviews = storedReviews ? JSON.parse(storedReviews) : [];
@@ -186,7 +217,12 @@ export const BusinessApi = {
         accountsPayable: Math.round(accountsPayable * 100) / 100,
         unearnedAdvanceLiabilities: Math.round(unearnedAdvanceLiabilities * 100) / 100,
         netOperatingCashflow: Math.round(netOperatingCashflow * 100) / 100,
-        activeProjects: projects.filter(p => p.status === 'ACTIVE').length,
+        totalIncomeReceived: Math.round(totalIncomeReceived * 100) / 100,
+        totalExpenses: Math.round(totalExpenses * 100) / 100,
+        outstandingClientPayments: Math.round(outstandingClientPayments * 100) / 100,
+        labourWagesPayable,
+        todayAttendance,
+        activeProjects: activeProjects.length,
         totalClients: clients.length,
         pendingOcrCount
       }
@@ -249,7 +285,106 @@ export const BusinessApi = {
       return { success: true, archivedId: prjId };
     }
 
-    if (endpoint.startsWith('/projects/') && method === 'GET') {
+    if (endpoint.startsWith('/projects/') && endpoint.endsWith('/report') && method === 'GET') {
+      const prjId = endpoint.replace('/projects/', '').replace('/report', '');
+      const projects = this._getOfflineProjects();
+      const prj = projects.find(p => p.id === prjId) || { id: prjId, name: 'Project' };
+      const receipts = this._getOfflineReceipts().filter(r => r.project_id === prjId);
+      const expenses = this._getOfflineExpenses().filter(e => e.project_id === prjId);
+      const attendance = this._getOfflineAttendance().filter(a => a.project_id === prjId);
+      const labourPayments = this._getOfflineLabourPayments().filter(p => p.project_id === prjId);
+
+      const totalIncome = receipts.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+      const totalExpenses = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      const contractVal = parseFloat(prj.contract_value) || 0;
+      const clientBalanceDue = Math.max(0, contractVal - totalIncome);
+
+      const wagesEarned = attendance.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0);
+      const advancesPaid = labourPayments.filter(p => p.payment_type === 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const wagesPaid = labourPayments.filter(p => p.payment_type !== 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const totalLabourPaid = advancesPaid + wagesPaid;
+      const wagesOutstanding = Math.max(0, wagesEarned - totalLabourPaid);
+
+      // Category breakdown
+      const categoryMap = {};
+      expenses.forEach(e => {
+        const cat = e.category || 'MISCELLANEOUS';
+        categoryMap[cat] = (categoryMap[cat] || 0) + (parseFloat(e.amount) || 0);
+      });
+      const categoryBreakdown = Object.entries(categoryMap).map(([category, totalAmount]) => ({
+        category,
+        totalAmount,
+        percentage: totalExpenses > 0 ? Math.round((totalAmount / totalExpenses) * 10000) / 100 : 0
+      }));
+
+      // Combined transactions
+      const txns = [
+        ...receipts.map(r => ({
+          id: r.id,
+          date: r.receipt_date,
+          type: 'INCOME',
+          category: 'Client Receipt',
+          description: r.notes || `Receipt from ${r.client_name || 'Client'}`,
+          amount: parseFloat(r.amount) || 0
+        })),
+        ...expenses.map(e => ({
+          id: e.id,
+          date: e.expense_date,
+          type: 'EXPENSE',
+          category: e.category,
+          description: e.paid_to ? `${e.category} - ${e.paid_to}` : (e.notes || 'Expense'),
+          amount: parseFloat(e.amount) || 0
+        })),
+        ...labourPayments.map(p => ({
+          id: p.id,
+          date: p.payment_date,
+          type: 'LABOUR_PAYMENT',
+          category: 'Labour Wages',
+          description: `Disbursement (${p.payment_type})`,
+          amount: parseFloat(p.amount) || 0
+        }))
+      ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+      return {
+        success: true,
+        report: {
+          project: prj,
+          financials: {
+            contractValue: contractVal,
+            totalIncome,
+            totalExpenses,
+            netCashflow: totalIncome - totalExpenses,
+            clientBalanceDue
+          },
+          labourSummary: {
+            wagesEarned,
+            advancesPaid,
+            wagesPaid,
+            totalDisbursed: totalLabourPaid,
+            wagesOutstanding
+          },
+          categoryBreakdown,
+          transactionHistory: txns,
+          progressUpdates: this._getOfflineProgress(prjId),
+          quotations: []
+        }
+      };
+    }
+
+    if (endpoint.startsWith('/projects/') && endpoint.endsWith('/transactions') && method === 'GET') {
+      const prjId = endpoint.replace('/projects/', '').replace('/transactions', '');
+      const receipts = this._getOfflineReceipts().filter(r => r.project_id === prjId);
+      const expenses = this._getOfflineExpenses().filter(e => e.project_id === prjId);
+      const labourPayments = this._getOfflineLabourPayments().filter(p => p.project_id === prjId);
+      const txns = [
+        ...receipts.map(r => ({ id: r.id, date: r.receipt_date, type: 'INCOME', category: 'Client Receipt', amount: parseFloat(r.amount) || 0, description: r.notes || 'Receipt' })),
+        ...expenses.map(e => ({ id: e.id, date: e.expense_date, type: 'EXPENSE', category: e.category, amount: parseFloat(e.amount) || 0, description: e.notes || 'Expense' })),
+        ...labourPayments.map(p => ({ id: p.id, date: p.payment_date, type: 'LABOUR', category: 'Labour', amount: parseFloat(p.amount) || 0, description: p.notes || 'Labour Payment' }))
+      ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      return { success: true, transactions: txns };
+    }
+
+    if (endpoint.startsWith('/projects/') && !endpoint.endsWith('/report') && !endpoint.endsWith('/transactions') && method === 'GET') {
       const prjId = endpoint.replace('/projects/', '');
       const projects = this._getOfflineProjects();
       const prj = projects.find(p => p.id === prjId) || { id: prjId, name: 'Project' };
@@ -549,6 +684,15 @@ export const BusinessApi = {
       return { success: false, error: 'Expense not found' };
     }
 
+    if (endpoint.startsWith('/expenses/') && !endpoint.endsWith('/void') && method === 'DELETE') {
+      const expId = endpoint.replace('/expenses/', '');
+      let expenses = this._getOfflineExpenses().filter(e => e.id !== expId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_expenses', JSON.stringify(expenses));
+      }
+      return { success: true, voidedId: expId };
+    }
+
     // Income / Receipts CRUD
     if (endpoint === '/income/receipts' && method === 'GET') {
       return { success: true, receipts: this._getOfflineReceipts() };
@@ -586,6 +730,29 @@ export const BusinessApi = {
         localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
       }
       return { success: true, voided: true };
+    }
+
+    if (endpoint.startsWith('/income/receipts/') && !endpoint.endsWith('/void') && method === 'PUT' && data) {
+      const recId = endpoint.replace('/income/receipts/', '');
+      const receipts = this._getOfflineReceipts();
+      const rec = receipts.find(r => r.id === recId);
+      if (rec) {
+        Object.assign(rec, data);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+        }
+        return { success: true, receipt: rec };
+      }
+      return { success: false, error: 'Receipt not found' };
+    }
+
+    if (endpoint.startsWith('/income/receipts/') && !endpoint.endsWith('/void') && method === 'DELETE') {
+      const recId = endpoint.replace('/income/receipts/', '');
+      let receipts = this._getOfflineReceipts().filter(r => r.id !== recId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_receipts', JSON.stringify(receipts));
+      }
+      return { success: true, voidedId: recId };
     }
 
     // Milestones CRUD
@@ -860,7 +1027,11 @@ export const BusinessApi = {
         expenses: this._getOfflineExpenses(),
         documents: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_documents') ? JSON.parse(localStorage.getItem('ddev_offline_documents')) : [],
         ocr_reviews: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_ocr_reviews') ? JSON.parse(localStorage.getItem('ddev_offline_ocr_reviews')) : [],
-        quotations: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_quotations') ? JSON.parse(localStorage.getItem('ddev_offline_quotations')) : []
+        quotations: typeof localStorage !== 'undefined' && localStorage.getItem('ddev_offline_quotations') ? JSON.parse(localStorage.getItem('ddev_offline_quotations')) : [],
+        labour_workers: this._getOfflineWorkers(),
+        labour_attendance: this._getOfflineAttendance(),
+        labour_payments: this._getOfflineLabourPayments(),
+        labour_adjustments: this._getOfflineLabourAdjustments()
       };
 
       let totalRecords = 0;
@@ -940,6 +1111,10 @@ export const BusinessApi = {
         if (payload.data.documents) localStorage.setItem('ddev_offline_documents', JSON.stringify(payload.data.documents));
         if (payload.data.ocr_reviews) localStorage.setItem('ddev_offline_ocr_reviews', JSON.stringify(payload.data.ocr_reviews));
         if (payload.data.quotations) localStorage.setItem('ddev_offline_quotations', JSON.stringify(payload.data.quotations));
+        if (payload.data.labour_workers) localStorage.setItem('ddev_offline_workers', JSON.stringify(payload.data.labour_workers));
+        if (payload.data.labour_attendance) localStorage.setItem('ddev_offline_attendance', JSON.stringify(payload.data.labour_attendance));
+        if (payload.data.labour_payments) localStorage.setItem('ddev_offline_labour_payments', JSON.stringify(payload.data.labour_payments));
+        if (payload.data.labour_adjustments) localStorage.setItem('ddev_offline_labour_adjustments', JSON.stringify(payload.data.labour_adjustments));
         if (payload.data.company_settings && payload.data.company_settings[0]) {
           localStorage.setItem('ddev_offline_company', JSON.stringify(payload.data.company_settings[0]));
         }
@@ -1017,7 +1192,53 @@ export const BusinessApi = {
       return { success: true, quotations };
     }
 
-    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'GET') {
+    if (endpoint.startsWith('/quotations/') && endpoint.endsWith('/convert-to-project') && method === 'POST') {
+      const qId = endpoint.replace('/quotations/', '').replace('/convert-to-project', '');
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
+      let quotes = stored ? JSON.parse(stored) : [];
+      const q = quotes.find(item => item.id === qId);
+      if (!q) return { success: false, error: 'Quotation not found' };
+
+      const projects = this._getOfflineProjects();
+      let project = null;
+      if (q.project_id) {
+        project = projects.find(p => p.id === q.project_id);
+      }
+      if (!project) {
+        project = {
+          id: `prj_${Date.now()}`,
+          project_code: `PRJ-${Date.now().toString().slice(-4)}`,
+          name: q.project_name || `Project for ${q.client_name || 'Client'}`,
+          client_id: q.client_id,
+          client_name: q.client_name,
+          site_address: q.site_address || '',
+          contract_value: parseFloat(q.grand_total || q.total_amount) || 0,
+          budgeted_cost: Math.round((parseFloat(q.grand_total || q.total_amount) || 0) * 0.8),
+          current_stage: 'PLANNING',
+          status: 'ACTIVE',
+          description: `Created from Quotation ${q.quotation_number}`
+        };
+        projects.unshift(project);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_projects', JSON.stringify(projects));
+        }
+      }
+
+      q.status = 'CONVERTED';
+      q.project_id = project.id;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_quotations', JSON.stringify(quotes));
+      }
+
+      return {
+        success: true,
+        project,
+        quotation: q,
+        message: `Quotation ${q.quotation_number} converted to project.`
+      };
+    }
+
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && !endpoint.includes('convert-to-project') && method === 'GET') {
       const qId = endpoint.replace('/quotations/', '');
       const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
@@ -1026,7 +1247,7 @@ export const BusinessApi = {
       return { success: false, error: 'Quotation not found' };
     }
 
-    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'PUT' && data) {
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && !endpoint.includes('convert-to-project') && method === 'PUT' && data) {
       const qId = endpoint.replace('/quotations/', '');
       const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
@@ -1041,7 +1262,7 @@ export const BusinessApi = {
       return { success: false, error: 'Quotation not found' };
     }
 
-    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && method === 'DELETE') {
+    if (endpoint.startsWith('/quotations/') && !endpoint.includes('html') && !endpoint.includes('revision') && !endpoint.includes('status') && !endpoint.includes('convert-to-project') && method === 'DELETE') {
       const qId = endpoint.replace('/quotations/', '');
       const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_quotations') : null;
       let quotes = stored ? JSON.parse(stored) : [];
@@ -1203,6 +1424,385 @@ export const BusinessApi = {
       };
     }
 
+    // Labour Management Offline Handlers
+    if (endpoint === '/labour/workers' && method === 'GET') {
+      const workers = this._getOfflineWorkers();
+      const attendance = this._getOfflineAttendance();
+      const payments = this._getOfflineLabourPayments();
+      const adjustments = this._getOfflineLabourAdjustments();
+
+      const enriched = workers.map(w => {
+        const att = attendance.filter(a => a.worker_id === w.id);
+        const pays = payments.filter(p => p.worker_id === w.id);
+        const adjs = adjustments.filter(a => a.worker_id === w.id);
+
+        const totalEarned = att.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0)
+          + adjs.filter(a => a.adjustment_type === 'ADDITION').reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+        const totalAdvances = pays.filter(p => p.payment_type === 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const totalWagesPaid = pays.filter(p => p.payment_type !== 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const totalDeductions = adjs.filter(a => a.adjustment_type === 'DEDUCTION').reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
+        const totalPaid = totalAdvances + totalWagesPaid + totalDeductions;
+
+        return {
+          ...w,
+          stats: {
+            totalDaysWorked: att.reduce((s, a) => s + (a.units || 0), 0),
+            totalEarned: Math.round(totalEarned * 100) / 100,
+            totalAdvances: Math.round(totalAdvances * 100) / 100,
+            totalWagesPaid: Math.round(totalWagesPaid * 100) / 100,
+            totalPaid: Math.round(totalPaid * 100) / 100,
+            balancePayable: Math.round((totalEarned - totalPaid) * 100) / 100
+          }
+        };
+      });
+
+      return { success: true, workers: enriched };
+    }
+
+    if (endpoint === '/labour/workers' && method === 'POST' && data) {
+      const workers = this._getOfflineWorkers();
+      const newWorker = {
+        id: `lab_${Date.now()}`,
+        worker_code: `LAB-${(workers.length + 1).toString().padStart(3, '0')}`,
+        name: data.name,
+        phone: data.phone || '',
+        trade: data.trade || 'MASON',
+        wage_type: data.wageType || 'DAILY',
+        daily_wage: parseFloat(data.dailyWage) || 0,
+        joining_date: data.joiningDate || new Date().toISOString().split('T')[0],
+        is_active: 1,
+        notes: data.notes || '',
+        created_at: new Date().toISOString()
+      };
+      workers.unshift(newWorker);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_workers', JSON.stringify(workers));
+      }
+      return { status: 201, success: true, worker: newWorker };
+    }
+
+    if (endpoint.startsWith('/labour/workers/') && method === 'PUT' && data) {
+      const workerId = endpoint.replace('/labour/workers/', '');
+      const workers = this._getOfflineWorkers();
+      const worker = workers.find(w => w.id === workerId);
+      if (worker) {
+        Object.assign(worker, data);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_workers', JSON.stringify(workers));
+        }
+        return { success: true, worker };
+      }
+      return { success: false, error: 'Worker not found' };
+    }
+
+    if (endpoint.startsWith('/labour/workers/') && method === 'DELETE') {
+      const workerId = endpoint.replace('/labour/workers/', '');
+      let workers = this._getOfflineWorkers();
+      const worker = workers.find(w => w.id === workerId);
+      if (worker) {
+        worker.is_active = 0;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_workers', JSON.stringify(workers));
+        }
+      }
+      return { success: true, archivedId: workerId };
+    }
+
+    if (endpoint === '/labour/attendance' && method === 'GET') {
+      const attendance = this._getOfflineAttendance();
+      const workers = this._getOfflineWorkers();
+      const projects = this._getOfflineProjects();
+      const enriched = attendance.map(a => {
+        const w = workers.find(item => item.id === a.worker_id);
+        const p = projects.find(item => item.id === a.project_id);
+        return {
+          ...a,
+          worker_name: w ? w.name : 'Unknown Worker',
+          trade: w ? w.trade : 'LABOUR',
+          project_name: p ? p.name : 'General Business'
+        };
+      });
+      return { success: true, attendance: enriched };
+    }
+
+    if (endpoint === '/labour/attendance' && method === 'POST' && data) {
+      const attendance = this._getOfflineAttendance();
+      const workers = this._getOfflineWorkers();
+      const worker = workers.find(w => w.id === data.workerId);
+      if (!worker) return { success: false, error: 'Worker not found' };
+
+      const dup = attendance.find(a => a.worker_id === data.workerId && a.attendance_date === data.attendanceDate && a.project_id === (data.projectId || null));
+      if (dup && !data.allowOverwrite) {
+        return { success: false, error: `Duplicate attendance: Already recorded for ${worker.name} on ${data.attendanceDate}` };
+      }
+
+      const unitMap = { PRESENT: 1.0, HALF_DAY: 0.5, ABSENT: 0.0, LEAVE: 0.0 };
+      const status = data.status || 'PRESENT';
+      const units = unitMap[status] ?? 1.0;
+      const dailyRate = worker.daily_wage || 0;
+      const earnedAmount = Math.round(units * dailyRate * 100) / 100;
+      const otHours = Math.max(0, parseFloat(data.overtimeHours) || 0);
+      const overtimeAmount = dailyRate > 0 ? Math.round(otHours * (dailyRate / 8) * 100) / 100 : 0;
+
+      if (dup && data.allowOverwrite) {
+        Object.assign(dup, {
+          status,
+          units,
+          daily_rate: dailyRate,
+          earned_amount: earnedAmount,
+          overtime_hours: otHours,
+          overtime_amount: overtimeAmount,
+          notes: data.notes || ''
+        });
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('ddev_offline_attendance', JSON.stringify(attendance));
+        }
+        return { success: true, attendance: dup };
+      }
+
+      const newAtt = {
+        id: `att_${Date.now()}`,
+        worker_id: data.workerId,
+        project_id: data.projectId || null,
+        attendance_date: data.attendanceDate,
+        status,
+        units,
+        daily_rate: dailyRate,
+        earned_amount: earnedAmount,
+        overtime_hours: otHours,
+        overtime_amount: overtimeAmount,
+        notes: data.notes || '',
+        created_at: new Date().toISOString()
+      };
+      attendance.unshift(newAtt);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_attendance', JSON.stringify(attendance));
+      }
+      return { status: 201, success: true, attendance: newAtt };
+    }
+
+    if (endpoint === '/labour/attendance/monthly-summary' && method === 'GET') {
+      const ym = new Date().toISOString().slice(0, 7);
+      const attendance = this._getOfflineAttendance().filter(a => (a.attendance_date || '').startsWith(ym));
+      const workers = this._getOfflineWorkers();
+      const summary = workers.map(w => {
+        const att = attendance.filter(a => a.worker_id === w.id);
+        return {
+          worker_id: w.id,
+          worker_name: w.name,
+          trade: w.trade,
+          daily_wage: w.daily_wage,
+          present_days: att.filter(a => a.status === 'PRESENT').length,
+          half_days: att.filter(a => a.status === 'HALF_DAY').length,
+          absent_days: att.filter(a => a.status === 'ABSENT').length,
+          leave_days: att.filter(a => a.status === 'LEAVE').length,
+          total_units: att.reduce((s, a) => s + (a.units || 0), 0),
+          total_earned: att.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0)
+        };
+      });
+      return { success: true, summary };
+    }
+
+    if (endpoint === '/labour/payments' && method === 'GET') {
+      const payments = this._getOfflineLabourPayments();
+      const workers = this._getOfflineWorkers();
+      const projects = this._getOfflineProjects();
+      const enriched = payments.map(p => ({
+        ...p,
+        worker_name: workers.find(w => w.id === p.worker_id)?.name || 'Worker',
+        project_name: projects.find(prj => prj.id === p.project_id)?.name || 'General Business'
+      }));
+      return { success: true, payments: enriched };
+    }
+
+    if (endpoint === '/labour/payments' && method === 'POST' && data) {
+      const payments = this._getOfflineLabourPayments();
+      const amt = parseFloat(data.amount) || 0;
+      const newPay = {
+        id: `pay_${Date.now()}`,
+        payment_number: `PAY-LAB-${new Date().getFullYear()}-${(payments.length + 1).toString().padStart(4, '0')}`,
+        worker_id: data.workerId,
+        project_id: data.projectId || null,
+        payment_type: data.paymentType || 'ADVANCE',
+        amount: amt,
+        payment_date: data.paymentDate || new Date().toISOString().split('T')[0],
+        payment_mode: data.paymentMode || 'CASH',
+        account_id: data.accountId || null,
+        notes: data.notes || '',
+        created_at: new Date().toISOString()
+      };
+
+      if (data.accountId) {
+        const accounts = this._getOfflineAccounts();
+        const acc = accounts.find(a => a.id === data.accountId);
+        if (acc) {
+          acc.current_balance = Math.max(0, (parseFloat(acc.current_balance) || 0) - amt);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_accounts', JSON.stringify(accounts));
+          }
+        }
+      }
+
+      payments.unshift(newPay);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_labour_payments', JSON.stringify(payments));
+      }
+      return { status: 201, success: true, payment: newPay };
+    }
+
+    if (endpoint.startsWith('/labour/payments/') && method === 'DELETE') {
+      const payId = endpoint.replace('/labour/payments/', '');
+      let payments = this._getOfflineLabourPayments();
+      const pay = payments.find(p => p.id === payId);
+      if (pay && pay.account_id) {
+        const accounts = this._getOfflineAccounts();
+        const acc = accounts.find(a => a.id === pay.account_id);
+        if (acc) {
+          acc.current_balance = (parseFloat(acc.current_balance) || 0) + (parseFloat(pay.amount) || 0);
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('ddev_offline_accounts', JSON.stringify(accounts));
+          }
+        }
+      }
+      payments = payments.filter(p => p.id !== payId);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_labour_payments', JSON.stringify(payments));
+      }
+      return { success: true, voidedId: payId };
+    }
+
+    if (endpoint.startsWith('/labour/ledger/') && method === 'GET') {
+      const workerId = endpoint.replace('/labour/ledger/', '');
+      const workers = this._getOfflineWorkers();
+      const worker = workers.find(w => w.id === workerId);
+      if (!worker) return { success: false, error: 'Worker not found' };
+
+      const attendance = this._getOfflineAttendance().filter(a => a.worker_id === workerId);
+      const payments = this._getOfflineLabourPayments().filter(p => p.worker_id === workerId);
+      const adjustments = this._getOfflineLabourAdjustments().filter(a => a.worker_id === workerId);
+
+      const entries = [
+        ...attendance.map(a => ({
+          id: a.id,
+          date: a.attendance_date,
+          entry_type: 'ATTENDANCE',
+          description: `Wage Earned (${a.status}${a.units === 0.5 ? ' - Half Day' : ''})`,
+          credit_amount: (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0),
+          debit_amount: 0,
+          created_at: a.created_at
+        })),
+        ...payments.map(p => ({
+          id: p.id,
+          date: p.payment_date,
+          entry_type: 'PAYMENT',
+          description: `Disbursement (${p.payment_type} via ${p.payment_mode})`,
+          credit_amount: 0,
+          debit_amount: parseFloat(p.amount) || 0,
+          created_at: p.created_at
+        })),
+        ...adjustments.map(adj => ({
+          id: adj.id,
+          date: adj.adjustment_date,
+          entry_type: 'ADJUSTMENT',
+          description: `Adjustment: ${adj.reason}`,
+          credit_amount: adj.adjustment_type === 'ADDITION' ? (parseFloat(adj.amount) || 0) : 0,
+          debit_amount: adj.adjustment_type === 'DEDUCTION' ? (parseFloat(adj.amount) || 0) : 0,
+          created_at: adj.created_at
+        }))
+      ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+      let running = 0;
+      const ledger = entries.map(e => {
+        running = Math.round((running + e.credit_amount - e.debit_amount) * 100) / 100;
+        return { ...e, balance: running };
+      });
+
+      return { success: true, worker, ledger, currentBalance: running };
+    }
+
+    if (endpoint.startsWith('/labour/statement/') && method === 'GET') {
+      const workerId = endpoint.replace('/labour/statement/', '');
+      const workers = this._getOfflineWorkers();
+      const worker = workers.find(w => w.id === workerId);
+      if (!worker) return { success: false, error: 'Worker not found' };
+
+      const attendance = this._getOfflineAttendance().filter(a => a.worker_id === workerId);
+      const payments = this._getOfflineLabourPayments().filter(p => p.worker_id === workerId);
+
+      const grossEarned = attendance.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0);
+      const advancesPaid = payments.filter(p => p.payment_type === 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const wagesPaid = payments.filter(p => p.payment_type !== 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const totalDisbursed = advancesPaid + wagesPaid;
+
+      return {
+        success: true,
+        statement: {
+          worker,
+          period: { startDate: 'All Time', endDate: 'Present' },
+          summary: {
+            presentDays: attendance.filter(a => a.status === 'PRESENT').length,
+            halfDays: attendance.filter(a => a.status === 'HALF_DAY').length,
+            absentDays: attendance.filter(a => a.status === 'ABSENT').length,
+            leaveDays: attendance.filter(a => a.status === 'LEAVE').length,
+            totalDaysWorked: attendance.reduce((s, a) => s + (a.units || 0), 0),
+            baseWages: attendance.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0), 0),
+            overtimeEarned: attendance.reduce((s, a) => s + (parseFloat(a.overtime_amount) || 0), 0),
+            grossEarned,
+            advancesPaid,
+            wagesPaid,
+            totalDisbursed,
+            netPayable: Math.max(0, grossEarned - totalDisbursed)
+          },
+          attendanceList: attendance,
+          paymentList: payments
+        }
+      };
+    }
+
+    if (endpoint === '/labour/adjustments' && method === 'POST' && data) {
+      const adjustments = this._getOfflineLabourAdjustments();
+      const newAdj = {
+        id: `adj_${Date.now()}`,
+        worker_id: data.workerId,
+        project_id: data.projectId || null,
+        adjustment_type: data.adjustmentType || 'DEDUCTION',
+        amount: parseFloat(data.amount) || 0,
+        adjustment_date: data.adjustmentDate || new Date().toISOString().split('T')[0],
+        reason: data.reason || 'Manual Adjustment',
+        created_at: new Date().toISOString()
+      };
+      adjustments.unshift(newAdj);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('ddev_offline_labour_adjustments', JSON.stringify(adjustments));
+      }
+      return { status: 201, success: true, adjustment: newAdj };
+    }
+
+    if (endpoint.startsWith('/labour/projects/') && endpoint.endsWith('/summary') && method === 'GET') {
+      const pId = endpoint.replace('/labour/projects/', '').replace('/summary', '');
+      const attendance = this._getOfflineAttendance().filter(a => a.project_id === pId);
+      const payments = this._getOfflineLabourPayments().filter(p => p.project_id === pId);
+
+      const wagesEarned = attendance.reduce((s, a) => s + (parseFloat(a.earned_amount) || 0) + (parseFloat(a.overtime_amount) || 0), 0);
+      const advancesPaid = payments.filter(p => p.payment_type === 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const wagesPaid = payments.filter(p => p.payment_type !== 'ADVANCE').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const totalDisbursed = advancesPaid + wagesPaid;
+      const wagesOutstanding = Math.max(0, wagesEarned - totalDisbursed);
+
+      return {
+        success: true,
+        summary: {
+          projectId: pId,
+          totalDaysWorked: attendance.reduce((s, a) => s + (a.units || 0), 0),
+          wagesEarned,
+          advancesPaid,
+          wagesPaid,
+          totalDisbursed,
+          wagesOutstanding
+        }
+      };
+    }
+
     return { success: true, offline: true, endpoint, data };
   },
 
@@ -1268,6 +1868,26 @@ export const BusinessApi = {
   _getOfflineProgress(prjId) {
     const key = `ddev_offline_progress_${prjId || 'default'}`;
     const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  _getOfflineWorkers() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_workers') : null;
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  _getOfflineAttendance() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_attendance') : null;
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  _getOfflineLabourPayments() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_labour_payments') : null;
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  _getOfflineLabourAdjustments() {
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('ddev_offline_labour_adjustments') : null;
     return stored ? JSON.parse(stored) : [];
   }
 };

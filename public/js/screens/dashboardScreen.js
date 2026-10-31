@@ -1,6 +1,7 @@
 /**
  * DDevUltraHome — Executive Dashboard Screen
- * Interactive, high-contrast, clickable KPIs and Construction Lifecycle Flowchart View.
+ * Interactive, high-contrast, clickable KPIs, Construction Lifecycle Flowchart View,
+ * Labour Attendance & Wages Summaries, and Real-Time Recent Transactions.
  */
 
 import { BusinessApi } from '../businessApi.js';
@@ -15,18 +16,51 @@ export const DashboardScreen = {
     `;
 
     try {
-      const [summaryRes, receiptsRes, expensesRes] = await Promise.all([
+      const [summaryRes, receiptsRes, expensesRes, labourPaymentsRes] = await Promise.all([
         BusinessApi.request('/dashboard/summary'),
         BusinessApi.request('/income/receipts'),
-        BusinessApi.request('/expenses')
+        BusinessApi.request('/expenses'),
+        BusinessApi.request('/labour/payments').catch(() => ({ payments: [] }))
       ]);
       const d = summaryRes.dashboard || {};
       const receipts = receiptsRes.receipts || [];
       const expenses = expensesRes.expenses || [];
+      const labourPayments = labourPaymentsRes.payments || [];
+
+      // Combine recent transactions
+      const recentTxns = [
+        ...receipts.map(r => ({
+          id: r.id,
+          date: r.receipt_date,
+          type: 'INCOME',
+          category: r.is_advance ? 'Advance' : 'Milestone',
+          description: r.notes || `Receipt from ${r.client_name || 'Client'}`,
+          amount: parseFloat(r.amount) || 0
+        })),
+        ...expenses.map(e => ({
+          id: e.id,
+          date: e.expense_date,
+          type: 'EXPENSE',
+          category: e.category || 'Expense',
+          description: e.notes || e.paid_to || 'Site Expense',
+          amount: parseFloat(e.amount) || 0
+        })),
+        ...labourPayments.map(p => ({
+          id: p.id,
+          date: p.payment_date,
+          type: 'WAGES',
+          category: 'Labour Wages',
+          description: `Disbursement (${p.payment_type || 'WAGE'})`,
+          amount: parseFloat(p.amount) || 0
+        }))
+      ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
       const formatInr = (amt) => {
         return '₹' + (amt || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
       };
+
+      const att = d.todayAttendance || { present: 0, total: 0 };
+      const labourDue = d.labourWagesPayable || 0;
 
       container.innerHTML = `
         <div class="screen-dashboard" style="padding-bottom: 24px;">
@@ -135,21 +169,31 @@ export const DashboardScreen = {
             </div>
           </div>
 
-          <!-- 3 Interactive Metric Targets: Active Sites, Total Clients, Pending Bills -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 16px 16px;">
-            <div id="btn-stat-sites" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 10px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Projects">
-              <div style="font-size: 22px; font-weight: 800; color: var(--brand-navy-900);">${d.activeProjects || 0}</div>
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Active Sites ↗</div>
+          <!-- Interactive Metric Targets: Sites, Clients, Pending Bills, Labour Wages, Today Attendance -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; margin: 0 16px 16px;">
+            <div id="btn-stat-sites" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Projects">
+              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900);">${d.activeProjects || 0}</div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Active Sites ↗</div>
             </div>
 
-            <div id="btn-stat-clients" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 10px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Clients Directory">
-              <div style="font-size: 22px; font-weight: 800; color: var(--brand-navy-900);">${d.totalClients || 0}</div>
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Total Clients ↗</div>
+            <div id="btn-stat-clients" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Clients Directory">
+              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900);">${d.totalClients || 0}</div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Total Clients ↗</div>
             </div>
 
-            <div id="btn-stat-bills" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 10px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to view Pending Bills & Invoices">
-              <div style="font-size: 22px; font-weight: 800; color: ${d.pendingOcrCount > 0 ? '#F59E0B' : '#10B981'};">${d.pendingOcrCount || 0}</div>
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Pending Bills ↗</div>
+            <div id="btn-stat-bills" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to view Pending Bills & Invoices">
+              <div style="font-size: 20px; font-weight: 800; color: ${(d.pendingOcrCount || 0) > 0 ? '#F59E0B' : '#10B981'};">${d.pendingOcrCount || 0}</div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Pending Bills ↗</div>
+            </div>
+
+            <div id="btn-stat-labour-due" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to view Labour Wages">
+              <div style="font-size: 15px; font-weight: 800; color: ${labourDue > 0 ? '#DC2626' : '#10B981'}; line-height: 1.3;">₹${Math.round(labourDue).toLocaleString('en-IN')}</div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Labour Due ↗</div>
+            </div>
+
+            <div id="btn-stat-today-att" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to record Daily Attendance">
+              <div style="font-size: 16px; font-weight: 800; color: #0284C7; line-height: 1.3;">${att.present || 0}/${att.total || 0}</div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Attendance ↗</div>
             </div>
           </div>
 
@@ -240,6 +284,53 @@ export const DashboardScreen = {
             </div>
           </div>
 
+          <!-- Recent Transactions Feed -->
+          <div style="margin: 0 16px 16px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 16px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <h3 style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900); margin: 0;">
+                  📑 Recent Transactions
+                </h3>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  Latest receipts, site expenses &amp; wage payouts
+                </div>
+              </div>
+              <button id="btn-view-all-txns" class="btn-outline" style="min-height: 28px; padding: 0 10px; font-size: 11px; font-weight: 700;">
+                All Ledgers →
+              </button>
+            </div>
+
+            <div id="dashboard-txns-list" style="display: flex; flex-direction: column; gap: 6px;">
+              ${recentTxns.length === 0 ? `
+                <div style="font-size: 12px; color: var(--text-muted); padding: 12px; text-align: center;">No transactions recorded yet.</div>
+              ` : recentTxns.slice(0, 6).map(t => {
+                const isIncome = t.type === 'INCOME';
+                const isLabour = t.type === 'WAGES';
+                const badgeBg = isIncome ? '#ECFDF5' : (isLabour ? '#EEF2FF' : '#FEF2F2');
+                const badgeColor = isIncome ? '#059669' : (isLabour ? '#4F46E5' : '#DC2626');
+                const sign = isIncome ? '+' : '-';
+                return `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: var(--bg-card-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-sm); font-size: 12px;">
+                    <div style="flex: 1; min-width: 0; padding-right: 8px;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 10px; font-weight: 800; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 5px; border-radius: 4px;">
+                          ${t.type}
+                        </span>
+                        <span style="font-size: 11px; color: var(--text-muted);">${t.date || ''}</span>
+                      </div>
+                      <div style="font-weight: 600; color: var(--brand-navy-900); margin-top: 2px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${t.description}
+                      </div>
+                    </div>
+                    <div style="font-weight: 800; color: ${isIncome ? '#059669' : '#DC2626'}; text-align: right; white-space: nowrap;">
+                      ${sign}₹${t.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
           <!-- Quick Action Buttons -->
           <div style="padding: 0 16px 20px;">
             <div style="font-size: 12px; font-weight: 800; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
@@ -255,7 +346,10 @@ export const DashboardScreen = {
               <button id="btn-quick-record-expense" class="btn-outline quick-action-btn" style="min-height: 44px; font-size: 13px; font-weight: 700;">
                 + Site Expense
               </button>
-              <button id="btn-quick-scan-bill" class="btn-outline quick-action-btn" style="min-height: 44px; font-size: 13px; font-weight: 700; background: var(--brand-gold-50); border-color: var(--brand-gold-500); color: var(--brand-gold-700);">
+              <button id="btn-quick-record-attendance" class="btn-outline quick-action-btn" style="min-height: 44px; font-size: 13px; font-weight: 700; border-color: #0284C7; color: #0284C7;">
+                👷 Daily Attendance
+              </button>
+              <button id="btn-quick-scan-bill" class="btn-outline quick-action-btn" style="grid-column: span 2; min-height: 44px; font-size: 13px; font-weight: 700; background: var(--brand-gold-50); border-color: var(--brand-gold-500); color: var(--brand-gold-700);">
                 📷 Scan Bill (OCR)
               </button>
             </div>
@@ -286,6 +380,12 @@ export const DashboardScreen = {
       });
       container.querySelector('#btn-stat-bills')?.addEventListener('click', () => {
         window.appNavigate?.('suppliers');
+      });
+      container.querySelector('#btn-stat-labour-due')?.addEventListener('click', () => {
+        window.appNavigate?.('labour');
+      });
+      container.querySelector('#btn-stat-today-att')?.addEventListener('click', () => {
+        window.appNavigate?.('labour');
       });
 
       // 3. Flowchart Node Navigation
@@ -323,6 +423,12 @@ export const DashboardScreen = {
       });
       container.querySelector('#btn-quick-record-expense')?.addEventListener('click', () => {
         window.appNavigate?.('expenses');
+      });
+      container.querySelector('#btn-quick-record-attendance')?.addEventListener('click', () => {
+        window.appNavigate?.('labour');
+      });
+      container.querySelector('#btn-view-all-txns')?.addEventListener('click', () => {
+        window.appNavigate?.('reports');
       });
 
       // 5. Native Camera Scan Bill Trigger
@@ -414,10 +520,14 @@ export const DashboardScreen = {
       const totalFlow = totalReceived + totalSpent;
 
       const categoryColors = {
+        MATERIALS: '#F59E0B',
+        TRANSPORT: '#06B6D4',
+        EQUIPMENT: '#8B5CF6',
+        RENT: '#EC4899',
         LABOUR: '#3B82F6',
-        SITE_PURCHASES: '#F59E0B',
-        EQUIPMENT_RENTAL: '#8B5CF6',
-        SUB_CONTRACT: '#EC4899',
+        ELECTRICITY: '#EAB308',
+        FOOD: '#10B981',
+        MISCELLANEOUS: '#64748B',
         OTHER: '#64748B'
       };
 
@@ -488,7 +598,7 @@ export const DashboardScreen = {
       container.querySelectorAll('.btn-timeframe').forEach(b => {
         const isCurrent = b.dataset.period === period;
         b.style.background = isCurrent ? '#ea580c' : 'transparent';
-        b.style.color = isCurrent ? '#ffffff' : '#e2e8f0';
+        b.style.color = isCurrent ? '#ffffff' : 'var(--text-secondary)';
       });
     };
 
