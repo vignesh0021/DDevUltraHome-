@@ -97,16 +97,11 @@ export const ExpensesScreen = {
               <div class="form-group">
                 <label class="form-label">Expense Date *</label>
                 <input type="date" id="inp-exp-date" class="form-control" required value="${new Date().toISOString().split('T')[0]}">
-              </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="form-group">
                 <label class="form-label">Deduct From Account *</label>
-                <select id="sel-exp-account" class="form-control" required>
-                  <option value="acc-hdfc-current">HDFC Bank Current</option>
-                  <option value="acc-petty-site">Site Petty Cash</option>
-                  <option value="acc-icici-escrow">ICICI Project Escrow</option>
-                </select>
+                <select id="sel-exp-account" class="form-control" required></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Payment Mode</label>
@@ -272,15 +267,20 @@ export const ExpensesScreen = {
 
   async populateProjectDropdown(container) {
     const selPrj = container.querySelector('#sel-exp-project');
-    const prjRes = await BusinessApi.request('/projects');
-    const projects = prjRes.projects || [];
+    const [prjRes, settingsRes] = await Promise.all([
+      BusinessApi.request('/projects'),
+      BusinessApi.request('/settings/company')
+    ]);
+    const projects = (prjRes.projects || []).filter(p => p.id !== 'prj-business-overhead');
     selPrj.innerHTML = '<option value="">-- General Business / HQ Overhead --</option>' +
-      projects.map(p => `<option value="${p.id}">${p.name} (${p.project_code})</option>`).join('');
+      projects.map(p => `<option value="${p.id}">${p.name} (${p.project_code || 'PRJ'})</option>`).join('');
 
     const selAcc = container.querySelector('#sel-exp-account');
-    const accountsRes = await BusinessApi.request('/settings/company');
-    if (accountsRes?.accounts && accountsRes.accounts.length > 0) {
-      selAcc.innerHTML = accountsRes.accounts.map(a => `<option value="${a.id}">${a.account_name} (₹${a.current_balance})</option>`).join('');
+    const accounts = settingsRes.accounts || [];
+    if (accounts.length > 0) {
+      selAcc.innerHTML = accounts.map(a => `<option value="${a.id}">${a.account_name} (₹${(a.current_balance || 0).toLocaleString('en-IN')})</option>`).join('');
+    } else {
+      selAcc.innerHTML = '<option value="acc-hdfc-current">HDFC Bank Current</option>';
     }
   },
 

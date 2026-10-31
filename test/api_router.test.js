@@ -162,4 +162,32 @@ describe('DDevUltraHome Business API Router Endpoints', () => {
     });
     assert.equal(notFoundRes.status, 404);
   });
+
+  test('POST /api/business/settings/accounts adds a bank and lists it', async () => {
+    const createRes = await router.handle('/api/business/settings/accounts', 'POST', {
+      account_name: 'SBI Site Current A/C',
+      account_type: 'BANK',
+      bank_name: 'State Bank of India',
+      account_number: '12345678901',
+      branch_ifsc: 'SBIN0001234',
+      current_balance: 25000
+    });
+
+    assert.equal(createRes.status, 201);
+    assert.equal(createRes.data.account.account_name, 'SBI Site Current A/C');
+    assert.equal(createRes.data.account.branch_ifsc, 'SBIN0001234');
+    assert.equal(createRes.data.account.current_balance, 25000);
+    assert.equal(createRes.data.account.account_type, 'BANK');
+
+    const listRes = await router.handle('/api/business/settings/company', 'GET');
+    const names = listRes.data.accounts.map(a => a.account_name);
+    assert.ok(names.includes('SBI Site Current A/C'));
+    assert.equal(listRes.data.accounts.length, 4);
+
+    const badType = await router.handle('/api/business/settings/accounts', 'POST', {
+      account_name: 'Bad Type',
+      account_type: 'WALLET'
+    });
+    assert.equal(badType.status, 400);
+  });
 });

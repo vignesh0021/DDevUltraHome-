@@ -91,8 +91,13 @@ export const SettingsScreen = {
 
         <!-- Registered Financial Accounts -->
         <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 16px; box-shadow: var(--shadow-sm);">
-          <div style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900); margin-bottom: 10px;">
-            🏦 ${isTa ? 'பதிவுசெய்யப்பட்ட வங்கிக் கணக்குகள்' : 'Registered Financial Accounts'}
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <div style="font-size: 14px; font-weight: 800; color: var(--brand-navy-900);">
+              🏦 ${isTa ? 'பதிவுசெய்யப்பட்ட வங்கிக் கணக்குகள்' : 'Registered Financial Accounts'}
+            </div>
+            <button type="button" id="btn-add-account" class="btn-primary" style="min-height: 34px; padding: 0 12px; font-size: 12px; font-weight: 700; white-space: nowrap;">
+              ${isTa ? '+ வங்கி சேர்' : '+ Add Bank'}
+            </button>
           </div>
           <div id="settings-accounts-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
             <div style="padding: 10px; text-align: center; color: var(--text-muted);">Loading accounts...</div>
@@ -160,7 +165,7 @@ export const SettingsScreen = {
       <div id="modal-edit-account" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 350; align-items: center; justify-content: center; padding: 16px;">
         <div style="background: var(--bg-card); border-radius: var(--radius-lg); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 20px; box-shadow: var(--shadow-lg);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Financial Account</h3>
+            <h3 id="edit-acc-heading" style="margin: 0; font-size: 16px; font-weight: 800; color: var(--brand-navy-900);">Edit Financial Account</h3>
             <button type="button" id="btn-close-edit-account" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
           </div>
 
@@ -205,7 +210,7 @@ export const SettingsScreen = {
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
               <button type="button" id="btn-cancel-edit-account" class="btn-outline">Cancel</button>
-              <button type="submit" class="btn-primary" style="font-weight: 700;">
+              <button type="submit" id="btn-save-account" class="btn-primary" style="font-weight: 700;">
                 Save Account
               </button>
             </div>
@@ -279,6 +284,8 @@ export const SettingsScreen = {
             container.querySelector('#inp-edit-acc-ifsc').value = acc.branch_ifsc || '';
             container.querySelector('#inp-edit-acc-balance').value = acc.current_balance !== undefined ? acc.current_balance : 0;
 
+            container.querySelector('#edit-acc-heading').textContent = 'Edit Financial Account';
+            container.querySelector('#btn-save-account').textContent = 'Save Account';
             const accModal = container.querySelector('#modal-edit-account');
             accModal.style.display = 'flex';
           });
@@ -339,6 +346,19 @@ export const SettingsScreen = {
       accModal.style.display = 'none';
     });
 
+    container.querySelector('#btn-add-account')?.addEventListener('click', () => {
+      container.querySelector('#inp-edit-acc-id').value = '';
+      container.querySelector('#inp-edit-acc-name').value = '';
+      container.querySelector('#sel-edit-acc-type').value = 'BANK';
+      container.querySelector('#inp-edit-acc-bank').value = '';
+      container.querySelector('#inp-edit-acc-number').value = '';
+      container.querySelector('#inp-edit-acc-ifsc').value = '';
+      container.querySelector('#inp-edit-acc-balance').value = '0';
+      container.querySelector('#edit-acc-heading').textContent = isTa ? 'புதிய வங்கிக் கணக்கு' : 'Add Bank Account';
+      container.querySelector('#btn-save-account').textContent = isTa ? 'கணக்கைச் சேர்' : 'Add Account';
+      accModal.style.display = 'flex';
+    });
+
     container.querySelector('#form-edit-account')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const accId = container.querySelector('#inp-edit-acc-id').value;
@@ -373,12 +393,17 @@ export const SettingsScreen = {
       };
 
       try {
-        await BusinessApi.request(`/settings/accounts/${accId}`, 'PUT', payload);
-        alert('✅ Account updated successfully!');
+        if (!accId) {
+          await BusinessApi.request('/settings/accounts', 'POST', payload);
+          alert('✅ Bank account added. It will appear when you record a receipt or expense.');
+        } else {
+          await BusinessApi.request(`/settings/accounts/${accId}`, 'PUT', payload);
+          alert('✅ Account updated successfully!');
+        }
         accModal.style.display = 'none';
         this.render(container);
       } catch (err) {
-        alert('Failed to update account: ' + err.message);
+        alert('Failed to save account: ' + err.message);
       }
     });
 

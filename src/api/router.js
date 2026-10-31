@@ -981,6 +981,51 @@ export class BusinessApiRouter {
       return { status: 200, data: { success: true, company } };
     }
 
+    if (route === '/settings/accounts' && method === 'POST') {
+      const { account_name, account_type, bank_name, account_number, branch_ifsc, current_balance } = body || {};
+
+      if (!account_name || !String(account_name).trim()) {
+        return { status: 400, data: { success: false, error: 'Account name cannot be blank' } };
+      }
+
+      const type = account_type || 'BANK';
+      if (!['BANK', 'CASH', 'PETTY_CASH'].includes(type)) {
+        return { status: 400, data: { success: false, error: 'Account type must be BANK, CASH, or PETTY_CASH' } };
+      }
+
+      let bal = 0;
+      if (current_balance !== undefined && current_balance !== null && current_balance !== '') {
+        bal = parseFloat(current_balance);
+        if (isNaN(bal) || bal < 0) {
+          return { status: 400, data: { success: false, error: 'Current balance must be a non-negative number' } };
+        }
+      }
+
+      const ifsc = branch_ifsc ? String(branch_ifsc).trim().toUpperCase() : null;
+      if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+        return { status: 400, data: { success: false, error: 'Invalid IFSC code format (must match ^[A-Z]{4}0[A-Z0-9]{6}$)' } };
+      }
+
+      const id = `acc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      this.db.run(`
+        INSERT INTO financial_accounts (
+          id, account_name, account_type, bank_name, account_number,
+          branch_ifsc, current_balance, currency, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'INR', 1);
+      `, [
+        id,
+        String(account_name).trim(),
+        type,
+        bank_name ? String(bank_name).trim() : null,
+        account_number ? String(account_number).trim() : null,
+        ifsc,
+        bal
+      ]);
+
+      const account = this.db.queryOne('SELECT * FROM financial_accounts WHERE id = ?;', [id]);
+      return { status: 201, data: { success: true, account } };
+    }
+
     if (route.startsWith('/settings/accounts/') && method === 'PUT') {
       const id = route.replace('/settings/accounts/', '').trim();
       if (!id) {

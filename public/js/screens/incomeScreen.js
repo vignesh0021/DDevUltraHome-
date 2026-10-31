@@ -73,11 +73,7 @@ export const IncomeScreen = {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div class="form-group">
                 <label class="form-label">Deposit Account *</label>
-                <select id="sel-rec-account" class="form-control" required>
-                  <option value="acc-hdfc-current">HDFC Bank Current</option>
-                  <option value="acc-icici-escrow">ICICI Project Escrow</option>
-                  <option value="acc-petty-site">Site Petty Cash</option>
-                </select>
+                <select id="sel-rec-account" class="form-control" required></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Payment Mode</label>
@@ -166,11 +162,13 @@ export const IncomeScreen = {
     const selCli = container.querySelector('#sel-rec-client');
     const badgeEl = container.querySelector('#rec-project-balance-badge');
 
-    const prjRes = await BusinessApi.request('/projects');
-    const cliRes = await BusinessApi.request('/clients');
-    const accountsRes = await BusinessApi.request('/settings/company');
+    const [prjRes, cliRes, settingsRes] = await Promise.all([
+      BusinessApi.request('/projects'),
+      BusinessApi.request('/clients'),
+      BusinessApi.request('/settings/company')
+    ]);
 
-    this.projectsList = prjRes.projects || [];
+    this.projectsList = (prjRes.projects || []).filter(p => p.id !== 'prj-business-overhead');
     this.clientsList = cliRes.clients || [];
 
     selPrj.innerHTML = '<option value="">-- General / Direct Business Receipt --</option>' +
@@ -180,8 +178,11 @@ export const IncomeScreen = {
 
     // Dynamic accounts
     const selAcc = container.querySelector('#sel-rec-account');
-    if (accountsRes?.accounts && accountsRes.accounts.length > 0) {
-      selAcc.innerHTML = accountsRes.accounts.map(a => `<option value="${a.id}">${a.account_name} (₹${a.current_balance})</option>`).join('');
+    const accounts = settingsRes.accounts || [];
+    if (accounts.length > 0) {
+      selAcc.innerHTML = accounts.map(a => `<option value="${a.id}">${a.account_name} (₹${(a.current_balance || 0).toLocaleString('en-IN')})</option>`).join('');
+    } else {
+      selAcc.innerHTML = '<option value="acc-hdfc-current">HDFC Bank Current</option>';
     }
 
     selPrj.onchange = () => {
