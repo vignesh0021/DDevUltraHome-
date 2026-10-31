@@ -145,9 +145,11 @@ html {
   font-size: 16px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
   overflow-x: clip;
   max-width: 100%;
   overscroll-behavior-x: none;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -156,6 +158,7 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
@@ -330,13 +333,22 @@ header.app-header {
   justify-content: center;
   min-height: 36px;
   min-width: 36px;
-  transition: all 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
-.header-btn:hover {
-  background-color: var(--bg-accent-soft);
-  color: var(--accent);
-  border-color: var(--accent-border);
+@media (hover: hover) and (pointer: fine) {
+  .header-btn:hover {
+    background-color: var(--bg-accent-soft);
+    color: var(--accent);
+    border-color: var(--accent-border);
+  }
+}
+
+.header-btn:active {
+  transform: scale(0.96);
 }
 
 .role-pill-btn {
@@ -354,14 +366,23 @@ header.app-header {
   min-height: 36px;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(11, 25, 44, 0.2);
-  transition: all 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
   font-family: inherit;
 }
 
-.role-pill-btn:hover {
-  background: linear-gradient(135deg, #1E3E62 0%, #2B527E 100%);
-  color: #FEF3C7;
-  border-color: #FBBF24;
+@media (hover: hover) and (pointer: fine) {
+  .role-pill-btn:hover {
+    background: linear-gradient(135deg, #1E3E62 0%, #2B527E 100%);
+    color: #FEF3C7;
+    border-color: #FBBF24;
+  }
+}
+
+.role-pill-btn:active {
+  transform: scale(0.96);
 }
 
 .role-pill-btn .role-dot {
@@ -480,13 +501,24 @@ main.app-content {
   box-shadow: var(--shadow-xs);
   cursor: pointer;
   min-height: 58px;
-  transition: all 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
 }
 
-.quick-action-card:hover, .quick-action-card:active {
+@media (hover: hover) and (pointer: fine) {
+  .quick-action-card:hover {
+    border-color: var(--accent);
+    background-color: var(--bg-accent-soft);
+    transform: translateY(-1px);
+  }
+}
+
+.quick-action-card:active {
   border-color: var(--accent);
   background-color: var(--bg-accent-soft);
-  transform: translateY(-1px);
+  transform: scale(0.98);
 }
 
 .quick-icon {
@@ -651,13 +683,15 @@ main.app-content {
   font-family: inherit;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   text-decoration: none;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-primary {
@@ -735,7 +769,14 @@ main.app-content {
   align-items: center;
   gap: 0.3rem;
   box-shadow: var(--shadow-xs);
-  transition: all 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.chip-btn:active {
+  transform: scale(0.96);
 }
 
 .chip-btn.active {
@@ -1005,16 +1046,26 @@ nav.mobile-bottom-nav {
   align-items: flex-start;
   gap: 0.85rem;
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
-  transition: all 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
   text-decoration: none;
   color: inherit;
 }
 
-.more-menu-card:hover, .more-menu-card:active {
+@media (hover: hover) and (pointer: fine) {
+  .more-menu-card:hover {
+    border-color: var(--accent);
+    background-color: var(--bg-accent-soft);
+    transform: translateY(-1px);
+  }
+}
+
+.more-menu-card:active {
   border-color: var(--accent);
   background-color: var(--bg-accent-soft);
-  transform: translateY(-1px);
+  transform: scale(0.98);
 }
 
 .more-card-icon {
@@ -1212,7 +1263,7 @@ nav.mobile-bottom-nav {
   padding: 1.5rem;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   position: relative;
 }
 

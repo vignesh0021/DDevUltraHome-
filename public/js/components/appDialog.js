@@ -8,7 +8,10 @@ export const AppDialog = {
   /**
    * Show a confirmation modal (Replaces window.confirm)
    */
-  confirm({ title = 'Confirm Action', message, confirmText = 'Confirm', cancelText = 'Cancel', isDestructive = false }) {
+  confirm(options) {
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const { title = 'Confirm Action', message = '', confirmText = 'Confirm', cancelText = 'Cancel', isDestructive = false } = opts;
+
     return new Promise((resolve) => {
       const existing = document.getElementById('app-dynamic-dialog');
       if (existing) existing.remove();
@@ -22,7 +25,7 @@ export const AppDialog = {
       `;
 
       overlay.innerHTML = `
-        <div style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 420px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+        <div class="modal-animated" style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 420px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
           <h3 style="margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--brand-navy-900, #0B192C);">
             ${title}
           </h3>
@@ -30,10 +33,10 @@ export const AppDialog = {
             ${message}
           </p>
           <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button id="dialog-btn-cancel" class="btn-outline" style="min-height: 40px; padding: 0 16px; font-size: 13px; font-weight: 600;">
+            <button id="dialog-btn-cancel" class="btn-outline" style="min-height: 40px; padding: 0 16px; font-size: 13px; font-weight: 600; touch-action: manipulation;">
               ${cancelText}
             </button>
-            <button id="dialog-btn-confirm" class="btn-primary" style="min-height: 40px; padding: 0 18px; font-size: 13px; font-weight: 700; ${isDestructive ? 'background: #DC2626 !important; border-color: #DC2626 !important; color: white !important;' : ''}">
+            <button id="dialog-btn-confirm" class="btn-primary" style="min-height: 40px; padding: 0 18px; font-size: 13px; font-weight: 700; touch-action: manipulation; ${isDestructive ? 'background: #DC2626 !important; border-color: #DC2626 !important; color: white !important;' : ''}">
               ${confirmText}
             </button>
           </div>
@@ -56,7 +59,10 @@ export const AppDialog = {
   /**
    * Show an input prompt modal (Replaces window.prompt)
    */
-  prompt({ title = 'Provide Reason', message, placeholder = 'Enter reason...', defaultValue = '', confirmText = 'Submit', cancelText = 'Cancel' }) {
+  prompt(options) {
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const { title = 'Provide Reason', message = '', placeholder = 'Enter reason...', defaultValue = '', confirmText = 'Submit', cancelText = 'Cancel' } = opts;
+
     return new Promise((resolve) => {
       const existing = document.getElementById('app-dynamic-dialog');
       if (existing) existing.remove();
@@ -66,11 +72,11 @@ export const AppDialog = {
       overlay.style.cssText = `
         position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999;
         display: flex; align-items: center; justify-content: center; padding: 16px;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(2px); animation: fadeIn 0.15s ease-out;
       `;
 
       overlay.innerHTML = `
-        <div style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 440px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+        <div class="modal-animated" style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 440px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
           <h3 style="margin: 0 0 6px; font-size: 16px; font-weight: 800; color: var(--brand-navy-900, #0B192C);">
             ${title}
           </h3>
@@ -78,13 +84,13 @@ export const AppDialog = {
             ${message}
           </p>
           <div style="margin-bottom: 16px;">
-            <input type="text" id="dialog-inp-val" class="form-control" style="width: 100%; font-size: 13px;" placeholder="${placeholder}" value="${defaultValue}">
+            <input type="text" id="dialog-inp-val" class="form-control" style="width: 100%; font-size: 16px;" placeholder="${placeholder}" value="${defaultValue}">
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button id="dialog-btn-cancel" class="btn-outline" style="min-height: 40px; padding: 0 16px; font-size: 13px; font-weight: 600;">
+            <button id="dialog-btn-cancel" class="btn-outline" style="min-height: 40px; padding: 0 16px; font-size: 13px; font-weight: 600; touch-action: manipulation;">
               ${cancelText}
             </button>
-            <button id="dialog-btn-confirm" class="btn-primary" style="min-height: 40px; padding: 0 18px; font-size: 13px; font-weight: 700;">
+            <button id="dialog-btn-confirm" class="btn-primary" style="min-height: 40px; padding: 0 18px; font-size: 13px; font-weight: 700; touch-action: manipulation;">
               ${confirmText}
             </button>
           </div>
@@ -121,7 +127,10 @@ export const AppDialog = {
   /**
    * Show a notice alert (Replaces window.alert)
    */
-  alert({ title = 'Notice', message, okText = 'OK' }) {
+  alert(options) {
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const { title = 'Notice', message = '', okText = 'OK' } = opts;
+
     return new Promise((resolve) => {
       const existing = document.getElementById('app-dynamic-dialog');
       if (existing) existing.remove();
@@ -131,10 +140,11 @@ export const AppDialog = {
       overlay.style.cssText = `
         position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999;
         display: flex; align-items: center; justify-content: center; padding: 16px;
+        backdrop-filter: blur(2px); animation: fadeIn 0.15s ease-out;
       `;
 
       overlay.innerHTML = `
-        <div style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+        <div class="modal-animated" style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 14px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
           <h3 style="margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--brand-navy-900, #0B192C);">
             ${title}
           </h3>
@@ -142,7 +152,7 @@ export const AppDialog = {
             ${message}
           </p>
           <div style="display: flex; justify-content: flex-end;">
-            <button id="dialog-btn-ok" class="btn-primary" style="min-height: 40px; padding: 0 20px; font-size: 13px; font-weight: 700;">
+            <button id="dialog-btn-ok" class="btn-primary" style="min-height: 40px; padding: 0 20px; font-size: 13px; font-weight: 700; touch-action: manipulation;">
               ${okText}
             </button>
           </div>
@@ -161,3 +171,7 @@ export const AppDialog = {
     });
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.AppDialog = AppDialog;
+}

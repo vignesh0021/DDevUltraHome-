@@ -5,6 +5,7 @@
 
 import { BusinessApi } from '../businessApi.js';
 import { i18n } from '../i18n.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const SettingsScreen = {
   async render(container) {
@@ -308,6 +309,9 @@ export const SettingsScreen = {
       editModal.style.display = 'flex';
     });
 
+    // Close modals on outside backdrop click
+    editModal.onclick = (e) => { if (e.target === editModal) editModal.style.display = 'none'; };
+
     container.querySelector('#btn-close-edit-company')?.addEventListener('click', () => {
       editModal.style.display = 'none';
     });
@@ -329,16 +333,20 @@ export const SettingsScreen = {
 
       try {
         await BusinessApi.request('/settings/company', 'PUT', payload);
-        alert('✅ Company profile saved successfully!');
+        await AppDialog.alert({ title: 'Company Saved', message: '✅ Company profile saved successfully!' });
         editModal.style.display = 'none';
         this.render(container);
       } catch (err) {
-        alert('Failed to update company profile: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to update company profile: ' + err.message });
       }
     });
 
     // Account Modal Controls
     const accModal = container.querySelector('#modal-edit-account');
+    if (accModal) {
+      accModal.onclick = (e) => { if (e.target === accModal) accModal.style.display = 'none'; };
+    }
+
     container.querySelector('#btn-close-edit-account')?.addEventListener('click', () => {
       accModal.style.display = 'none';
     });
@@ -371,15 +379,15 @@ export const SettingsScreen = {
       const balance = parseFloat(balanceStr);
 
       if (!name) {
-        alert('Account name cannot be blank.');
+        await AppDialog.alert({ title: 'Validation', message: 'Account name cannot be blank.' });
         return;
       }
       if (isNaN(balance) || balance < 0) {
-        alert('Current balance must be a non-negative number.');
+        await AppDialog.alert({ title: 'Validation', message: 'Current balance must be a non-negative number.' });
         return;
       }
       if (ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
-        alert('Invalid IFSC code format! Must match ^[A-Z]{4}0[A-Z0-9]{6}$ (e.g. HDFC0001234)');
+        await AppDialog.alert({ title: 'Validation', message: 'Invalid IFSC code format! Must match ^[A-Z]{4}0[A-Z0-9]{6}$ (e.g. HDFC0001234)' });
         return;
       }
 
@@ -395,15 +403,15 @@ export const SettingsScreen = {
       try {
         if (!accId) {
           await BusinessApi.request('/settings/accounts', 'POST', payload);
-          alert('✅ Bank account added. It will appear when you record a receipt or expense.');
+          await AppDialog.alert({ title: 'Account Added', message: '✅ Bank account added. It will appear when you record a receipt or expense.' });
         } else {
           await BusinessApi.request(`/settings/accounts/${accId}`, 'PUT', payload);
-          alert('✅ Account updated successfully!');
+          await AppDialog.alert({ title: 'Account Saved', message: '✅ Account updated successfully!' });
         }
         accModal.style.display = 'none';
         this.render(container);
       } catch (err) {
-        alert('Failed to save account: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save account: ' + err.message });
       }
     });
 
@@ -414,7 +422,7 @@ export const SettingsScreen = {
         const res = await BusinessApi.request('/auth/switch-role', 'POST', { role: selectedRole });
         if (res.user) {
           BusinessApi.setActiveUser(res.user);
-          alert(`Switched active role to: ${selectedRole} (${res.user.fullName || res.user.name})`);
+          await AppDialog.alert({ title: 'Role Switched', message: `Switched active role to: ${selectedRole} (${res.user.fullName || res.user.name})` });
           if (window.appNavigate) {
             window.appNavigate(selectedRole === 'CLIENT' ? 'clients' : 'dashboard');
           } else {
@@ -422,7 +430,7 @@ export const SettingsScreen = {
           }
         }
       } catch (err) {
-        alert('Failed to switch role: ' + err.message);
+        await AppDialog.alert({ title: 'Switch Failed', message: 'Failed to switch role: ' + err.message });
       }
     });
 

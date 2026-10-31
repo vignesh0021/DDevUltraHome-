@@ -11,12 +11,23 @@ export const CameraHelper = {
    */
   async capturePhoto(options = { source: 'CAMERA' }) {
     // 1. Try Native Capacitor Camera Plugin (Android APK)
-    if (typeof window !== 'undefined' && window.Capacitor?.isPluginAvailable?.('Camera')) {
-      try {
-        const Camera = window.Capacitor.Plugins.Camera;
+    const hasCapacitor = typeof window !== 'undefined' && window.Capacitor;
+    const Camera = hasCapacitor?.Plugins?.Camera;
+    const isCameraAvailable = hasCapacitor?.isPluginAvailable?.('Camera') || !!Camera;
 
-        // Request permissions first
-        if (Camera.requestPermissions) {
+    if (isCameraAvailable && Camera) {
+      try {
+        // Request/Check permissions first
+        if (Camera.checkPermissions) {
+          try {
+            const status = await Camera.checkPermissions();
+            if (status.camera !== 'granted' && Camera.requestPermissions) {
+              await Camera.requestPermissions();
+            }
+          } catch (permErr) {
+            console.warn('Camera permission check warning:', permErr);
+          }
+        } else if (Camera.requestPermissions) {
           try {
             await Camera.requestPermissions();
           } catch (permErr) {
@@ -90,25 +101,26 @@ export const CameraHelper = {
       justify-content: center;
       padding: 16px;
       box-sizing: border-box;
+      backdrop-filter: blur(2px);
     `;
 
     sheet.innerHTML = `
-      <div style="background: white; border-radius: 16px; width: 100%; max-width: 420px; padding: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); animation: slideUp 0.2s ease-out;">
-        <div style="font-size: 15px; font-weight: 800; color: #0B192C; margin-bottom: 4px; text-align: center;">
+      <div class="modal-animated" style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #E2E8F0); border-radius: 16px; width: 100%; max-width: 420px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <div style="font-size: 16px; font-weight: 800; color: var(--brand-navy-900, #0B192C); margin-bottom: 4px; text-align: center;">
           📸 Capture Bill / Document
         </div>
-        <div style="font-size: 12px; color: #64748B; margin-bottom: 16px; text-align: center;">
+        <div style="font-size: 12px; color: var(--text-muted, #64748B); margin-bottom: 18px; text-align: center;">
           Choose source to scan voucher or purchase bill:
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <button id="btn-sheet-camera" style="width: 100%; min-height: 46px; background: #0B192C; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <button type="button" id="btn-sheet-camera" class="btn-primary" style="width: 100%; min-height: 48px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; touch-action: manipulation;">
             📷 Open camera
           </button>
-          <button id="btn-sheet-gallery" style="width: 100%; min-height: 46px; background: #F8FAFC; color: #0B192C; border: 1px solid #CBD5E1; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <button type="button" id="btn-sheet-gallery" class="btn-outline" style="width: 100%; min-height: 48px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; touch-action: manipulation;">
             🖼️ Choose from gallery
           </button>
-          <button id="btn-sheet-cancel" style="width: 100%; min-height: 44px; background: transparent; color: #EF4444; border: none; font-size: 13px; font-weight: 700; cursor: pointer;">
+          <button type="button" id="btn-sheet-cancel" class="btn-outline" style="width: 100%; min-height: 44px; background: transparent; color: #DC2626 !important; border-color: #FCA5A5 !important; font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation;">
             ✕ Cancel
           </button>
         </div>

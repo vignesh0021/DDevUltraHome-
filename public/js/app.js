@@ -100,7 +100,7 @@ function initBusinessPlatform() {
   window.appNavigate = (screenKey) => {
     // Map child screens to their primary 5-hub bottom navigation item
     let bottomNavTarget = screenKey;
-    if (['income', 'expenses', 'suppliers', 'finance'].includes(screenKey)) {
+    if (['income', 'expenses', 'suppliers', 'finance', 'labour', 'attendance', 'wages'].includes(screenKey)) {
       bottomNavTarget = 'finance';
     } else if (['quotations', 'vault', 'documents', 'docs'].includes(screenKey)) {
       bottomNavTarget = 'documents';
@@ -108,7 +108,7 @@ function initBusinessPlatform() {
       bottomNavTarget = 'settings';
     } else if (screenKey === 'dashboard') {
       bottomNavTarget = 'dashboard';
-    } else if (screenKey === 'projects') {
+    } else if (['projects', 'progress'].includes(screenKey)) {
       bottomNavTarget = 'projects';
     }
 

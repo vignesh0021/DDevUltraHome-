@@ -5,6 +5,7 @@
 
 import { BusinessApi } from '../businessApi.js';
 import { handoffFile } from '../printDoc.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const BackupScreen = {
   async render(container) {
@@ -234,8 +235,11 @@ export const BackupScreen = {
       }
     });
 
-    container.querySelector('#btn-sync-supabase')?.addEventListener('click', () => {
-      alert('Supabase is not connected. Cloud database sync is inactive.');
+    container.querySelector('#btn-sync-supabase')?.addEventListener('click', async () => {
+      await AppDialog.alert({
+        title: 'Cloud Sync Inactive',
+        message: 'Supabase is not connected. Cloud database sync is inactive.'
+      });
     });
   },
 

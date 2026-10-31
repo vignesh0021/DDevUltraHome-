@@ -176,25 +176,25 @@ export function openQuickCalculator({
 
   function render() {
     overlay.innerHTML = `
-      <div style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #CBD5E1); border-radius: 16px; width: 100%; max-width: 440px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 30px -5px rgba(0,0,0,0.4);">
+      <div class="modal-animated" style="background: var(--bg-card, #FFFFFF); border: 1px solid var(--border-light, #CBD5E1); border-radius: 16px; width: 100%; max-width: 440px; max-height: 85dvh; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 30px -5px rgba(0,0,0,0.4); animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
         <!-- Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border-light, #E2E8F0); background: var(--bg-surface, #F8FAFC);">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 18px;">🧮</span>
             <span style="font-weight: 800; font-size: 15px; color: var(--brand-navy-900, #0B192C);">${title}</span>
           </div>
-          <button id="qcalc-btn-close" style="background: transparent; border: none; font-size: 18px; font-weight: 700; color: #64748B; cursor: pointer; padding: 4px 8px;">✕</button>
+          <button id="qcalc-btn-close" style="background: transparent; border: none; font-size: 18px; font-weight: 700; color: #64748B; cursor: pointer; padding: 4px 8px; touch-action: manipulation;">✕</button>
         </div>
 
         <!-- Mode Segmented Tabs -->
         <div style="display: flex; background: var(--bg-body, #F1F5F9); padding: 4px; border-bottom: 1px solid var(--border-light, #E2E8F0); gap: 4px;">
-          <button id="tab-qty-rate" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; ${activeTab === 'QTY_RATE' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
+          <button id="tab-qty-rate" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; ${activeTab === 'QTY_RATE' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
             Qty × Rate
           </button>
-          <button id="tab-lines" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; ${activeTab === 'LINE_ITEMS' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
+          <button id="tab-lines" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; ${activeTab === 'LINE_ITEMS' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
             Line Items
           </button>
-          <button id="tab-expr" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; ${activeTab === 'EXPRESSION' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
+          <button id="tab-expr" class="tab-btn" style="flex: 1; padding: 8px 4px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; ${activeTab === 'EXPRESSION' ? 'background: #2563EB; color: #FFF;' : 'background: transparent; color: #475569;'}">
             Arithmetic (+ - × ÷)
           </button>
         </div>
@@ -208,16 +208,16 @@ export function openQuickCalculator({
         <div style="padding: 12px 16px; border-top: 1px solid var(--border-light, #E2E8F0); background: var(--bg-surface, #F8FAFC);">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
             <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary, #64748B);">Computed Amount:</span>
-            <span id="qcalc-result-badge" style="font-size: 18px; font-weight: 900; color: #16A34A; font-family: monospace;">
+            <span id="qcalc-result-badge" style="font-size: 18px; font-weight: 900; color: #16A34A; font-family: monospace; font-variant-numeric: tabular-nums;">
               ₹${getComputedTotal().toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
 
           <div style="display: flex; gap: 8px;">
-            <button id="qcalc-btn-cancel" class="btn-outline" style="flex: 1; min-height: 42px; font-size: 13px; font-weight: 600;">
+            <button id="qcalc-btn-cancel" class="btn-outline" style="flex: 1; min-height: 42px; font-size: 13px; font-weight: 600; touch-action: manipulation;">
               Cancel
             </button>
-            <button id="qcalc-btn-apply" class="btn-primary" style="flex: 2; min-height: 42px; font-size: 13px; font-weight: 800; background: #2563EB; color: white; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <button id="qcalc-btn-apply" class="btn-primary" style="flex: 2; min-height: 42px; font-size: 13px; font-weight: 800; background: #2563EB; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; touch-action: manipulation;">
               <span>✓ Insert Amount</span>
             </button>
           </div>
@@ -234,11 +234,11 @@ export function openQuickCalculator({
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <div>
             <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary, #475569); margin-bottom: 4px;">Quantity</label>
-            <input type="number" id="inp-qr-qty" class="form-control" style="width: 100%; font-size: 15px; font-weight: 600;" placeholder="e.g. 12" value="1" step="any" min="0">
+            <input type="number" id="inp-qr-qty" class="form-control" style="width: 100%; font-size: 16px; font-weight: 600;" placeholder="e.g. 12" value="1" step="any" min="0">
           </div>
           <div>
             <label style="display: block; font-size: 12px; font-weight: 700; color: var(--text-secondary, #475569); margin-bottom: 4px;">Rate per Unit (₹)</label>
-            <input type="number" id="inp-qr-rate" class="form-control" style="width: 100%; font-size: 15px; font-weight: 600;" placeholder="e.g. 450" value="${initialValue || ''}" step="any" min="0">
+            <input type="number" id="inp-qr-rate" class="form-control" style="width: 100%; font-size: 16px; font-weight: 600;" placeholder="e.g. 450" value="${initialValue || ''}" step="any" min="0">
           </div>
 
           <!-- Modifiers (Discount, Tax, Round-off) -->
@@ -252,7 +252,7 @@ export function openQuickCalculator({
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary, #475569);">Items List</span>
-            <button id="btn-add-line" style="background: #EEF2FF; color: #4F46E5; border: 1px dashed #6366F1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">
+            <button id="btn-add-line" style="background: #EEF2FF; color: #4F46E5; border: 1px dashed #6366F1; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; touch-action: manipulation;">
               + Add Item
             </button>
           </div>
@@ -260,10 +260,10 @@ export function openQuickCalculator({
           <div id="line-items-container" style="display: flex; flex-direction: column; gap: 8px;">
             ${lineItems.map((item, idx) => `
               <div style="display: flex; gap: 6px; align-items: center; background: var(--bg-surface, #F8FAFC); padding: 8px; border-radius: 8px; border: 1px solid var(--border-light, #E2E8F0);">
-                <input type="text" class="line-desc form-control" data-idx="${idx}" placeholder="Desc" value="${item.desc}" style="flex: 2; font-size: 12px;">
-                <input type="number" class="line-qty form-control" data-idx="${idx}" placeholder="Qty" value="${item.qty}" style="flex: 1; font-size: 12px; width: 60px;" step="any" min="0">
-                <input type="number" class="line-rate form-control" data-idx="${idx}" placeholder="Rate" value="${item.rate}" style="flex: 1.2; font-size: 12px; width: 70px;" step="any" min="0">
-                <button class="btn-del-line" data-idx="${idx}" style="background: transparent; border: none; color: #EF4444; font-weight: bold; cursor: pointer; padding: 4px;">✕</button>
+                <input type="text" class="line-desc form-control" data-idx="${idx}" placeholder="Desc" value="${item.desc}" style="flex: 2; font-size: 16px;">
+                <input type="number" class="line-qty form-control" data-idx="${idx}" placeholder="Qty" value="${item.qty}" style="flex: 1; font-size: 16px; width: 60px;" step="any" min="0">
+                <input type="number" class="line-rate form-control" data-idx="${idx}" placeholder="Rate" value="${item.rate}" style="flex: 1.2; font-size: 16px; width: 70px;" step="any" min="0">
+                <button class="btn-del-line" data-idx="${idx}" style="background: transparent; border: none; color: #EF4444; font-weight: bold; cursor: pointer; padding: 4px; touch-action: manipulation;">✕</button>
               </div>
             `).join('')}
           </div>
@@ -285,30 +285,30 @@ export function openQuickCalculator({
 
         <!-- Keypad Grid -->
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-          <button class="btn-calc-key" data-val="C" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #FEE2E2; color: #DC2626; font-weight: 800; font-size: 14px;">C</button>
-          <button class="btn-calc-key" data-val="(" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 14px;">(</button>
-          <button class="btn-calc-key" data-val=")" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 14px;">)</button>
-          <button class="btn-calc-key" data-val="/" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px;">÷</button>
+          <button class="btn-calc-key" data-val="C" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #FEE2E2; color: #DC2626; font-weight: 800; font-size: 14px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">C</button>
+          <button class="btn-calc-key" data-val="(" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 14px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">(</button>
+          <button class="btn-calc-key" data-val=")" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 14px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">)</button>
+          <button class="btn-calc-key" data-val="/" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">÷</button>
 
-          <button class="btn-calc-key" data-val="7" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">7</button>
-          <button class="btn-calc-key" data-val="8" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">8</button>
-          <button class="btn-calc-key" data-val="9" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">9</button>
-          <button class="btn-calc-key" data-val="*" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px;">×</button>
+          <button class="btn-calc-key" data-val="7" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">7</button>
+          <button class="btn-calc-key" data-val="8" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">8</button>
+          <button class="btn-calc-key" data-val="9" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">9</button>
+          <button class="btn-calc-key" data-val="*" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">×</button>
 
-          <button class="btn-calc-key" data-val="4" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">4</button>
-          <button class="btn-calc-key" data-val="5" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">5</button>
-          <button class="btn-calc-key" data-val="6" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">6</button>
-          <button class="btn-calc-key" data-val="-" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px;">−</button>
+          <button class="btn-calc-key" data-val="4" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">4</button>
+          <button class="btn-calc-key" data-val="5" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">5</button>
+          <button class="btn-calc-key" data-val="6" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">6</button>
+          <button class="btn-calc-key" data-val="-" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">−</button>
 
-          <button class="btn-calc-key" data-val="1" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">1</button>
-          <button class="btn-calc-key" data-val="2" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">2</button>
-          <button class="btn-calc-key" data-val="3" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">3</button>
-          <button class="btn-calc-key" data-val="+" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px;">+</button>
+          <button class="btn-calc-key" data-val="1" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">1</button>
+          <button class="btn-calc-key" data-val="2" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">2</button>
+          <button class="btn-calc-key" data-val="3" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">3</button>
+          <button class="btn-calc-key" data-val="+" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #DBEAFE; color: #1D4ED8; font-weight: 800; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">+</button>
 
-          <button class="btn-calc-key" data-val="0" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">0</button>
-          <button class="btn-calc-key" data-val="." style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px;">.</button>
-          <button class="btn-calc-key" data-val="DEL" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 13px;">⌫</button>
-          <button class="btn-calc-key" data-val="=" style="padding: 12px; border-radius: 8px; border: 1px solid #16A34A; background: #16A34A; color: white; font-weight: 800; font-size: 16px;">=</button>
+          <button class="btn-calc-key" data-val="0" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">0</button>
+          <button class="btn-calc-key" data-val="." style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: var(--bg-card, #FFF); font-weight: 700; font-size: 15px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">.</button>
+          <button class="btn-calc-key" data-val="DEL" style="padding: 12px; border-radius: 8px; border: 1px solid #CBD5E1; background: #F1F5F9; font-weight: 700; font-size: 13px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">⌫</button>
+          <button class="btn-calc-key" data-val="=" style="padding: 12px; border-radius: 8px; border: 1px solid #16A34A; background: #16A34A; color: white; font-weight: 800; font-size: 16px; touch-action: manipulation; user-select: none; -webkit-user-select: none;">=</button>
         </div>
       </div>
     `;
@@ -324,8 +324,8 @@ export function openQuickCalculator({
           <div style="flex: 1;">
             <label style="display: block; font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 2px;">Discount</label>
             <div style="display: flex; gap: 4px;">
-              <input type="number" id="inp-discount-val" class="form-control" style="flex: 1; font-size: 12px;" placeholder="0" value="${discountVal || ''}" min="0">
-              <select id="sel-discount-type" class="form-control" style="width: 55px; font-size: 11px; padding: 0 4px;">
+              <input type="number" id="inp-discount-val" class="form-control" style="flex: 1; font-size: 16px;" placeholder="0" value="${discountVal || ''}" min="0">
+              <select id="sel-discount-type" class="form-control" style="width: 58px; font-size: 16px; padding: 0 4px;">
                 <option value="PERCENT" ${discountType === 'PERCENT' ? 'selected' : ''}>%</option>
                 <option value="FLAT" ${discountType === 'FLAT' ? 'selected' : ''}>₹</option>
               </select>
@@ -333,7 +333,7 @@ export function openQuickCalculator({
           </div>
           <div style="flex: 1;">
             <label style="display: block; font-size: 11px; font-weight: 600; color: #64748B; margin-bottom: 2px;">Tax / GST (%)</label>
-            <select id="sel-tax-pct" class="form-control" style="width: 100%; font-size: 12px;">
+            <select id="sel-tax-pct" class="form-control" style="width: 100%; font-size: 16px;">
               <option value="0" ${taxPercent === 0 ? 'selected' : ''}>None (0%)</option>
               <option value="5" ${taxPercent === 5 ? 'selected' : ''}>5%</option>
               <option value="12" ${taxPercent === 12 ? 'selected' : ''}>12%</option>

@@ -171,30 +171,30 @@ export const DashboardScreen = {
 
           <!-- Interactive Metric Targets: Sites, Clients, Pending Bills, Labour Wages, Today Attendance -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 8px; margin: 0 16px 16px;">
-            <div id="btn-stat-sites" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Projects">
-              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900);">${d.activeProjects || 0}</div>
+            <button type="button" id="btn-stat-sites" class="stat-metric-card" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); width: 100%; touch-action: manipulation;" title="Tap to open Projects">
+              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900); font-variant-numeric: tabular-nums;">${d.activeProjects || 0}</div>
               <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Active Sites ↗</div>
-            </div>
+            </button>
 
-            <div id="btn-stat-clients" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to open Clients Directory">
-              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900);">${d.totalClients || 0}</div>
+            <button type="button" id="btn-stat-clients" class="stat-metric-card" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); width: 100%; touch-action: manipulation;" title="Tap to open Clients Directory">
+              <div style="font-size: 20px; font-weight: 800; color: var(--brand-navy-900); font-variant-numeric: tabular-nums;">${d.totalClients || 0}</div>
               <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Total Clients ↗</div>
-            </div>
+            </button>
 
-            <div id="btn-stat-bills" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to view Pending Bills & Invoices">
-              <div style="font-size: 20px; font-weight: 800; color: ${(d.pendingOcrCount || 0) > 0 ? '#F59E0B' : '#10B981'};">${d.pendingOcrCount || 0}</div>
+            <button type="button" id="btn-stat-bills" class="stat-metric-card" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); width: 100%; touch-action: manipulation;" title="Tap to view Pending Bills & Invoices">
+              <div style="font-size: 20px; font-weight: 800; color: ${(d.pendingOcrCount || 0) > 0 ? '#F59E0B' : '#10B981'}; font-variant-numeric: tabular-nums;">${d.pendingOcrCount || 0}</div>
               <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Pending Bills ↗</div>
-            </div>
+            </button>
 
-            <div id="btn-stat-labour-due" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to view Labour Wages">
-              <div style="font-size: 15px; font-weight: 800; color: ${labourDue > 0 ? '#DC2626' : '#10B981'}; line-height: 1.3;">₹${Math.round(labourDue).toLocaleString('en-IN')}</div>
+            <button type="button" id="btn-stat-labour-due" class="stat-metric-card" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); width: 100%; touch-action: manipulation;" title="Tap to view Labour Wages">
+              <div style="font-size: 15px; font-weight: 800; color: ${labourDue > 0 ? '#DC2626' : '#10B981'}; line-height: 1.3; font-variant-numeric: tabular-nums;">₹${Math.round(labourDue).toLocaleString('en-IN')}</div>
               <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Labour Due ↗</div>
-            </div>
+            </button>
 
-            <div id="btn-stat-today-att" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.12s, border-color 0.12s;" title="Tap to record Daily Attendance">
-              <div style="font-size: 16px; font-weight: 800; color: #0284C7; line-height: 1.3;">${att.present || 0}/${att.total || 0}</div>
+            <button type="button" id="btn-stat-today-att" class="stat-metric-card" style="background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 10px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); width: 100%; touch-action: manipulation;" title="Tap to record Daily Attendance">
+              <div style="font-size: 16px; font-weight: 800; color: #0284C7; line-height: 1.3; font-variant-numeric: tabular-nums;">${att.present || 0}/${att.total || 0}</div>
               <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px;">Attendance ↗</div>
-            </div>
+            </button>
           </div>
 
           <!-- Construction Business Lifecycle Flowchart View -->
@@ -379,7 +379,7 @@ export const DashboardScreen = {
         window.appNavigate?.('clients');
       });
       container.querySelector('#btn-stat-bills')?.addEventListener('click', () => {
-        window.appNavigate?.('suppliers');
+        window.appNavigate?.('documents');
       });
       container.querySelector('#btn-stat-labour-due')?.addEventListener('click', () => {
         window.appNavigate?.('labour');
@@ -437,11 +437,11 @@ export const DashboardScreen = {
           const photo = await CameraHelper.capturePhoto({ source: 'CAMERA' });
           if (photo) {
             window._pendingScannedPhoto = photo;
+            window.appNavigate?.('documents');
           }
         } catch (e) {
           console.warn('Camera capture fallback:', e);
         }
-        window.appNavigate?.('documents');
       });
 
       // 6. Initialize Interactive Cash Flow Ring

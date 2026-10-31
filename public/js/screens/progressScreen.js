@@ -4,6 +4,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const ProgressScreen = {
   currentProjectId: null,
@@ -172,6 +173,10 @@ export const ProgressScreen = {
     const dprModal = container.querySelector('#modal-new-dpr');
     const certModal = container.querySelector('#modal-certify-milestone');
 
+    // Backdrop dismissal
+    if (dprModal) dprModal.onclick = (e) => { if (e.target === dprModal) dprModal.style.display = 'none'; };
+    if (certModal) certModal.onclick = (e) => { if (e.target === certModal) certModal.style.display = 'none'; };
+
     container.querySelector('#btn-log-progress')?.addEventListener('click', async () => {
       await this.populateMilestoneDropdown(container);
       dprModal.style.display = 'flex';
@@ -211,7 +216,7 @@ export const ProgressScreen = {
     container.querySelector('#form-create-dpr')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!this.currentProjectId) {
-        alert('Please select an active project first.');
+        await AppDialog.alert({ title: 'Project Required', message: 'Please select an active project first.' });
         return;
       }
 
@@ -228,13 +233,13 @@ export const ProgressScreen = {
 
       try {
         await BusinessApi.request('/progress', 'POST', payload);
-        alert('✅ Daily Site Progress Entry (DPR) saved successfully!');
+        await AppDialog.alert({ title: 'DPR Saved', message: '✅ Daily Site Progress Entry (DPR) saved successfully!' });
         dprModal.style.display = 'none';
         container.querySelector('#form-create-dpr').reset();
         prevContainer.style.display = 'none';
         await this.loadProjectProgress(container, this.currentProjectId);
       } catch (err) {
-        alert('Failed to save daily log: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save daily log: ' + err.message });
       }
     });
 
@@ -250,11 +255,11 @@ export const ProgressScreen = {
 
       try {
         await BusinessApi.request(`/milestones/${mId}`, 'PATCH', payload);
-        alert('✅ Milestone stage status updated!');
+        await AppDialog.alert({ title: 'Milestone Updated', message: '✅ Milestone stage status updated!' });
         certModal.style.display = 'none';
         await this.loadProjectProgress(container, this.currentProjectId);
       } catch (err) {
-        alert('Failed to update milestone: ' + err.message);
+        await AppDialog.alert({ title: 'Update Failed', message: 'Failed to update milestone: ' + err.message });
       }
     });
   },
@@ -385,12 +390,19 @@ export const ProgressScreen = {
       dataContainer.querySelectorAll('.btn-delete-prog').forEach(btn => {
         btn.addEventListener('click', async () => {
           const progId = btn.dataset.id;
-          if (confirm('Delete this site diary entry?')) {
+          const confirmed = await AppDialog.confirm({
+            title: 'Delete Progress Entry',
+            message: 'Delete this site diary entry?\n(This action cannot be undone)',
+            confirmText: 'Delete Entry',
+            isDestructive: true
+          });
+          if (confirmed) {
             try {
               await BusinessApi.request(`/progress/${progId}`, 'DELETE');
+              await AppDialog.alert({ title: 'Entry Deleted', message: '🗑️ Site diary entry deleted.' });
               await this.loadProjectProgress(container, prjId);
             } catch (err) {
-              alert('Failed to delete log: ' + err.message);
+              await AppDialog.alert({ title: 'Delete Failed', message: 'Failed to delete log: ' + err.message });
             }
           }
         });

@@ -6,6 +6,7 @@
 
 import { BusinessApi } from '../businessApi.js';
 import { deliverPdf } from '../printDoc.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const ReportsScreen = {
   currentTab: 'project_report', // 'project_report' | 'company_pnl'
@@ -441,7 +442,7 @@ export const ReportsScreen = {
     try {
       await deliverPdf(filename, lines);
     } catch (e) {
-      alert('PDF export notification: ' + e.message);
+      await AppDialog.alert({ title: 'PDF Export Notice', message: e.message });
     }
   },
 

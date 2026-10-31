@@ -208,9 +208,16 @@
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform var(--trans-fast), box-shadow var(--trans-fast);
   position: relative;
   overflow: hidden;
+}
+
+.kpi-card:active {
+  transform: scale(0.98);
 }
 
 .kpi-card::before {
@@ -235,6 +242,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 6px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .kpi-amount {
@@ -242,6 +251,7 @@
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .kpi-subtext {
@@ -279,8 +289,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
   transition: var(--trans-fast);
   min-height: 40px;
+}
+
+.business-tab-btn:active {
+  transform: scale(0.96);
 }
 
 .business-tab-btn.active {
@@ -312,7 +329,7 @@
   padding: 10px 14px;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 16px; /* 16px eliminates unwanted mobile viewport auto-zoom */
   background: #FFFFFF;
   color: var(--text-primary);
   box-sizing: border-box;
@@ -339,11 +356,14 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
   transition: var(--trans-fast);
 }
 
 .btn-primary:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn-gold {
@@ -360,6 +380,14 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: var(--trans-fast);
+}
+
+.btn-gold:active {
+  transform: scale(0.97);
 }
 
 .btn-outline {
@@ -375,6 +403,14 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: var(--trans-fast);
+}
+
+.btn-outline:active {
+  transform: scale(0.97);
 }
 
 /* Floating Action Button (FAB) */
@@ -435,7 +471,7 @@
 
 [data-theme="dark"] .btn-outline {
   background: #1E293B;
-  color: #F8FAFC !important;
+  color: #F8FAFC;
   border-color: #475569;
 }
 
@@ -443,6 +479,31 @@
 [data-theme="dark"] .btn-outline:active {
   background: #334155;
   border-color: var(--brand-gold-500);
+  color: #FBBF24;
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #1E293B !important;
+  color: #F8FAFC !important;
+  border: 1px solid #475569 !important;
+}
+
+[data-theme="dark"] .btn-secondary:hover,
+[data-theme="dark"] .btn-secondary:active {
+  background: #334155 !important;
+  border-color: #64748B !important;
+}
+
+[data-theme="dark"] .header-btn {
+  background: #1E293B !important;
+  color: #F8FAFC !important;
+  border: 1px solid #475569 !important;
+}
+
+[data-theme="dark"] .header-btn:hover,
+[data-theme="dark"] .header-btn:active {
+  background: #334155 !important;
+  border-color: #F59E0B !important;
   color: #FBBF24 !important;
 }
 
@@ -458,14 +519,45 @@
   border-color: #334155;
 }
 
+/* Stat Metric Buttons (Active Sites, Clients, Pending Bills, Labour Due, Attendance) */
+.stat-metric-card {
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.stat-metric-card:active {
+  transform: scale(0.95);
+}
+
+[data-theme="dark"] .stat-metric-card,
+[data-theme="dark"] #btn-stat-sites,
+[data-theme="dark"] #btn-stat-clients,
+[data-theme="dark"] #btn-stat-bills,
+[data-theme="dark"] #btn-stat-labour-due,
+[data-theme="dark"] #btn-stat-today-att {
+  background: #1E293B !important;
+  border: 1px solid #475569 !important;
+  color: #F8FAFC !important;
+}
+[data-theme="dark"] .stat-metric-card:active {
+  border-color: #F59E0B !important;
+}
+
 [data-theme="dark"] .quick-action-btn,
 [data-theme="dark"] #btn-quick-new-project,
 [data-theme="dark"] #btn-quick-record-receipt,
 [data-theme="dark"] #btn-quick-record-expense,
+[data-theme="dark"] #btn-quick-record-attendance,
 [data-theme="dark"] #btn-quick-scan-bill {
   background: #1E293B !important;
   color: #FBBF24 !important;
-  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  border: 1px solid rgba(245, 158, 11, 0.55) !important;
+}
+
+[data-theme="dark"] .quick-action-btn:active {
+  background: #334155 !important;
+  border-color: #F59E0B !important;
 }
 
 [data-theme="dark"] .business-tab-btn {
@@ -480,6 +572,64 @@
   border-color: var(--brand-gold-600);
 }
 
+[data-theme="dark"] .chip-btn {
+  background: #1E293B !important;
+  color: #CBD5E1 !important;
+  border-color: #475569 !important;
+}
+
+[data-theme="dark"] .chip-btn.active {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  border-color: #ea580c !important;
+}
+
+[data-theme="dark"] .btn-timeframe:not(.active) {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .btn-timeframe.active {
+  background: #ea580c !important;
+  color: #ffffff !important;
+}
+
+/* Flowchart Nodes in Dark Mode */
+[data-theme="dark"] [id^="flow-node-"] {
+  background: #0F172A !important;
+  border: 1px solid #334155 !important;
+}
+[data-theme="dark"] [id^="flow-node-"]:hover,
+[data-theme="dark"] [id^="flow-node-"]:active {
+  border-color: #F59E0B !important;
+}
+
+/* Modals in Dark Mode */
+[data-theme="dark"] .modal-animated,
+[data-theme="dark"] #modal-new-project > div,
+[data-theme="dark"] #modal-project-details > div,
+[data-theme="dark"] #modal-edit-project > div,
+[data-theme="dark"] #modal-new-client > div,
+[data-theme="dark"] #modal-edit-client > div,
+[data-theme="dark"] #modal-new-quotation > div,
+[data-theme="dark"] #modal-new-dpr > div,
+[data-theme="dark"] #modal-certify-milestone > div,
+[data-theme="dark"] #modal-edit-company > div,
+[data-theme="dark"] #modal-edit-account > div,
+[data-theme="dark"] #modal-add-supplier > div,
+[data-theme="dark"] #modal-edit-supplier > div,
+[data-theme="dark"] #modal-supplier-invoice > div,
+[data-theme="dark"] #modal-settle-dues > div,
+[data-theme="dark"] #modal-ocr-verify > div,
+[data-theme="dark"] #modal-add-worker > div,
+[data-theme="dark"] #modal-record-disbursement > div {
+  background: #1E293B !important;
+  border: 1px solid #475569 !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .form-label {
+  color: #CBD5E1 !important;
+}
 
 /* Dark mode remaps --brand-navy-900 to near-white paper. Primary buttons
    must not inherit that token, or the white label disappears. */
@@ -563,4 +713,30 @@
 [data-theme="dark"] [style*="background:white"] textarea::placeholder {
   color: #64748B;
   -webkit-text-fill-color: #64748B;
+}
+
+/* Emil Kowalski Animation & Mobile-Native Polish Standards */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-animated {
+  animation: modalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Break-UI defensive overflow text handling */
+.text-break-defensive, 
+.card-header h2, 
+.card-header h3, 
+.project-card-title,
+.kpi-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }

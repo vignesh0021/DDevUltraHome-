@@ -5,6 +5,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const ProjectsScreen = {
   currentProject: null,
@@ -308,12 +309,19 @@ export const ProjectsScreen = {
         modal.style.display = 'none';
         await this.loadProjects(container);
       } catch (err) {
-        alert('Failed to save project: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save project: ' + err.message });
       }
     });
 
+    // Close modals on outside backdrop click
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    detailsModal.onclick = (e) => { if (e.target === detailsModal) detailsModal.style.display = 'none'; };
+
     // Edit & Archive Project controls
     const editModal = container.querySelector('#modal-edit-project');
+    if (editModal) {
+      editModal.onclick = (e) => { if (e.target === editModal) editModal.style.display = 'none'; };
+    }
 
     container.querySelector('#btn-dtl-edit-project')?.addEventListener('click', () => {
       if (!this.currentProject) return;
@@ -356,27 +364,32 @@ export const ProjectsScreen = {
 
       try {
         await BusinessApi.request(`/projects/${prjId}`, 'PUT', payload);
-        alert('✅ Project updated successfully!');
+        await AppDialog.alert({ title: 'Project Updated', message: '✅ Project updated successfully!' });
         editModal.style.display = 'none';
         detailsModal.style.display = 'none';
         await this.loadProjects(container);
       } catch (err) {
-        alert('Failed to update project: ' + err.message);
+        await AppDialog.alert({ title: 'Update Failed', message: 'Failed to update project: ' + err.message });
       }
     });
 
     container.querySelector('#btn-dtl-archive-project')?.addEventListener('click', async () => {
       if (!this.currentProject) return;
-      const confirmArchive = confirm(`Archive project "${this.currentProject.name}"?\nAll financial audit ledgers and progress history will remain preserved.`);
+      const confirmArchive = await AppDialog.confirm({
+        title: 'Archive Project',
+        message: `Archive project "${this.currentProject.name}"?\nAll financial audit ledgers and progress history will remain preserved.`,
+        confirmText: 'Archive Project',
+        isDestructive: true
+      });
       if (!confirmArchive) return;
 
       try {
         await BusinessApi.request(`/projects/${this.currentProject.id}`, 'DELETE');
-        alert('📦 Project archived successfully.');
+        await AppDialog.alert({ title: 'Archived', message: '📦 Project archived successfully.' });
         detailsModal.style.display = 'none';
         await this.loadProjects(container);
       } catch (err) {
-        alert('Failed to archive project: ' + err.message);
+        await AppDialog.alert({ title: 'Archive Failed', message: 'Failed to archive project: ' + err.message });
       }
     });
 
@@ -509,15 +522,20 @@ export const ProjectsScreen = {
           e.stopPropagation();
           const prjId = e.currentTarget.dataset.id;
           const prjName = e.currentTarget.dataset.name;
-          const confirmed = confirm(`Are you sure you want to delete / archive project "${prjName}"?\nAll financial audit ledgers and transaction history will remain safely preserved.`);
+          const confirmed = await AppDialog.confirm({
+            title: 'Delete / Archive Project',
+            message: `Are you sure you want to delete / archive project "${prjName}"?\nAll financial audit ledgers and transaction history will remain safely preserved.`,
+            confirmText: 'Archive Project',
+            isDestructive: true
+          });
           if (!confirmed) return;
 
           try {
             await BusinessApi.request(`/projects/${prjId}`, 'DELETE');
-            alert('📦 Project archived / deleted successfully.');
+            await AppDialog.alert({ title: 'Archived', message: '📦 Project archived / deleted successfully.' });
             await this.loadProjects(container);
           } catch (err) {
-            alert('Failed to delete project: ' + err.message);
+            await AppDialog.alert({ title: 'Delete Failed', message: 'Failed to delete project: ' + err.message });
           }
         });
       });
@@ -637,7 +655,7 @@ export const ProjectsScreen = {
 
       detailsModal.style.display = 'flex';
     } catch (err) {
-      alert('Error fetching project details: ' + err.message);
+      await AppDialog.alert({ title: 'Error', message: 'Error fetching project details: ' + err.message });
     }
   }
 };

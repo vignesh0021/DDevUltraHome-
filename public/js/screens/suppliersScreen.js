@@ -351,13 +351,19 @@ export const SuppliersScreen = {
 
       try {
         await BusinessApi.request(`/suppliers/${supId}`, 'PUT', payload);
-        alert('✅ Vendor updated successfully!');
+        await AppDialog.alert({ title: 'Vendor Updated', message: '✅ Vendor updated successfully!' });
         editSupModal.style.display = 'none';
         await this.loadSuppliers(container);
       } catch (err) {
-        alert('Failed to update vendor: ' + err.message);
+        await AppDialog.alert({ title: 'Update Failed', message: 'Failed to update vendor: ' + err.message });
       }
     });
+
+    // Close modals on outside backdrop click
+    supModal.onclick = (e) => { if (e.target === supModal) supModal.style.display = 'none'; };
+    editSupModal.onclick = (e) => { if (e.target === editSupModal) editSupModal.style.display = 'none'; };
+    invModal.onclick = (e) => { if (e.target === invModal) invModal.style.display = 'none'; };
+    settleModal.onclick = (e) => { if (e.target === settleModal) settleModal.style.display = 'none'; };
 
     // Open Log Bill
     container.querySelector('#btn-add-invoice')?.addEventListener('click', async () => {
@@ -407,12 +413,12 @@ export const SuppliersScreen = {
 
       try {
         await BusinessApi.request('/suppliers', 'POST', payload);
-        alert('✅ Supplier registered successfully!');
+        await AppDialog.alert({ title: 'Supplier Registered', message: '✅ Supplier registered successfully!' });
         supModal.style.display = 'none';
         container.querySelector('#form-create-supplier').reset();
         await this.loadSuppliers(container);
       } catch (err) {
-        alert('Failed to save supplier: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save supplier: ' + err.message });
       }
     });
 
@@ -433,12 +439,12 @@ export const SuppliersScreen = {
 
       try {
         await BusinessApi.request('/suppliers/invoices', 'POST', payload);
-        alert('✅ Supplier invoice logged! Accounts Payable updated.');
+        await AppDialog.alert({ title: 'Invoice Logged', message: '✅ Supplier invoice logged! Accounts Payable updated.' });
         invModal.style.display = 'none';
         container.querySelector('#form-log-invoice').reset();
         await this.loadSuppliers(container);
       } catch (err) {
-        alert('Failed to log invoice: ' + err.message);
+        await AppDialog.alert({ title: 'Log Failed', message: 'Failed to log invoice: ' + err.message });
       }
     });
 
@@ -461,12 +467,12 @@ export const SuppliersScreen = {
 
       try {
         await BusinessApi.request('/suppliers/payments', 'POST', payload);
-        alert('✅ Payment disbursed and supplier dues settled successfully!');
+        await AppDialog.alert({ title: 'Dues Settled', message: '✅ Payment disbursed and supplier dues settled successfully!' });
         settleModal.style.display = 'none';
         container.querySelector('#form-settle-dues').reset();
         await this.loadSuppliers(container);
       } catch (err) {
-        alert('Payment settlement failed: ' + err.message);
+        await AppDialog.alert({ title: 'Settlement Failed', message: 'Payment settlement failed: ' + err.message });
       }
     });
   },
@@ -560,7 +566,7 @@ export const SuppliersScreen = {
       await updateSupplierDues();
       modal.style.display = 'flex';
     } catch (err) {
-      alert('Failed to initialize settlement wizard: ' + err.message);
+      await AppDialog.alert({ title: 'Settlement Error', message: 'Failed to initialize settlement wizard: ' + err.message });
     }
   },
 
@@ -612,7 +618,7 @@ export const SuppliersScreen = {
                   </div>
                   <div style="text-align: right;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Outstanding Dues</div>
-                    <div style="font-size: 18px; font-weight: 800; color: ${hasDues ? '#DC2626' : '#059669'};">
+                    <div style="font-size: 18px; font-weight: 800; color: ${hasDues ? '#DC2626' : '#059669'}; font-variant-numeric: tabular-nums;">
                       ₹${dues.toLocaleString('en-IN')}
                     </div>
                   </div>
@@ -620,21 +626,21 @@ export const SuppliersScreen = {
 
                 <!-- Action Controls -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-light); flex-wrap: wrap; gap: 8px;">
-                  <button class="btn-toggle-invoices btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 600;">
+                  <button class="btn-toggle-invoices btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 10px; font-size: 11px; font-weight: 600; touch-action: manipulation;">
                     📄 View Invoices
                   </button>
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button class="btn-card-edit-sup btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 8px; font-size: 11px;">
+                    <button class="btn-card-edit-sup btn-outline" data-id="${s.id}" style="min-height: 32px; padding: 0 8px; font-size: 11px; touch-action: manipulation;">
                       ✏️ Edit
                     </button>
-                    <button class="btn-card-archive-sup btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 8px; font-size: 11px; color: #DC2626; border-color: #FCA5A5;">
+                    <button class="btn-card-archive-sup btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 8px; font-size: 11px; color: #DC2626; border-color: #FCA5A5; touch-action: manipulation;">
                       📦 Archive
                     </button>
-                    <button class="btn-card-log-bill btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 10px; font-size: 11px;">
+                    <button class="btn-card-log-bill btn-outline" data-id="${s.id}" data-name="${s.name}" style="min-height: 32px; padding: 0 10px; font-size: 11px; touch-action: manipulation;">
                       + Bill
                     </button>
                     ${hasDues ? `
-                      <button class="btn-card-settle btn-primary" data-id="${s.id}" style="min-height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700;">
+                      <button class="btn-card-settle btn-primary" data-id="${s.id}" style="min-height: 32px; padding: 0 12px; font-size: 11px; font-weight: 700; touch-action: manipulation;">
                         💳 Settle Dues
                       </button>
                     ` : ''}
@@ -675,15 +681,20 @@ export const SuppliersScreen = {
         btn.addEventListener('click', async (e) => {
           const supId = e.currentTarget.dataset.id;
           const supName = e.currentTarget.dataset.name;
-          const confirmed = confirm(`Archive vendor "${supName}"?\nHistorical invoices and settlement records will remain intact.`);
+          const confirmed = await AppDialog.confirm({
+            title: 'Archive Vendor',
+            message: `Archive vendor "${supName}"?\nHistorical invoices and settlement records will remain intact.`,
+            confirmText: 'Archive Vendor',
+            isDestructive: true
+          });
           if (!confirmed) return;
 
           try {
             await BusinessApi.request(`/suppliers/${supId}`, 'DELETE');
-            alert('📦 Vendor archived successfully.');
+            await AppDialog.alert({ title: 'Vendor Archived', message: '📦 Vendor archived successfully.' });
             await this.loadSuppliers(container);
           } catch (err) {
-            alert('Failed to archive vendor: ' + err.message);
+            await AppDialog.alert({ title: 'Archive Failed', message: 'Failed to archive vendor: ' + err.message });
           }
         });
       });

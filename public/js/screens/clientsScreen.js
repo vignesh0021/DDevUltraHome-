@@ -8,6 +8,7 @@
  */
 
 import { BusinessApi } from '../businessApi.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const ClientsScreen = {
   viewingPortalClientId: null,
@@ -143,6 +144,10 @@ export const ClientsScreen = {
     const modal = container.querySelector('#modal-new-client');
     const editModal = container.querySelector('#modal-edit-client');
 
+    // Backdrop dismissal
+    if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    if (editModal) editModal.onclick = (e) => { if (e.target === editModal) editModal.style.display = 'none'; };
+
     container.querySelector('#btn-add-client')?.addEventListener('click', () => {
       modal.style.display = 'flex';
     });
@@ -174,11 +179,11 @@ export const ClientsScreen = {
 
       try {
         await BusinessApi.request(`/clients/${cliId}`, 'PUT', payload);
-        alert('✅ Client updated successfully!');
+        await AppDialog.alert({ title: 'Client Updated', message: '✅ Client updated successfully!' });
         editModal.style.display = 'none';
         await this.loadClients(container);
       } catch (err) {
-        alert('Failed to update client: ' + err.message);
+        await AppDialog.alert({ title: 'Update Failed', message: 'Failed to update client: ' + err.message });
       }
     });
 
@@ -196,12 +201,12 @@ export const ClientsScreen = {
 
       try {
         await BusinessApi.request('/clients', 'POST', payload);
-        alert('✅ Client registered successfully!');
+        await AppDialog.alert({ title: 'Client Registered', message: '✅ Client registered successfully!' });
         modal.style.display = 'none';
         container.querySelector('#form-create-client').reset();
         await this.loadClients(container);
       } catch (err) {
-        alert('Failed to save client: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save client: ' + err.message });
       }
     });
   },
@@ -500,15 +505,20 @@ export const ClientsScreen = {
         btn.addEventListener('click', async (e) => {
           const cliId = e.currentTarget.dataset.id;
           const cliName = e.currentTarget.dataset.name;
-          const confirmed = confirm(`Archive client "${cliName}"?\nAll linked contracts, receipts, and historical data will remain intact.`);
+          const confirmed = await AppDialog.confirm({
+            title: 'Archive Client',
+            message: `Archive client "${cliName}"?\nAll linked contracts, receipts, and historical data will remain intact.`,
+            confirmText: 'Archive Client',
+            isDestructive: true
+          });
           if (!confirmed) return;
 
           try {
             await BusinessApi.request(`/clients/${cliId}`, 'DELETE');
-            alert('📦 Client archived successfully.');
+            await AppDialog.alert({ title: 'Client Archived', message: '📦 Client archived successfully.' });
             await this.loadClients(container);
           } catch (err) {
-            alert('Failed to archive client: ' + err.message);
+            await AppDialog.alert({ title: 'Archive Failed', message: 'Failed to archive client: ' + err.message });
           }
         });
       });

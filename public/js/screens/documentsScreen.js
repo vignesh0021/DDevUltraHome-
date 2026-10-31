@@ -9,6 +9,7 @@
 
 import { BusinessApi } from '../businessApi.js';
 import { CameraHelper } from '../cameraHelper.js';
+import { AppDialog } from '../components/appDialog.js';
 
 export const DocumentsScreen = {
   currentFilter: 'ALL',
@@ -452,7 +453,10 @@ Total Amount: 159,300.00`;
           });
         }
 
-        alert('✅ Document vaulted with SHA-256 integrity and submitted to Human Verification Gate! Staged as UNVERIFIED.');
+        await AppDialog.alert({
+          title: 'Document Vaulted',
+          message: '✅ Document vaulted with SHA-256 integrity and submitted to Human Verification Gate! Staged as UNVERIFIED.'
+        });
         uploadModal.style.display = 'none';
         uploadForm.reset();
         container.querySelector('#box-file-meta').style.display = 'none';
@@ -461,9 +465,16 @@ Total Amount: 159,300.00`;
         await this.loadVault(container);
         await this.checkPendingOcr(container);
       } catch (err) {
-        alert('Upload failed: ' + err.message);
+        await AppDialog.alert({ title: 'Upload Failed', message: 'Upload failed: ' + err.message });
       }
     });
+
+    // Close modals on outside backdrop click
+    uploadModal.onclick = (e) => { if (e.target === uploadModal) uploadModal.style.display = 'none'; };
+    const wmModal = container.querySelector('#modal-watermark-view');
+    if (wmModal) {
+      wmModal.onclick = (e) => { if (e.target === wmModal) wmModal.style.display = 'none'; };
+    }
 
     // Filter Chips
     container.querySelectorAll('.doc-filter-btn').forEach(btn => {
@@ -488,7 +499,7 @@ Total Amount: 159,300.00`;
         wmBox.innerHTML = res.svg || '';
         wmBox.style.display = wmBox.style.display === 'none' ? 'block' : 'none';
       } catch (e) {
-        alert('Watermark preview error: ' + e.message);
+        await AppDialog.alert({ title: 'Preview Error', message: 'Watermark preview error: ' + e.message });
       }
     });
 
@@ -565,6 +576,9 @@ Total Amount: 159,300.00`;
       await this.openFirstPendingReview(container);
     });
 
+    // Close verify modal on outside click
+    verifyModal.onclick = (e) => { if (e.target === verifyModal) verifyModal.style.display = 'none'; };
+
     // Submit Verification Handler
     container.querySelector('#form-ocr-verify')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -572,7 +586,10 @@ Total Amount: 159,300.00`;
 
       // RBAC check
       if (!['OWNER', 'ACCOUNTANT'].includes(user.role)) {
-        alert(`⛔ Unauthorized: Role "${user.role}" cannot verify bills. Requires OWNER or ACCOUNTANT.`);
+        await AppDialog.alert({
+          title: 'Permission Denied',
+          message: `⛔ Unauthorized: Role "${user.role}" cannot verify bills. Requires OWNER or ACCOUNTANT.`
+        });
         return;
       }
 
@@ -599,12 +616,15 @@ Total Amount: 159,300.00`;
           financialAction: postingDest
         });
 
-        alert(`✅ Bill verified! Record posted to ${postingDest === 'SUPPLIER_INVOICE' ? 'Accounts Payable' : 'Site Expenses'}.`);
+        await AppDialog.alert({
+          title: 'Bill Verified',
+          message: `✅ Bill verified! Record posted to ${postingDest === 'SUPPLIER_INVOICE' ? 'Accounts Payable' : 'Site Expenses'}.`
+        });
         verifyModal.style.display = 'none';
         await this.loadVault(container);
         await this.checkPendingOcr(container);
       } catch (err) {
-        alert('Verification failed: ' + err.message);
+        await AppDialog.alert({ title: 'Verification Failed', message: 'Verification failed: ' + err.message });
       }
     });
 
@@ -623,12 +643,12 @@ Total Amount: 159,300.00`;
           notes
         });
 
-        alert('Bill rejected and archived.');
+        await AppDialog.alert({ title: 'Bill Rejected', message: 'Bill rejected and archived.' });
         verifyModal.style.display = 'none';
         await this.loadVault(container);
         await this.checkPendingOcr(container);
       } catch (err) {
-        alert('Rejection failed: ' + err.message);
+        await AppDialog.alert({ title: 'Rejection Failed', message: 'Rejection failed: ' + err.message });
       }
     });
   },
@@ -722,7 +742,7 @@ Total Amount: 159,300.00`;
             `;
             modal.style.display = 'flex';
           } catch (err) {
-            alert('Failed to load watermark: ' + err.message);
+            await AppDialog.alert({ title: 'Preview Error', message: 'Failed to load watermark: ' + err.message });
           }
         });
       });
@@ -730,7 +750,7 @@ Total Amount: 159,300.00`;
       // Wire verify buttons
       listEl.querySelectorAll('.btn-doc-verify').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-          const docId = e.target.dataset.id;
+          const docId = e.currentTarget.dataset.id;
           await this.openReviewByDocId(container, docId);
         });
       });
@@ -738,18 +758,23 @@ Total Amount: 159,300.00`;
       // Wire delete document buttons
       listEl.querySelectorAll('.btn-doc-delete').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-          const docId = e.target.dataset.id;
-          const docName = e.target.dataset.name;
-          const confirmed = confirm(`Delete document "${docName}" from the vault?\n(Document will be soft-deleted with audit tracking)`);
+          const docId = e.currentTarget.dataset.id;
+          const docName = e.currentTarget.dataset.name;
+          const confirmed = await AppDialog.confirm({
+            title: 'Delete Document',
+            message: `Delete document "${docName}" from the vault?\n(Document will be soft-deleted with audit tracking)`,
+            confirmText: 'Delete Document',
+            isDestructive: true
+          });
           if (!confirmed) return;
 
           try {
             await BusinessApi.request(`/documents/${docId}`, 'DELETE');
-            alert('🗑️ Document deleted successfully.');
+            await AppDialog.alert({ title: 'Document Deleted', message: '🗑️ Document deleted successfully.' });
             await this.loadVault(container);
             await this.checkPendingOcr(container);
           } catch (err) {
-            alert('Delete failed: ' + err.message);
+            await AppDialog.alert({ title: 'Delete Failed', message: 'Delete failed: ' + err.message });
           }
         });
       });
@@ -781,12 +806,12 @@ Total Amount: 159,300.00`;
       const res = await BusinessApi.request('/ocr/reviews');
       const pending = (res.reviews || []).find(r => r.verification_status === 'UNVERIFIED');
       if (!pending) {
-        alert('No pending OCR reviews found.');
+        await AppDialog.alert({ title: 'OCR Reviews', message: 'No pending OCR reviews found.' });
         return;
       }
       await this.populateAndShowVerifyModal(container, pending);
     } catch (err) {
-      alert('Error opening review: ' + err.message);
+      await AppDialog.alert({ title: 'Review Error', message: 'Error opening review: ' + err.message });
     }
   },
 
@@ -795,12 +820,12 @@ Total Amount: 159,300.00`;
       const res = await BusinessApi.request('/ocr/reviews');
       const review = (res.reviews || []).find(r => r.document_id === docId && r.verification_status === 'UNVERIFIED');
       if (!review) {
-        alert('No unverified OCR review found for this document.');
+        await AppDialog.alert({ title: 'Not Found', message: 'No unverified OCR review found for this document.' });
         return;
       }
       await this.populateAndShowVerifyModal(container, review);
     } catch (err) {
-      alert('Error: ' + err.message);
+      await AppDialog.alert({ title: 'Error', message: 'Error: ' + err.message });
     }
   },
 

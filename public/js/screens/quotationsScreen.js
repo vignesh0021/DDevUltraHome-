@@ -251,13 +251,19 @@ export const QuotationsScreen = {
           e.stopPropagation();
           const qId = btn.getAttribute('data-id');
           const qNum = btn.getAttribute('data-number');
-          if (confirm(`Delete draft quotation ${qNum}?`)) {
+          const confirmed = await AppDialog.confirm({
+            title: 'Delete Draft Quotation',
+            message: `Delete draft quotation ${qNum}?\nThis action cannot be undone.`,
+            confirmText: 'Delete Draft',
+            isDestructive: true
+          });
+          if (confirmed) {
             try {
               await BusinessApi.request(`/quotations/${qId}`, 'DELETE');
-              alert('🗑️ Draft quotation deleted.');
+              await AppDialog.alert({ title: 'Quotation Deleted', message: '🗑️ Draft quotation deleted.' });
               await this.loadQuotations(container);
             } catch (err) {
-              alert('Delete failed: ' + err.message);
+              await AppDialog.alert({ title: 'Delete Failed', message: 'Delete failed: ' + err.message });
             }
           }
         });
@@ -273,7 +279,7 @@ export const QuotationsScreen = {
             if (!quote) throw new Error('Quotation not found');
             await this.openQuoteEditor(container, quote);
           } catch (err) {
-            alert('Could not open quotation: ' + err.message);
+            await AppDialog.alert({ title: 'Error', message: 'Could not open quotation: ' + err.message });
           }
         });
       });
@@ -282,12 +288,17 @@ export const QuotationsScreen = {
         btn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const qId = btn.getAttribute('data-id');
-          if (confirm('Create a new revision for this quotation?')) {
+          const confirmed = await AppDialog.confirm({
+            title: 'Create Revision',
+            message: 'Create a new revision for this quotation?\nThe current version will be archived as SUPERSEDED.',
+            confirmText: 'Create Revision'
+          });
+          if (confirmed) {
             try {
               await BusinessApi.request(`/quotations/${qId}/revision`, 'POST');
               await this.loadQuotations(container);
             } catch (err) {
-              alert('Revision error: ' + err.message);
+              await AppDialog.alert({ title: 'Revision Failed', message: 'Revision error: ' + err.message });
             }
           }
         });
@@ -340,6 +351,10 @@ export const QuotationsScreen = {
     const printModal = container.querySelector('#modal-quotation-print');
     const cardsContainer = container.querySelector('#quote-items-cards-container');
 
+    // Backdrop dismissal
+    if (modal) modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    if (printModal) printModal.onclick = (e) => { if (e.target === printModal) printModal.style.display = 'none'; };
+
     // Open Add Quote Modal
     container.querySelector('#btn-add-quote')?.addEventListener('click', async () => {
       this.editingQuoteId = null;
@@ -388,7 +403,7 @@ export const QuotationsScreen = {
           dialogTitle: 'Share Quotation PDF'
         });
       } catch (err) {
-        alert('Failed to deliver PDF: ' + err.message);
+        await AppDialog.alert({ title: 'PDF Notice', message: 'Failed to deliver PDF: ' + err.message });
       }
     };
 
@@ -463,7 +478,7 @@ export const QuotationsScreen = {
       });
 
       if (items.length === 0) {
-        alert('Please add at least one line item to the quotation.');
+        await AppDialog.alert({ title: 'Line Items Required', message: 'Please add at least one line item to the quotation.' });
         return;
       }
 
@@ -511,7 +526,7 @@ export const QuotationsScreen = {
         modal.style.display = 'none';
         await this.loadQuotations(container);
       } catch (err) {
-        alert('Failed to save quotation: ' + err.message);
+        await AppDialog.alert({ title: 'Save Failed', message: 'Failed to save quotation: ' + err.message });
       }
     });
   },
@@ -726,7 +741,7 @@ export const QuotationsScreen = {
       iframe.srcdoc = html;
       printModal.style.display = 'flex';
     } catch (err) {
-      alert('Error loading quotation preview: ' + err.message);
+      await AppDialog.alert({ title: 'Preview Error', message: 'Error loading quotation preview: ' + err.message });
     }
   }
 };
